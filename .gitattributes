@@ -1,0 +1,22 @@
+# Normalise text files to LF in the repository.
+# Without this, a teammate with core.autocrlf=false on Windows can commit CRLF
+# line endings. That silently breaks the multi-line `run: |` blocks in the
+# GitHub Actions workflows, because bash on the ubuntu runners treats the
+# trailing \r as part of the command.
+* text=auto eol=lf
+
+# Explicit for the files where CRLF actually causes failures.
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sh    text eol=lf
+
+# Generated — collapse in diffs and PR reviews.
+package-lock.json   linguist-generated=true -diff
+src/routeTree.gen.ts linguist-generated=true -diff
+
+# Binary assets: never touch line endings.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff  binary
+*.woff2 binary

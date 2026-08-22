@@ -1,0 +1,70 @@
+name: CI
+
+# Quality gate for the develop branch.
+# Runs on every PR targeting develop, and on every push/merge into develop.
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+# Superseded runs on the same ref are pointless — cancel them.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, type-check & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # node-version-file keeps CI pinned to .nvmrc (currently 22) so the
+      # runtime can never silently drift from what the team runs locally.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      # Regenerates src/routeTree.gen.ts, then type-checks the project
+      # references. Fails if the committed route tree is stale.
+      - name: Type-check
+        run: npm run typecheck
+
+      # NOTE: no test framework is configured in this project yet (no vitest /
+      # jest / playwright, no `test` script, no test files). When tests land,
+      # add the step here:
+      #
+      #   - name: Test
+      #     run: npm run test -- --run
+      #
+      # Until then there is deliberately no test step, rather than a green
+      # placeholder that proves nothing.
+
+      - name: Production build
+        run: npm run build
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
+          if-no-files-found: error

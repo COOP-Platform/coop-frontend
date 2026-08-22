@@ -1,0 +1,84 @@
+name: Deploy develop to Vercel (Preview)
+
+# Fires only when code actually lands on develop (direct push or PR merge).
+# This never runs on pull_request, so forks/PRs can never reach the Vercel
+# token.
+on:
+  push:
+    branches: [develop]
+
+# Never cancel a deploy that is already in flight — queue instead, so develop
+# always converges on the newest commit.
+concurrency:
+  group: deploy-develop
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build & deploy preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Marks the deployment in the GitHub UI and surfaces the resulting URL.
+    environment:
+      name: development
+      url: ${{ steps.deploy.outputs.url }}
+
+    # Project/org IDs tell the Vercel CLI which project to act on. They are
+    # read from the environment by `vercel pull|build|deploy`, so they never
+    # have to appear on a command line.
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Pinned rather than @latest: a CLI major bump should be a deliberate,
+      # reviewable change, not something that breaks deploys unannounced.
+      - name: Install Vercel CLI
+        run: npm install --global vercel@59.4.0
+
+      # Pulls the PREVIEW environment config + env vars into .vercel/.
+      # --environment=preview is what keeps this off the production target.
+      - name: Pull Vercel preview environment
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      # Builds locally against the pulled preview env. Any VITE_* variable set
+      # in Vercel for the Preview environment is inlined into the bundle here.
+      # No --prod flag, so this produces a preview build.
+      - name: Build project artifacts
+        run: vercel build --token="$VERCEL_TOKEN"
+
+      # --prebuilt uploads .vercel/output instead of rebuilding on Vercel.
+      # No --prod flag => this is a Preview deployment and CANNOT become the
+      # production deployment or touch the main branch's production alias.
+      - name: Deploy to Vercel (preview)
+        id: deploy
+        run: |
+          set -euo pipefail
+          url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Summarise deployment
+        run: |
+          {
+            echo "### Develop preview deployed :rocket:"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Environment | Preview (non-production) |"
+            echo "| Commit | \`${GITHUB_SHA::7}\` |"
+            echo "| URL | ${{ steps.deploy.outputs.url }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

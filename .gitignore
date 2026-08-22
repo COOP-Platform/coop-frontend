@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # build info
 *.tsbuildinfo
+
+# vercel cli (pulled env + local build output)
+.vercel/

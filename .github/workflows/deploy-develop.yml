@@ -1,8 +1,7 @@
 name: Deploy develop to Vercel (Preview)
 
 # Fires only when code actually lands on develop (direct push or PR merge).
-# This never runs on pull_request, so forks/PRs can never reach the Vercel
-# token.
+# Never runs on pull_request, so forks/PRs can never reach the Vercel token.
 on:
   push:
     branches: [develop]
@@ -27,13 +26,15 @@ jobs:
       name: development
       url: ${{ steps.deploy.outputs.url }}
 
-    # Project/org IDs tell the Vercel CLI which project to act on. They are
-    # read from the environment by `vercel pull|build|deploy`, so they never
-    # have to appear on a command line.
+    # The Vercel CLI reads VERCEL_ORG_ID + VERCEL_PROJECT_ID directly from the
+    # environment. Verified against the v59.4.0 source: when BOTH are set the
+    # CLI uses them as the project link and never reads .vercel/project.json,
+    # so no linking step is needed or useful here.
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TELEMETRY_DISABLED: '1'
 
     steps:
       - name: Checkout
@@ -50,8 +51,79 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@59.4.0
 
-      # Pulls the PREVIEW environment config + env vars into .vercel/.
-      # --environment=preview is what keeps this off the production target.
+      # Fail fast with an actionable message instead of the CLI's generic
+      # "Could not retrieve Project Settings". Values are never echoed — the
+      # tests below only ever yield a true/false, never the value itself.
+      - name: Validate Vercel credentials
+        # Explicit: this step uses bash-only [[ =~ ]] string matching.
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+
+          [ -n "${VERCEL_TOKEN:-}" ]      || fail "VERCEL_TOKEN secret is empty or unset."
+          [ -n "${VERCEL_ORG_ID:-}" ]     || fail "VERCEL_ORG_ID secret is empty or unset."
+          [ -n "${VERCEL_PROJECT_ID:-}" ] || fail "VERCEL_PROJECT_ID secret is empty or unset."
+
+          # A trailing newline or stray space pasted into a GitHub secret makes
+          # the ID invalid, and the CLI reports it as a missing project.
+          #
+          # Uses bash [[ =~ ]] rather than grep on purpose: grep matches line by
+          # line, so "prj_XXXX\n" looks like one perfectly valid line and the
+          # trailing newline — the most common paste error — slips through.
+          # [[ =~ ]] matches against the whole string, so it catches it.
+          [[ "$VERCEL_PROJECT_ID" =~ ^prj_[A-Za-z0-9]+$ ]] \
+            || fail "VERCEL_PROJECT_ID is malformed. Expected prj_XXXX with no surrounding whitespace — re-paste the secret."
+          [[ "$VERCEL_ORG_ID" =~ ^(team_)?[A-Za-z0-9]+$ ]] \
+            || fail "VERCEL_ORG_ID is malformed. Expected team_XXXX (or a user id) with no surrounding whitespace — re-paste the secret."
+
+          echo "Credential shape OK."
+
+      # Proves the token is valid and shows which scope it resolves to. If the
+      # token was created against a personal account but the project lives in
+      # a team, this is where it becomes obvious — the previous failure mode
+      # surfaced only as a confusing project-settings error.
+      - name: Confirm token identity and scope
+        run: vercel whoami --token="$VERCEL_TOKEN"
+
+      # Preflight the exact API call the CLI is about to make, so a failure
+      # names its own cause instead of surfacing as the CLI's misleading
+      # "Could not retrieve Project Settings ... remove the .vercel directory".
+      #
+      # That message is thrown on HTTP 403 (code "forbidden"/"team_unauthorized"),
+      # NOT on a missing link -- a 404 would raise ProjectNotFound instead. So a
+      # 403 always means the token is not authorised for this team/project, and
+      # no amount of local linking can fix it.
+      #
+      # The token is sent as an Authorization header and never echoed.
+      - name: Verify token can access this project
+        shell: bash
+        run: |
+          set -euo pipefail
+          api="https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}?teamId=${VERCEL_ORG_ID}"
+          status="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $VERCEL_TOKEN" "$api")"
+
+          case "$status" in
+            200)
+              echo "Vercel API returned 200 - token can read this project." ;;
+            401)
+              echo "::error::Vercel API returned 401. VERCEL_TOKEN is invalid, revoked or expired. Create a new token at https://vercel.com/account/tokens and update the secret."
+              exit 1 ;;
+            403)
+              echo "::error::Vercel API returned 403 (team_unauthorized). The token is valid but is NOT authorised for the team in VERCEL_ORG_ID. Vercel tokens are scope-bound at creation: recreate VERCEL_TOKEN with the TEAM selected as its scope, not your personal account, then update the secret."
+              exit 1 ;;
+            404)
+              echo "::error::Vercel API returned 404. No project with this VERCEL_PROJECT_ID exists under this VERCEL_ORG_ID. Check both secrets against Vercel > Project > Settings > General."
+              exit 1 ;;
+            *)
+              echo "::error::Unexpected status $status from the Vercel API while checking project access."
+              exit 1 ;;
+          esac
+
+      # Pulls the PREVIEW environment settings + env vars into .vercel/.
+      # The CLI identifies the project from VERCEL_ORG_ID + VERCEL_PROJECT_ID
+      # (see note in the env block). --environment=preview keeps this off the
+      # production target.
       - name: Pull Vercel preview environment
         run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
@@ -62,14 +134,19 @@ jobs:
         run: vercel build --token="$VERCEL_TOKEN"
 
       # --prebuilt uploads .vercel/output instead of rebuilding on Vercel.
-      # No --prod flag => this is a Preview deployment and CANNOT become the
-      # production deployment or touch the main branch's production alias.
+      # No --prod flag => Preview deployment. This cannot become the production
+      # deployment or touch any production alias.
       - name: Deploy to Vercel (preview)
         id: deploy
         run: |
           set -euo pipefail
-          url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
+          url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN" | tail -n 1 | tr -d '\r')"
+          case "$url" in
+            https://*) ;;
+            *) echo "::error::Deploy did not return a URL. Got: $url"; exit 1 ;;
+          esac
           echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed to $url"
 
       - name: Summarise deployment
         run: |

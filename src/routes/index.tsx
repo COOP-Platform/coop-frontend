@@ -29,6 +29,30 @@ function WelcomePage() {
           <span className="tag">TanStack Query</span>
           <span className="tag">Vite</span>
         </div>
+
+        {/*
+          Deploy check. The values below are baked in at build time, so if this
+          panel shows the commit you just merged, the whole pipeline worked:
+          CI passed, GitHub Actions built it, and Vercel served it.
+        */}
+        <dl className="buildstamp">
+          <div className="buildstamp__row">
+            <dt>Commit</dt>
+            <dd>
+              <code>{__BUILD_SHA__}</code>
+            </dd>
+          </div>
+          <div className="buildstamp__row">
+            <dt>Built</dt>
+            <dd>{__BUILT_AT__}</dd>
+          </div>
+          <div className="buildstamp__row">
+            <dt>API</dt>
+            <dd>
+              <code>{env.apiBaseUrl}</code>
+            </dd>
+          </div>
+        </dl>
       </div>
     </Card>
   );

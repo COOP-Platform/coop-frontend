@@ -113,3 +113,37 @@ greyscale placeholders so nothing needs unpicking later.
 
 Auth and RBAC arrive in Sprint 2, so the API client currently sends no
 `Authorization` header — that hook-in point is marked in `src/lib/api/client.ts`.
+
+## Deployments
+
+`develop` is deployed by **GitHub Actions only** — see
+`.github/workflows/deploy-develop.yml`. Every push to `develop` builds and
+publishes a **Preview** deployment via the Vercel CLI
+(`vercel pull --environment=preview` → `vercel build` → `vercel deploy --prebuilt`).
+There is no `--prod` flag anywhere, so this can never become the production
+deployment.
+
+The preview URL is different on every deploy. Find it in the run's step summary,
+or under the repo's **Deployments → development** environment. It is *not* the
+project's main Vercel URL, which stays on whatever was last promoted to
+production.
+
+### Why `vercel.json` disables Git deployments for `develop`
+
+```json
+{ "git": { "deploymentEnabled": { "develop": false } } }
+```
+
+Vercel's own Git integration was auto-deploying `develop` **to Production**,
+because Vercel defaults its production branch to the repo default branch — which
+here is `develop`. That ran in parallel with the Actions pipeline: the same
+commit was built twice, and the Vercel-side build bypassed the Preview-only
+guarantee above.
+
+Turning it off leaves GitHub Actions as the single deployer. If you ever want
+Vercel's automatic PR previews back, remove that key — but then check the
+Production Branch setting first, or `develop` goes straight to production again.
+
+Required secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+The token must be scoped to the **team** that owns the project, not a personal
+account.

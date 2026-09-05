@@ -1,18 +1,22 @@
 /*
  * Design tokens — single source of truth for colour, type and spacing.
  *
- * >>> COLOURS ARE NOT DECIDED YET. <<<
- * Everything below is deliberately neutral greyscale so nothing has to be
- * un-picked later. When Hubert + Dieudonne sign off the Figma palette
- * (Sprint 0 deliverable), change ONLY the values in this file — no component
- * should ever hardcode a colour.
+ * Palette approved (Figma, Sign In screen): teal brand, grey/white/black
+ * neutrals, yellow reserved as a sparing accent (see --color-accent below).
+ * Change ONLY the values in this file — no component should ever hardcode
+ * a colour.
  */
 
 :root {
-  /* ---- Brand (TODO: replace with approved palette) ---- */
-  --color-brand: #2f2f2f;
-  --color-brand-hover: #171717;
+  /* ---- Brand ---- */
+  --color-brand: #278884;
+  --color-brand-hover: #1f6b68;
   --color-brand-contrast: #ffffff;
+
+  /* ---- Accent (sparing use only — badges, highlights, brand mark;
+     never primary buttons/links/body text) ---- */
+  --color-accent: #fcc20c;
+  --color-accent-contrast: #18181b;
 
   /* ---- Surfaces ---- */
   --color-bg: #fafafa;

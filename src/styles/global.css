@@ -207,3 +207,270 @@ button {
   font-family: var(--font-mono);
   color: var(--color-text);
 }
+
+/* ---------- Button ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn--primary {
+  background-color: var(--color-brand);
+  color: var(--color-brand-contrast);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background-color: var(--color-brand-hover);
+}
+
+.btn--secondary {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background-color: var(--color-surface-muted);
+}
+
+/* ---------- Field (Input) ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: left;
+}
+
+.field__label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.field__control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  padding: 0 var(--space-3);
+}
+
+.field__control:focus-within {
+  border-color: var(--color-brand);
+  outline: 2px solid var(--color-brand);
+  outline-offset: -1px;
+}
+
+.field__icon {
+  display: inline-flex;
+  color: var(--color-text-subtle);
+}
+
+.field__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: var(--space-3) 0;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.field__input:focus {
+  outline: none;
+}
+
+.field__trailing {
+  display: inline-flex;
+  align-items: center;
+}
+
+.field__toggle {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-muted);
+}
+
+.field__toggle:hover {
+  color: var(--color-text);
+}
+
+/* ---------- Checkbox ---------- */
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.checkbox__input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-brand);
+}
+
+.checkbox__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Auth shell (sign in / sign up) ---------- */
+
+.auth-shell {
+  display: flex;
+  min-height: 100%;
+}
+
+.auth-brand {
+  position: relative;
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-6);
+  /* Safety net: scroll internally rather than silently clipping content
+     (e.g. the badges) if a viewport is ever too short to fit everything. */
+  overflow-y: auto;
+  background-color: var(--color-brand);
+  color: var(--color-brand-contrast);
+  padding: var(--space-6) var(--space-8);
+}
+
+.auth-brand__illustration {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.auth-brand__mark {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.auth-brand__logo {
+  height: 2rem;
+  width: auto;
+}
+
+.auth-brand__name {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.auth-brand__bottom {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.auth-brand__title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.auth-brand__message {
+  max-width: 42ch;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.auth-brand__badges {
+  display: flex;
+  gap: var(--space-6);
+  list-style: none;
+  font-size: var(--text-xs);
+  color: rgb(255 255 255 / 0.85);
+}
+
+.auth-panel {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.auth-panel__inner {
+  width: 100%;
+  max-width: 26rem;
+}
+
+@media (min-width: 900px) {
+  .auth-brand {
+    display: flex;
+  }
+}
+
+/* ---------- Login form ---------- */
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.login-form__title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.login-form__subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-top: calc(var(--space-1) * -1);
+}
+
+.login-form__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login-form__forgot {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-brand);
+}
+
+.login-form__forgot:hover {
+  color: var(--color-brand-hover);
+}
+
+.login-form__error {
+  border-radius: var(--radius-sm);
+  background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}

@@ -1,4 +1,4 @@
-import type { SelectHTMLAttributes } from 'react';
+import type { ReactNode, SelectHTMLAttributes } from 'react';
 import { useId } from 'react';
 
 import { IconChevronDown } from './icons';
@@ -11,6 +11,7 @@ export interface SelectOption {
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   options: readonly SelectOption[];
+  icon?: ReactNode;
   /** Rendered as a disabled first option, for when there is no sensible default. */
   placeholder?: string;
   hint?: string;
@@ -20,6 +21,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 export function Select({
   label,
   options,
+  icon,
   placeholder,
   hint,
   error,
@@ -54,6 +56,7 @@ export function Select({
       </label>
 
       <div className={controlClasses}>
+        {icon && <span className="field__icon">{icon}</span>}
         <select
           id={selectId}
           className="field__select"

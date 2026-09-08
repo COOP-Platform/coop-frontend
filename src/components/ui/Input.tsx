@@ -3,6 +3,8 @@ import { useId } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  /** Keeps `label` as the accessible name but hides it visually. */
+  labelHidden?: boolean;
   icon?: ReactNode;
   trailing?: ReactNode;
   /**
@@ -19,6 +21,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function Input({
   label,
+  labelHidden,
   icon,
   trailing,
   leading,
@@ -40,7 +43,10 @@ export function Input({
 
   return (
     <div className="field">
-      <label htmlFor={inputId} className="field__label">
+      <label
+        htmlFor={inputId}
+        className={labelHidden ? 'field__label visually-hidden' : 'field__label'}
+      >
         {label}
         {required && (
           <span className="field__required" aria-hidden="true">

@@ -1,4 +1,5 @@
 import { env } from '@/config/env';
+import { getAccessToken } from '@/lib/auth/session';
 
 /** Field name -> first message, e.g. `{ slug: 'This slug is already taken.' }`. */
 export type FieldErrors = Record<string, string>;
@@ -63,17 +64,19 @@ function parseErrorPayload(payload: unknown): { message?: string; fieldErrors: F
   return { message, fieldErrors };
 }
 
-/**
- * Thin fetch wrapper around the backend API.
- * Auth headers get added here in Sprint 2 when JWT login lands.
- */
+/** Thin fetch wrapper around the backend API. */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
+
+  // Bearer token when signed in. Spread before `headers` so a caller can still
+  // override it — the sign-in request itself must go out unauthenticated.
+  const token = getAccessToken();
 
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
     ...rest,
     headers: {
       'Content-Type': 'application/json',
+      ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
       ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),

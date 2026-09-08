@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
 import {
@@ -12,15 +13,12 @@ import {
 interface QuickAction {
   label: string;
   icon: ReactNode;
+  /** Only present once the destination exists; the rest render disabled. */
+  to?: '/members/invite';
 }
 
-/**
- * Buttons rather than links: none of these destinations exist yet, and a link
- * to a route that isn't in the generated tree cannot even compile. They are
- * rendered disabled so the affordance is honest instead of dead.
- */
 const ACTIONS: readonly QuickAction[] = [
-  { label: 'Add Member', icon: <IconUserPlus /> },
+  { label: 'Add Member', icon: <IconUserPlus />, to: '/members/invite' },
   { label: 'Record Contribution', icon: <IconPlusCircle /> },
   { label: 'Plan Event', icon: <IconCalendar /> },
   { label: 'View Reports', icon: <IconBarChart /> },
@@ -32,15 +30,27 @@ export function QuickActions() {
       <ul className="quick-actions" role="list">
         {ACTIONS.map((action) => (
           <li key={action.label}>
-            <button type="button" className="quick-action" disabled>
-              <span className="quick-action__icon" aria-hidden="true">
-                {action.icon}
-              </span>
-              <span className="quick-action__label">{action.label}</span>
-              <span className="quick-action__chevron" aria-hidden="true">
-                <IconChevronRight />
-              </span>
-            </button>
+            {action.to ? (
+              <Link to={action.to} className="quick-action">
+                <span className="quick-action__icon" aria-hidden="true">
+                  {action.icon}
+                </span>
+                <span className="quick-action__label">{action.label}</span>
+                <span className="quick-action__chevron" aria-hidden="true">
+                  <IconChevronRight />
+                </span>
+              </Link>
+            ) : (
+              <button type="button" className="quick-action" disabled>
+                <span className="quick-action__icon" aria-hidden="true">
+                  {action.icon}
+                </span>
+                <span className="quick-action__label">{action.label}</span>
+                <span className="quick-action__chevron" aria-hidden="true">
+                  <IconChevronRight />
+                </span>
+              </button>
+            )}
           </li>
         ))}
       </ul>

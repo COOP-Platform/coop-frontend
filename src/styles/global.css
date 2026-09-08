@@ -337,9 +337,18 @@ button {
 
 /* ---------- Auth shell (sign in / sign up) ---------- */
 
+/*
+ * The brand panel is pinned to the viewport and only the form column scrolls,
+ * so `height` (not `min-height`) plus `overflow: hidden` here: the shell must
+ * not grow with its content, otherwise the page scrolls as one and the panel
+ * scrolls away with it. `dvh` keeps it honest when mobile browser chrome
+ * shows and hides.
+ */
 .auth-shell {
   display: flex;
-  min-height: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .auth-brand {
@@ -414,15 +423,27 @@ button {
   color: rgb(255 255 255 / 0.85);
 }
 
+/*
+ * The one scrolling column. `min-height: 0` lets a flex child actually shrink
+ * below its content height, which is what makes `overflow-y` take effect.
+ */
 .auth-panel {
   display: flex;
   flex: 1;
-  align-items: center;
+  min-height: 0;
   justify-content: center;
+  overflow-y: auto;
   padding: var(--space-6);
 }
 
 .auth-panel__inner {
+  /*
+   * `margin-block: auto` rather than `align-items: center` on the parent:
+   * centring a flex item taller than its container pushes the overflow past
+   * the scroll origin, leaving the top of a long form unreachable. Auto
+   * margins centre short content and collapse for tall content.
+   */
+  margin-block: auto;
   width: 100%;
   max-width: 26rem;
 }

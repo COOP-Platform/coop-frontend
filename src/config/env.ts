@@ -14,7 +14,6 @@ function required(name: keyof ImportMetaEnv, fallback?: string): string {
 
 export const env = {
   apiBaseUrl: required('VITE_API_BASE_URL', 'http://localhost:8080/api'),
-  // TODO(Sprint 0): drop the fallback once the product name is approved.
-  appName: required('VITE_APP_NAME', 'Community Management Platform'),
+  appName: required('VITE_APP_NAME', 'COOP'),
   isDev: import.meta.env.DEV,
 } as const;

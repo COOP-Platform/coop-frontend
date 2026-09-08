@@ -1,10 +1,6 @@
-# Community Management Platform — Frontend
+# COOP — Frontend
 
-Web frontend for the Community Management Platform, piloted with **Les Cousins Neretse**.
-
-> **Naming:** the product name and logo are still pending (Sprint 0, Dieudonné).
-> Everything user-facing reads from `VITE_APP_NAME` / `src/config/env.ts`, so the
-> rename is a one-line change.
+Web frontend for COOP, piloted with **Les Cousins Neretse**.
 
 ## Stack
 

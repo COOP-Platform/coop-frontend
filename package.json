@@ -1,9 +1,9 @@
 {
-  "name": "cmp-frontend",
+  "name": "coop-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Community Management Platform — web frontend",
+  "description": "COOP — web frontend",
   "scripts": {
     "dev": "vite",
     "build": "tsr generate && tsc -b && vite build",

@@ -1,3 +1,9 @@
-// Public surface of the Community Management module.
-// TODO(Sprint 1): export the community list/detail/create components and hooks.
-export {};
+// Public surface of the Communities module.
+export { CreateCommunityForm } from './components/CreateCommunityForm';
+export { useCreateCommunity, slugify } from './api/communities';
+export type {
+  Community,
+  CommunityStatus,
+  CommunityType,
+  CreateCommunityRequest,
+} from './api/communities';

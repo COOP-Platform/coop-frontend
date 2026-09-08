@@ -60,10 +60,7 @@ export function ContributionsTrend({ points }: ContributionsTrendProps) {
               {hovered === index && (
                 <span className="chart__tooltip">{formatAmount(point.value)}</span>
               )}
-              <span
-                className="chart__bar"
-                style={{ height: `${(point.value / max) * 100}%` }}
-              />
+              <span className="chart__bar" style={{ height: `${(point.value / max) * 100}%` }} />
             </div>
           ))}
         </div>

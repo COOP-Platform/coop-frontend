@@ -5,22 +5,69 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   icon?: ReactNode;
   trailing?: ReactNode;
+  /** Static content inside the control, before the input — e.g. a dial code. */
+  prefix?: ReactNode;
+  /** Guidance under the field. Replaced by `error` when that is set. */
+  hint?: string;
+  /** Validation message. Marks the control invalid and takes over from `hint`. */
+  error?: string;
 }
 
-export function Input({ label, icon, trailing, id, className, ...rest }: InputProps) {
+export function Input({
+  label,
+  icon,
+  trailing,
+  prefix,
+  hint,
+  error,
+  id,
+  className,
+  required,
+  ...rest
+}: InputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
+  const messageId = `${inputId}-message`;
+  const message = error ?? hint;
+
+  const controlClasses = ['field__control', error ? 'field__control--invalid' : null, className]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className="field">
       <label htmlFor={inputId} className="field__label">
         {label}
+        {required && (
+          <span className="field__required" aria-hidden="true">
+            *
+          </span>
+        )}
       </label>
-      <div className={className ? `field__control ${className}` : 'field__control'}>
+
+      <div className={controlClasses}>
         {icon && <span className="field__icon">{icon}</span>}
-        <input id={inputId} className="field__input" {...rest} />
+        {prefix && <span className="field__prefix">{prefix}</span>}
+        <input
+          id={inputId}
+          className="field__input"
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={message ? messageId : undefined}
+          {...rest}
+        />
         {trailing && <span className="field__trailing">{trailing}</span>}
       </div>
+
+      {message && (
+        <p
+          id={messageId}
+          className={error ? 'field__error' : 'field__hint'}
+          role={error ? 'alert' : undefined}
+        >
+          {message}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 export { Card } from './Card';
+export { Panel } from './Panel';
 export { Button } from './Button';
 export { Input } from './Input';
 export { Textarea } from './Textarea';
@@ -21,4 +22,18 @@ export {
   IconChevronDown,
   IconChevronRight,
   IconArrowRight,
+  IconHome,
+  IconUsers,
+  IconWallet,
+  IconCalendar,
+  IconChat,
+  IconBarChart,
+  IconBell,
+  IconFile,
+  IconCheckSquare,
+  IconLogout,
+  IconSearch,
+  IconUserPlus,
+  IconPlusCircle,
+  IconInfoCircle,
 } from './icons';

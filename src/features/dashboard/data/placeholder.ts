@@ -15,7 +15,12 @@
 export interface StatDelta {
   /** Pre-formatted, e.g. "+4" or "+12.5%". Rendered verbatim. */
   label: string;
-  direction: 'up' | 'down' | 'neutral';
+  /**
+   * How the figure should read, not which way it points. "-3 pending
+   * approvals" is a fall in the number but not bad news, so tone is set per
+   * stat rather than derived from the sign.
+   */
+  tone: 'positive' | 'caution' | 'neutral';
 }
 
 export interface Stat {
@@ -59,28 +64,28 @@ export const STATS: readonly Stat[] = [
     id: 'members',
     label: 'Total Members',
     value: '156',
-    delta: { label: '+4', direction: 'up' },
+    delta: { label: '+4', tone: 'positive' },
     deltaSuffix: 'vs last month',
   },
   {
     id: 'contributions',
     label: 'Monthly Contributions',
     value: '2,450,000 RWF',
-    delta: { label: '+12.5%', direction: 'up' },
+    delta: { label: '+12.5%', tone: 'positive' },
     deltaSuffix: 'vs last month',
   },
   {
     id: 'events',
     label: 'Upcoming Events',
     value: '3',
-    delta: { label: 'On Track', direction: 'neutral' },
+    delta: { label: 'On Track', tone: 'positive' },
     deltaSuffix: 'vs last month',
   },
   {
     id: 'approvals',
     label: 'Pending Approvals',
     value: '8',
-    delta: { label: '-3', direction: 'down' },
+    delta: { label: '-3', tone: 'caution' },
     deltaSuffix: 'vs last month',
   },
 ];

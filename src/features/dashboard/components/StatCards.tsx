@@ -31,7 +31,7 @@ export function StatCards({ stats }: StatCardsProps) {
           <p className="stat__value">{stat.value}</p>
 
           <p className="stat__delta">
-            <span className={`stat__delta-value stat__delta-value--${stat.delta.direction}`}>
+            <span className={`stat__delta-value stat__delta-value--${stat.delta.tone}`}>
               {stat.delta.label}
             </span>{' '}
             <span className="stat__delta-suffix">{stat.deltaSuffix}</span>

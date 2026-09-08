@@ -12,6 +12,14 @@
   --color-brand: #278884;
   --color-brand-hover: #1f6b68;
   --color-brand-contrast: #ffffff;
+  /*
+   * The brand hue stepped dark enough to be legible as small text: #278884 is
+   * 4.25:1 on white, under the 4.5:1 WCAG AA floor, and 3.76:1 on the 10%
+   * brand tint used behind badges. This step measures 6.25:1 and 5.53:1.
+   * Use --color-brand for fills, icons and large headings; this for body-size
+   * text and links.
+   */
+  --color-brand-text: #1f6b68;
 
   /* ---- Accent (sparing use only — badges, highlights, brand mark;
      never primary buttons/links/body text) ---- */

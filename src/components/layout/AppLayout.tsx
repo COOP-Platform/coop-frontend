@@ -1,34 +1,39 @@
-import { Link, Outlet } from '@tanstack/react-router';
+import { Outlet } from '@tanstack/react-router';
 
-import { env } from '@/config/env';
+import { Sidebar } from './Sidebar';
+import { Topbar } from './Topbar';
 
 /**
- * Application shell: header + navigation, page content, footer.
- * Nav entries are placeholders for the Sprint 1 modules.
+ * Application shell: fixed sidebar, top bar, scrolling content.
+ *
+ * The signed-in user is hardcoded because there is no session to read it from
+ * yet — login discards its token and no route is guarded. It moves to an auth
+ * context in Sprint 2.
  */
+const CURRENT_USER = {
+  name: 'Jean Mukiza',
+  role: 'President',
+  notificationCount: 3,
+};
+
 export function AppLayout() {
   return (
     <div className="app-shell">
-      <header className="app-header">
-        {/* TODO(Sprint 0): swap the text brand for the approved logo. */}
-        <Link to="/" className="app-header__brand">
-          {env.appName}
-        </Link>
+      <aside className="app-shell__sidebar">
+        <Sidebar />
+      </aside>
 
-        <nav className="app-nav">
-          <Link to="/" activeProps={{ className: 'is-active' }} activeOptions={{ exact: true }}>
-            Home
-          </Link>
-        </nav>
-      </header>
+      <div className="app-shell__body">
+        <Topbar
+          userName={CURRENT_USER.name}
+          userRole={CURRENT_USER.role}
+          notificationCount={CURRENT_USER.notificationCount}
+        />
 
-      <main className="app-main">
-        <Outlet />
-      </main>
-
-      <footer className="app-footer">
-        Sprint 1 — Community &amp; Member Management · Les Cousins Neretse pilot
-      </footer>
+        <main className="app-main">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

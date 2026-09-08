@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as RegisterRouteImport } from './routes/register';
 import { Route as AppIndexRouteImport } from './routes/_app.index';
+import { Route as AppStatusRouteImport } from './routes/_app.status';
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -33,15 +34,22 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any);
+const AppStatusRoute = AppStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => AppRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
+  '/status': typeof AppStatusRoute;
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
+  '/status': typeof AppStatusRoute;
   '/': typeof AppIndexRoute;
 }
 export interface FileRoutesById {
@@ -49,14 +57,15 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
+  '/_app/status': typeof AppStatusRoute;
   '/_app/': typeof AppIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/login' | '/register';
+  fullPaths: '/' | '/login' | '/register' | '/status';
   fileRoutesByTo: FileRoutesByTo;
-  to: '/login' | '/register' | '/';
-  id: '__root__' | '/_app' | '/login' | '/register' | '/_app/';
+  to: '/login' | '/register' | '/status' | '/';
+  id: '__root__' | '/_app' | '/login' | '/register' | '/_app/status' | '/_app/';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -95,14 +104,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport;
       parentRoute: typeof AppRoute;
     };
+    '/_app/status': {
+      id: '/_app/status';
+      path: '/status';
+      fullPath: '/status';
+      preLoaderRoute: typeof AppStatusRouteImport;
+      parentRoute: typeof AppRoute;
+    };
   }
 }
 
 interface AppRouteChildren {
+  AppStatusRoute: typeof AppStatusRoute;
   AppIndexRoute: typeof AppIndexRoute;
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppStatusRoute: AppStatusRoute,
   AppIndexRoute: AppIndexRoute,
 };
 

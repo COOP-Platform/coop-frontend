@@ -243,7 +243,7 @@ export function CreateCommunityForm() {
           value={form.slug}
           onChange={(event) => handleSlugChange(event.target.value)}
           placeholder="les-cousins-neretse"
-          prefix={<span className="field__prefix-text">/c/</span>}
+          leading={<span className="field__prefix-text">/c/</span>}
           maxLength={60}
           hint="Lowercase letters, numbers and hyphens. Must be unique across all communities."
           error={fieldErrors.slug}
@@ -345,7 +345,7 @@ export function CreateCommunityForm() {
             placeholder="788 000 000"
             inputMode="numeric"
             autoComplete="tel-national"
-            prefix={
+            leading={
               <span className="field__dial">
                 <small>RW</small>
                 {DIAL_CODE}

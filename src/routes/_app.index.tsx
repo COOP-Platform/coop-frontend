@@ -1,59 +1,49 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { Card } from '@/components/ui';
 import { env } from '@/config/env';
+import {
+  CONTRIBUTIONS_TREND,
+  ContributionsTrend,
+  QuickActions,
+  RECENT_ACTIONS,
+  RecentMemberActions,
+  STATS,
+  StatCards,
+  UPCOMING_EVENTS,
+  UpcomingEvents,
+} from '@/features/dashboard';
 
 export const Route = createFileRoute('/_app/')({
-  component: WelcomePage,
+  component: DashboardPage,
 });
 
-function WelcomePage() {
+// Hardcoded alongside AppLayout's CURRENT_USER until there is a session to
+// read the signed-in member and their community from.
+const FIRST_NAME = 'Jean';
+const COMMUNITY_NAME = 'Les Cousins';
+
+function DashboardPage() {
   return (
-    <Card>
-      <div className="welcome">
-        <p className="welcome__eyebrow">Sprint 1 · 20 Aug – 02 Sep 2026</p>
-
-        <h1 className="welcome__title">Welcome to the {env.appName}</h1>
-
-        <p className="welcome__message">
-          The frontend is scaffolded and running. This is the starter shell for the Les Cousins
-          Neretse pilot — React, TypeScript, TanStack Router and TanStack Query are wired up and
-          ready. Colours, typography and the product name land once the design system is approved;
-          feature work starts with Community and Member Management.
+    <div className="dashboard">
+      <header className="dashboard__intro">
+        <h1 className="dashboard__title">Welcome back, {FIRST_NAME}</h1>
+        <p className="dashboard__subtitle">
+          Here is an overview of what has been happening within {env.appName} for {COMMUNITY_NAME}.
         </p>
+      </header>
 
-        <div className="welcome__meta">
-          <span className="tag">React 18</span>
-          <span className="tag">TypeScript</span>
-          <span className="tag">TanStack Router</span>
-          <span className="tag">TanStack Query</span>
-          <span className="tag">Vite</span>
+      <StatCards stats={STATS} />
+
+      <div className="dashboard__grid">
+        <div className="dashboard__col">
+          <ContributionsTrend points={CONTRIBUTIONS_TREND} />
+          <RecentMemberActions actions={RECENT_ACTIONS} />
         </div>
-
-        {/*
-          Deploy check. The values below are baked in at build time, so if this
-          panel shows the commit you just merged, the whole pipeline worked:
-          CI passed, GitHub Actions built it, and Vercel served it.
-        */}
-        <dl className="buildstamp">
-          <div className="buildstamp__row">
-            <dt>Commit</dt>
-            <dd>
-              <code>{__BUILD_SHA__}</code>
-            </dd>
-          </div>
-          <div className="buildstamp__row">
-            <dt>Built</dt>
-            <dd>{__BUILT_AT__}</dd>
-          </div>
-          <div className="buildstamp__row">
-            <dt>API</dt>
-            <dd>
-              <code>{env.apiBaseUrl}</code>
-            </dd>
-          </div>
-        </dl>
+        <div className="dashboard__col">
+          <QuickActions />
+          <UpcomingEvents events={UPCOMING_EVENTS} />
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }

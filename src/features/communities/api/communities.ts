@@ -8,14 +8,7 @@ import { apiFetch } from '@/lib/api/client';
  * fields directly — no camelCase mapping layer exists on either side yet.
  */
 export type CommunityType =
-  | 'family'
-  | 'savings_group'
-  | 'church'
-  | 'cooperative'
-  | 'alumni'
-  | 'ngo'
-  | 'youth_group'
-  | 'club';
+  'family' | 'savings_group' | 'church' | 'cooperative' | 'alumni' | 'ngo' | 'youth_group' | 'club';
 
 export type CommunityStatus = 'active' | 'suspended' | 'archived';
 

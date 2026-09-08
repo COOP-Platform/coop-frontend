@@ -36,4 +36,13 @@ export {
   IconUserPlus,
   IconPlusCircle,
   IconInfoCircle,
+  IconMail,
+  IconLayers,
+  IconSend,
+  IconCheckCircle,
+  IconCopy,
+  IconKey,
+  IconClock,
+  IconExternalLink,
+  IconWifi,
 } from './icons';

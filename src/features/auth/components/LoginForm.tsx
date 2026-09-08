@@ -1,12 +1,16 @@
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { Button, Checkbox, IconEye, IconEyeOff, IconLock, IconUser, Input } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
+import { saveSession } from '@/lib/auth/session';
 
 import { useLogin } from '../api/auth';
 
 export function LoginForm() {
+  const navigate = useNavigate();
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -16,7 +20,18 @@ export function LoginForm() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    login.mutate({ identifier, password, rememberMe });
+
+    // `rememberMe` is a client-side concern — it picks the token store — so it
+    // is deliberately not part of the request body.
+    login.mutate(
+      { identifier, password },
+      {
+        onSuccess: (result) => {
+          saveSession(result.access, result.refresh, result.user, rememberMe);
+          void navigate({ to: result.must_change_password ? '/onboarding/password' : '/' });
+        },
+      },
+    );
   }
 
   return (
@@ -62,6 +77,7 @@ export function LoginForm() {
           checked={rememberMe}
           onChange={(event) => setRememberMe(event.target.checked)}
         />
+        {/* TODO: point at the reset-password screen once it exists. */}
         <a href="#" className="login-form__forgot">
           Forgot password?
         </a>

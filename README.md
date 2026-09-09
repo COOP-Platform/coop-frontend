@@ -114,15 +114,18 @@ Auth and RBAC arrive in Sprint 2, so the API client currently sends no
 
 `develop` is deployed by **GitHub Actions only** — see
 `.github/workflows/deploy-develop.yml`. Every push to `develop` builds and
-publishes a **Preview** deployment via the Vercel CLI
-(`vercel pull --environment=preview` → `vercel build` → `vercel deploy --prebuilt`).
-There is no `--prod` flag anywhere, so this can never become the production
-deployment.
+publishes to **Production** via the Vercel CLI
+(`vercel pull --environment=production` → `vercel build --prod` →
+`vercel deploy --prebuilt --prod`).
 
-The preview URL is different on every deploy. Find it in the run's step summary,
-or under the repo's **Deployments → development** environment. It is *not* the
-project's main Vercel URL, which stays on whatever was last promoted to
-production.
+So the project's main Vercel URL always reflects the newest `develop`. There is
+no separate release step, which is the trade-off: whatever merges to `develop`
+is immediately live, and CI is the only gate in front of it.
+
+The three CLI calls must agree on the target. `vercel pull` decides which
+environment's `VITE_*` values are inlined at build time, so pulling `preview`
+and deploying `--prod` would ship a production URL built with preview
+configuration.
 
 ### Why `vercel.json` disables Git deployments for `develop`
 
@@ -130,15 +133,19 @@ production.
 { "git": { "deploymentEnabled": { "develop": false } } }
 ```
 
-Vercel's own Git integration was auto-deploying `develop` **to Production**,
-because Vercel defaults its production branch to the repo default branch — which
-here is `develop`. That ran in parallel with the Actions pipeline: the same
-commit was built twice, and the Vercel-side build bypassed the Preview-only
-guarantee above.
+This stays **off** even though `develop` now goes to production, and the reason
+is unchanged: Vercel's Git integration would deploy the same commit in parallel
+with the Actions pipeline, so every push was built twice and two deployments
+raced for the production alias. Vercel defaults its production branch to the
+repo default branch, which here is `develop`, so it needs to be disabled
+explicitly.
 
-Turning it off leaves GitHub Actions as the single deployer. If you ever want
-Vercel's automatic PR previews back, remove that key — but then check the
-Production Branch setting first, or `develop` goes straight to production again.
+`deploymentEnabled` governs only the Git integration — CLI deploys are
+unaffected, which is why the workflow's `--prod` deploy still works. GitHub
+Actions is the single deployer.
+
+If you ever want Vercel's automatic PR previews back, remove that key, but
+expect the double-deploy behaviour to return for `develop`.
 
 Required secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 The token must be scoped to the **team** that owns the project, not a personal

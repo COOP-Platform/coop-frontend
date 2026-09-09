@@ -1,4 +1,4 @@
-name: Deploy develop to Vercel (Preview)
+name: Deploy develop to Vercel (Production)
 
 # Fires only when code actually lands on develop (direct push or PR merge).
 # Never runs on pull_request, so forks/PRs can never reach the Vercel token.
@@ -17,13 +17,13 @@ permissions:
 
 jobs:
   deploy:
-    name: Build & deploy preview
+    name: Build & deploy production
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     # Marks the deployment in the GitHub UI and surfaces the resulting URL.
     environment:
-      name: development
+      name: production
       url: ${{ steps.deploy.outputs.url }}
 
     # The Vercel CLI reads VERCEL_ORG_ID + VERCEL_PROJECT_ID directly from the
@@ -137,23 +137,23 @@ jobs:
 
           echo "Preflight passed - the token can reach this team and project."
 
-      # Pulls the PREVIEW environment settings + env vars into .vercel/.
+      # Pulls the PRODUCTION environment settings + env vars into .vercel/.
       # The CLI identifies the project from VERCEL_ORG_ID + VERCEL_PROJECT_ID
-      # (see note in the env block). --environment=preview keeps this off the
-      # production target.
-      - name: Pull Vercel preview environment
-        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+      # (see note in the env block). This must match the target the deploy step
+      # uses, or the bundle is built against the wrong VITE_* values.
+      - name: Pull Vercel production environment
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
-      # Builds locally against the pulled preview env. Any VITE_* variable set
-      # in Vercel for the Preview environment is inlined into the bundle here.
-      # No --prod flag, so this produces a preview build.
+      # Builds locally against the pulled production env. Any VITE_* variable
+      # set in Vercel for the Production environment is inlined into the bundle
+      # here, so --prod is required and not cosmetic.
       - name: Build project artifacts
-        run: vercel build --token="$VERCEL_TOKEN"
+        run: vercel build --prod --token="$VERCEL_TOKEN"
 
       # --prebuilt uploads .vercel/output instead of rebuilding on Vercel.
-      # No --prod flag => Preview deployment. This cannot become the production
-      # deployment or touch any production alias.
-      - name: Deploy to Vercel (preview)
+      # --prod publishes to the production target and moves the project's
+      # production alias, so the shared URL always reflects the newest develop.
+      - name: Deploy to Vercel (production)
         id: deploy
         run: |
           set -euo pipefail
@@ -168,11 +168,11 @@ jobs:
       - name: Summarise deployment
         run: |
           {
-            echo "### Develop preview deployed :rocket:"
+            echo "### Develop deployed to production :rocket:"
             echo ""
             echo "| | |"
             echo "|---|---|"
-            echo "| Environment | Preview (non-production) |"
+            echo "| Environment | Production |"
             echo "| Commit | \`${GITHUB_SHA::7}\` |"
             echo "| URL | ${{ steps.deploy.outputs.url }} |"
           } >> "$GITHUB_STEP_SUMMARY"

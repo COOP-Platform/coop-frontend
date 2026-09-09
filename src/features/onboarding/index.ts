@@ -4,3 +4,6 @@ export { AcceptInvitation } from './components/AcceptInvitation';
 export { InvitationAccepted } from './components/InvitationAccepted';
 export { FirstTimeSignIn } from './components/FirstTimeSignIn';
 export { CreatePassword } from './components/CreatePassword';
+
+export { useInvitation, useAcceptInvitation } from './api/accept';
+export type { AcceptInvitationResult } from './api/accept';

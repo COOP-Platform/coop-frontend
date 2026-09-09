@@ -112,22 +112,62 @@ Auth and RBAC arrive in Sprint 2, so the API client currently sends no
 
 ## Deployments
 
-`develop` is deployed by **GitHub Actions only** — see
-`.github/workflows/deploy-develop.yml`. Every push to `develop` builds and
-publishes to **Production** via the Vercel CLI
-(`vercel pull --environment=production` → `vercel build --prod` →
-`vercel deploy --prebuilt --prod`).
+`develop` is deployed by **Vercel's Git integration**. Every push to `develop`
+is built by Vercel and published to **Production**, so the project's main URL
+always reflects the newest `develop`. Pull requests get their own preview
+deployments automatically.
 
-So the project's main Vercel URL always reflects the newest `develop`. There is
-no separate release step, which is the trade-off: whatever merges to `develop`
-is immediately live, and CI is the only gate in front of it.
+Vercel defaults its production branch to the repository's default branch, which
+here is `develop`, so no configuration is needed for that — but if the main URL
+ever stops tracking `develop`, check **Project Settings → Git → Production
+Branch** first.
 
-The three CLI calls must agree on the target. `vercel pull` decides which
-environment's `VITE_*` values are inlined at build time, so pulling `preview`
-and deploying `--prod` would ship a production URL built with preview
-configuration.
+There is no separate release step. Whatever merges to `develop` is live, with
+the CI workflow (`.github/workflows/ci.yml`) as the only gate in front of it.
+Use **Instant Rollback** on the Vercel dashboard to undo a bad deploy.
 
-### Why `vercel.json` disables Git deployments for `develop`
+### Environment variables live in Vercel
+
+Because Vercel now runs the build, `VITE_*` values must be set in **Project
+Settings → Environment Variables** for the Production environment. They are
+inlined at build time, so a missing `VITE_API_BASE_URL` does not fail the
+build — `src/config/env.ts` falls back to `http://localhost:8080/api` and the
+deployed site calls localhost with no visible error.
+
+### Why there is no deploy workflow
+
+There was one (`deploy-develop.yml`, in git history). It built with the Vercel
+CLI and deployed with `--prebuilt`, which existed to keep `develop` on Preview
+deployments only while Vercel's Git integration was disabled for the branch.
+
+Once `develop` was meant to be live, that arrangement stopped earning its
+keep: `vercel deploy --prebuilt --prod` failed in CI, and running both
+pipelines meant every commit was built twice and two deployments raced for the
+production alias. Vercel's own integration does the same job with no token
+plumbing, so the workflow was removed and `git.deploymentEnabled` dropped from
+`vercel.json`.
+
+The `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` repository secrets
+are no longer read by anything and can be deleted.
+
+### Why `vercel.json` rewrites everything to `/index.html`
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```
+
+This is a client-routed SPA: only `/index.html` exists on disk, and TanStack
+Router resolves the path in the browser. Without the rewrite, Vercel answers
+any deep link with a hard 404 — `/login`, `/register` and every
+`/invitation/*` and `/onboarding/*` URL was unreachable except by navigating
+from `/`, which matters because invitation links are emailed as deep URLs.
+
+Vercel's Vite preset does not add this fallback on its own; it was verified
+missing against the live deployment. `rewrites` are evaluated *after* the
+filesystem check, so hashed assets under `/assets/` still serve normally and
+only unmatched paths fall through to the app.
+
+## Why `vercel.json` disables Git deployments for `develop`
 
 ```json
 { "git": { "deploymentEnabled": { "develop": false } } }

@@ -63,10 +63,14 @@ export function InviteMemberForm() {
         invited_by: membership.id,
       },
       {
-        onSuccess: ({ token }) => {
-          // Nothing emails the token, so the only way it reaches the invitee
-          // is if the inviter copies this link.
-          setInviteLink(`${window.location.origin}/invitation?token=${token}`);
+        onSuccess: ({ invitation }) => {
+          /*
+           * Carries the invitation id, not the token: no endpoint resolves a
+           * raw token yet (only its hash is stored). The token is still
+           * generated and hashed on the way in, so switching this link to
+           * `?token=` is all that is needed once verification exists.
+           */
+          setInviteLink(`${window.location.origin}/invitation?id=${invitation.id}`);
           setFullName('');
           setEmail('');
           setCategory('');

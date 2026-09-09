@@ -2,16 +2,21 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { AcceptInvitation, OnboardingLayout } from '@/features/onboarding';
 
-// TODO: should be `/invitation/$token` — the screen is meaningless without a
-// token to resolve. Kept param-less until an endpoint exists to resolve one.
 export const Route = createFileRoute('/invitation/')({
+  // `id` for now — see the note on useInvitation. It becomes `token` once an
+  // endpoint exists that can resolve one.
+  validateSearch: (search: Record<string, unknown>): { id?: string } => ({
+    id: typeof search.id === 'string' && search.id !== '' ? search.id : undefined,
+  }),
   component: AcceptInvitationPage,
 });
 
 function AcceptInvitationPage() {
+  const { id } = Route.useSearch();
+
   return (
     <OnboardingLayout>
-      <AcceptInvitation />
+      <AcceptInvitation invitationId={id} />
     </OnboardingLayout>
   );
 }

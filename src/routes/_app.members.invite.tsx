@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
 
+import { primaryMembership, useMe } from '@/features/auth';
 import {
   INVITATION_GUIDELINES,
   InvitationGuidelines,
   InviteMemberForm,
-  RECENT_INVITATIONS,
   RecentInvitations,
+  useInvitations,
 } from '@/features/members';
 
 export const Route = createFileRoute('/_app/members/invite')({
@@ -13,6 +14,12 @@ export const Route = createFileRoute('/_app/members/invite')({
 });
 
 function InviteMemberPage() {
+  const { data: me } = useMe();
+  const membership = primaryMembership(me);
+  const communityId = membership?.community.id;
+
+  const { data: invitations, isPending } = useInvitations(communityId);
+
   return (
     <div className="invite-page">
       {/*
@@ -39,7 +46,11 @@ function InviteMemberPage() {
       <div className="invite-page__grid">
         <InviteMemberForm />
         <aside className="invite-page__rail">
-          <RecentInvitations entries={RECENT_INVITATIONS} />
+          <RecentInvitations
+            invitations={invitations ?? []}
+            isPending={isPending && communityId !== undefined}
+            communityName={membership?.community.name}
+          />
           <InvitationGuidelines guidelines={INVITATION_GUIDELINES} />
         </aside>
       </div>

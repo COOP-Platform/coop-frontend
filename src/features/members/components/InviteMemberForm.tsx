@@ -1,4 +1,3 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -11,31 +10,30 @@ import {
   IconSend,
   IconShield,
   IconUser,
-  IconUserPlus,
   Input,
   Select,
 } from '@/components/ui';
+import type { SelectOption } from '@/components/ui';
+import { primaryMembership, useMe } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import type { FieldErrors } from '@/lib/api/client';
 
 import { useSendInvitation } from '../api/invitations';
-import { CONTRIBUTION_CATEGORIES } from '../data/placeholder';
+import { useMemberCategories } from '../api/member-categories';
 
 /** Rwanda only, as on the community form — the API stores E.164. */
 const DIAL_CODE = '+250';
-
-/**
- * The community an invitation belongs to comes from the inviter's membership,
- * which needs the session. Hardcoded until `/auth/me/` is wired.
- */
-const COMMUNITY_ID = '';
 
 const PERMISSIONS_BLURB =
   'Member will automatically obtain read access to community financial statements, ' +
   'active event schedules, and voting rights for monthly initiatives.';
 
 export function InviteMemberForm() {
-  const navigate = useNavigate();
+  const { data: me, isPending: mePending } = useMe();
+  const membership = primaryMembership(me);
+  const communityId = membership?.community.id;
+
+  const { data: categories, isPending: categoriesPending } = useMemberCategories(communityId);
   const sendInvitation = useSendInvitation();
 
   const [fullName, setFullName] = useState('');
@@ -43,20 +41,36 @@ export function InviteMemberForm() {
   const [category, setCategory] = useState('');
   const [sendSms, setSendSms] = useState(true);
   const [phone, setPhone] = useState('');
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+
+  const categoryOptions: readonly SelectOption[] = (categories ?? [])
+    .filter((entry) => entry.is_active)
+    .map((entry) => ({ value: entry.id, label: entry.name }));
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (communityId === undefined || membership === undefined) {
+      return;
+    }
+
     sendInvitation.mutate(
       {
-        community: COMMUNITY_ID,
+        community: communityId,
         email: email.trim(),
         full_name: fullName.trim(),
         member_category: category,
+        invited_by: membership.id,
       },
       {
-        onSuccess: () => {
-          void navigate({ to: '/' });
+        onSuccess: ({ token }) => {
+          // Nothing emails the token, so the only way it reaches the invitee
+          // is if the inviter copies this link.
+          setInviteLink(`${window.location.origin}/invitation?token=${token}`);
+          setFullName('');
+          setEmail('');
+          setCategory('');
+          setPhone('');
         },
       },
     );
@@ -65,9 +79,6 @@ export function InviteMemberForm() {
   const fieldErrors: FieldErrors =
     sendInvitation.error instanceof ApiError ? sendInvitation.error.fieldErrors : {};
 
-  // Every field the API rejects that this form has no input for — which today
-  // means `token_hash`, `invited_by` and `community`. Surfacing them is the
-  // point: the form is otherwise silent about why nothing was sent.
   const rendered = new Set(['email', 'full_name', 'member_category']);
   let formError: string | undefined;
   if (sendInvitation.error instanceof ApiError) {
@@ -84,6 +95,20 @@ export function InviteMemberForm() {
     formError = 'Something went wrong. Please try again.';
   }
 
+  /*
+   * An invitation needs a community and an inviting membership, and creating a
+   * community does not enrol its owner. So an owner with no membership row
+   * genuinely cannot invite anyone, and saying so beats a form that 400s.
+   */
+  const blocker =
+    mePending || categoriesPending
+      ? undefined
+      : membership === undefined
+        ? 'You are not yet a member of any community, so there is no membership to send invitations from. A community owner needs an active membership before inviting others.'
+        : categoryOptions.length === 0
+          ? 'This community has no contribution categories yet. Every member must be assigned one, so create a category before inviting anyone.'
+          : undefined;
+
   return (
     <Card className="invite-card">
       <form className="invite-form" onSubmit={handleSubmit}>
@@ -95,10 +120,16 @@ export function InviteMemberForm() {
             </p>
           </div>
           <span className="invite-form__badge">
-            <IconUserPlus />
+            <IconUser />
             New Onboarding
           </span>
         </div>
+
+        {blocker !== undefined && (
+          <p className="invite-form__blocker" role="status">
+            {blocker}
+          </p>
+        )}
 
         <Input
           label="Full name"
@@ -128,10 +159,10 @@ export function InviteMemberForm() {
 
         <Select
           label="Contribution category"
-          options={CONTRIBUTION_CATEGORIES}
+          options={categoryOptions}
           value={category}
           onChange={(event) => setCategory(event.target.value)}
-          placeholder="Select category"
+          placeholder={categoriesPending ? 'Loading categories…' : 'Select category'}
           icon={<IconLayers />}
           error={fieldErrors.member_category}
           required
@@ -158,6 +189,7 @@ export function InviteMemberForm() {
               inputMode="numeric"
               autoComplete="tel-national"
               leading={<span className="field__prefix-text">{DIAL_CODE}</span>}
+              hint="Not sent yet — the API has no SMS field or dispatcher."
             />
           )}
         </div>
@@ -172,6 +204,17 @@ export function InviteMemberForm() {
           </div>
         </div>
 
+        {inviteLink !== null && (
+          <div className="invite-link" role="status">
+            <p className="invite-link__title">Invitation created — send this link yourself</p>
+            <p className="invite-link__text">
+              No email or SMS was dispatched: the API has no mail step. This link is shown once and
+              cannot be recovered, because only its hash is stored.
+            </p>
+            <code className="invite-link__value">{inviteLink}</code>
+          </div>
+        )}
+
         {formError && (
           <p className="invite-form__error" role="alert">
             {formError}
@@ -180,18 +223,10 @@ export function InviteMemberForm() {
 
         <div className="invite-form__actions">
           <Button
-            type="button"
-            variant="secondary"
-            className="invite-form__cancel"
-            onClick={() => void navigate({ to: '/' })}
-          >
-            Cancel
-          </Button>
-          <Button
             type="submit"
             variant="primary"
             className="invite-form__submit"
-            disabled={sendInvitation.isPending}
+            disabled={sendInvitation.isPending || blocker !== undefined}
           >
             {sendInvitation.isPending ? 'Sending…' : 'Send Invitation'}
             <IconSend />

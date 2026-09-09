@@ -36,7 +36,13 @@ function required(name: keyof ImportMetaEnv, fallback?: string): string {
 }
 
 export const env = {
-  apiBaseUrl: required('VITE_API_BASE_URL', 'http://localhost:8080/api'),
+  /*
+   * Falls back to the deployed backend rather than localhost: there is one
+   * shared API and a build without the variable set should reach it, not a
+   * port that only exists on a developer's machine. Override via .env.local
+   * to point at a local Django instance.
+   */
+  apiBaseUrl: required('VITE_API_BASE_URL', 'https://coop-backend-rxdl.onrender.com/api'),
   appName: required('VITE_APP_NAME', 'COOP'),
   isDev: import.meta.env.DEV,
 } as const;

@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { env } from '@/config/env';
+import { primaryMembership, useMe } from '@/features/auth';
+import { useMemberships } from '@/features/members';
 import {
   CONTRIBUTIONS_TREND,
   ContributionsTrend,
@@ -17,22 +19,41 @@ export const Route = createFileRoute('/_app/')({
   component: DashboardPage,
 });
 
-// Hardcoded alongside AppLayout's CURRENT_USER until there is a session to
-// read the signed-in member and their community from.
-const FIRST_NAME = 'Jean';
-const COMMUNITY_NAME = 'Les Cousins';
-
 function DashboardPage() {
+  const { data: me } = useMe();
+  const membership = primaryMembership(me);
+  const { data: memberships } = useMemberships(membership?.community.id);
+
+  const firstName = me?.full_name.split(/\s+/)[0] ?? 'there';
+  const communityName = membership?.community.name;
+
+  /*
+   * Only the member count has an endpoint behind it. Monthly contributions,
+   * upcoming events and pending approvals need the finance and meetings apps
+   * exposed, or one summary endpoint — until then those three tiles keep the
+   * design's figures and are not real.
+   */
+  const stats = STATS.map((stat) =>
+    stat.id === 'members' && memberships !== undefined
+      ? {
+          ...stat,
+          value: String(memberships.length),
+          delta: { label: 'live', tone: 'neutral' as const },
+        }
+      : stat,
+  );
+
   return (
     <div className="dashboard">
       <header className="dashboard__intro">
-        <h1 className="dashboard__title">Welcome back, {FIRST_NAME}</h1>
+        <h1 className="dashboard__title">Welcome back, {firstName}</h1>
         <p className="dashboard__subtitle">
-          Here is an overview of what has been happening within {env.appName} for {COMMUNITY_NAME}.
+          Here is an overview of what has been happening within {env.appName}
+          {communityName === undefined ? '' : ` for ${communityName}`}.
         </p>
       </header>
 
-      <StatCards stats={STATS} />
+      <StatCards stats={stats} />
 
       <div className="dashboard__grid">
         <div className="dashboard__col">

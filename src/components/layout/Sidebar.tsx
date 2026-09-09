@@ -16,6 +16,7 @@ import {
   IconWallet,
 } from '@/components/ui';
 import { env } from '@/config/env';
+import { clearSession } from '@/lib/auth/session';
 
 interface NavItem {
   label: string;
@@ -42,15 +43,16 @@ const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Profile', icon: <IconUser /> },
 ];
 
-/** The pilot community. Belongs to the session once memberships are wired. */
-const COMMUNITY_NAME = 'Les Cousins';
+interface SidebarProps {
+  /** From the signed-in user's membership; absent until /auth/me/ resolves. */
+  communityName?: string;
+}
 
-export function Sidebar() {
+export function Sidebar({ communityName }: SidebarProps) {
   const navigate = useNavigate();
 
   function handleLogout() {
-    // TODO: clear the session here once JWT login lands. Until then there is
-    // nothing to discard, so this just returns to the sign-in screen.
+    clearSession();
     void navigate({ to: '/login' });
   }
 
@@ -60,7 +62,9 @@ export function Sidebar() {
         <img src={logoUrl} alt="" className="sidebar__logo" />
         <span className="sidebar__brand-names">
           <span className="sidebar__brand-name">{env.appName}</span>
-          <span className="sidebar__brand-community">{COMMUNITY_NAME}</span>
+          {communityName !== undefined && (
+            <span className="sidebar__brand-community">{communityName}</span>
+          )}
         </span>
       </div>
 

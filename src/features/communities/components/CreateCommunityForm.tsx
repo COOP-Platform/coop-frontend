@@ -18,6 +18,7 @@ import {
 import type { RadioCardOption, SelectOption } from '@/components/ui';
 import { env } from '@/config/env';
 import { ApiError } from '@/lib/api/client';
+import { getUser } from '@/lib/auth/session';
 import type { FieldErrors } from '@/lib/api/client';
 
 import { sanitizeSlug, slugify, useCreateCommunity } from '../api/communities';
@@ -171,6 +172,10 @@ export function CreateCommunityForm() {
       currency: form.currency,
       language: form.language,
       founded_year: form.foundedYear === '' ? undefined : Number(form.foundedYear),
+      // Required by the serializer and not derived server-side, so the
+      // signed-in user is sent as the founder. Empty when unauthenticated,
+      // which the API rejects with a field error rather than failing silently.
+      owner: getUser()?.id ?? '',
     };
   }
 

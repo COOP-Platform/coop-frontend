@@ -1,34 +1,29 @@
 import { Outlet } from '@tanstack/react-router';
 
+import { useMe } from '@/features/auth';
+
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
-/**
- * Application shell: fixed sidebar, top bar, scrolling content.
- *
- * The signed-in user is hardcoded because there is no session to read it from
- * yet — login discards its token and no route is guarded. It moves to an auth
- * context in Sprint 2.
- */
-const CURRENT_USER = {
-  name: 'Jean Mukiza',
-  role: 'President',
-  notificationCount: 3,
-};
-
+/** Application shell: fixed sidebar, top bar, scrolling content. */
 export function AppLayout() {
+  const { data: me } = useMe();
+
+  const membership = me?.memberships.find((m) => m.status === 'active') ?? me?.memberships[0];
+
   return (
     <div className="app-shell">
       <aside className="app-shell__sidebar">
-        <Sidebar />
+        <Sidebar communityName={membership?.community.name} />
       </aside>
 
       <div className="app-shell__body">
-        <Topbar
-          userName={CURRENT_USER.name}
-          userRole={CURRENT_USER.role}
-          notificationCount={CURRENT_USER.notificationCount}
-        />
+        {/*
+          Role comes from the membership's contribution category, which is the
+          closest thing the schema has to one — real roles land with the RBAC
+          app (membership_roles) in Sprint 2.
+        */}
+        <Topbar userName={me?.full_name ?? '—'} userRole={membership?.member_category.name ?? ''} />
 
         <main className="app-main">
           <Outlet />

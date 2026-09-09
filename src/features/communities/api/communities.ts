@@ -1,57 +1,119 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/client';
+import { queryKeys } from '@/lib/query-keys';
 
 /**
- * Mirrors `communities.models.CommunityType` on the backend. Field names are
- * snake_case throughout because Django REST Framework serializes the model
- * fields directly — no camelCase mapping layer exists on either side yet.
+ * Mirrors `communities.models.CommunityType`. Field names are snake_case
+ * throughout because Django REST Framework serializes the model fields
+ * directly — there is no camelCase mapping layer on either side.
  */
 export type CommunityType =
   'family' | 'savings_group' | 'church' | 'cooperative' | 'alumni' | 'ngo' | 'youth_group' | 'club';
 
 export type CommunityStatus = 'active' | 'suspended' | 'archived';
 
-export interface CreateCommunityRequest {
+export interface CommunityFields {
   name: string;
   slug: string;
   type: CommunityType;
-  description?: string;
-  vision?: string;
-  mission?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  contact_address?: string;
-  logo_url?: string;
-  cover_url?: string;
+  description?: string | null;
+  vision?: string | null;
+  mission?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  contact_address?: string | null;
+  logo_url?: string | null;
+  cover_url?: string | null;
   currency?: string;
   language?: string;
-  founded_year?: number;
-  // `owner` is deliberately absent: the backend should derive it from the
-  // authenticated user. Today CommunitySerializer leaves it writable and the
-  // viewset has no perform_create, so this POST will fail validation until
-  // either that is fixed or auth lands and we send the current user's id.
+  founded_year?: number | null;
 }
 
-export interface Community extends CreateCommunityRequest {
+/**
+ * `owner` is required by the serializer and must be supplied by the client —
+ * the viewset has no `perform_create` deriving it from the request. Callers
+ * pass the signed-in user's id; it should move server-side, at which point
+ * this field comes off the request type.
+ */
+export interface CreateCommunityRequest extends CommunityFields {
+  owner: string;
+}
+
+export interface Community extends CommunityFields {
   id: string;
   status: CommunityStatus;
   owner: string;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
+}
+
+/** Unpaginated: the viewset returns a plain array. */
+export function useCommunities() {
+  return useQuery({
+    queryKey: queryKeys.communities.list(),
+    queryFn: () => apiFetch<Community[]>('/communities/'),
+  });
+}
+
+export function useCommunity(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.communities.detail(id ?? ''),
+    queryFn: () => apiFetch<Community>(`/communities/${id ?? ''}/`),
+    enabled: id !== undefined && id !== '',
+  });
 }
 
 export function useCreateCommunity() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (community: CreateCommunityRequest) =>
       apiFetch<Community>('/communities/', {
         method: 'POST',
         body: community,
       }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.communities.all });
+      // A new community changes what /auth/me/ reports.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+    },
   });
 }
 
-/** Derives a slug from free text — used to generate one from the community name. */
+export function useUpdateCommunity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, changes }: { id: string; changes: Partial<CommunityFields> }) =>
+      apiFetch<Community>(`/communities/${id}/`, {
+        method: 'PATCH',
+        body: changes,
+      }),
+    onSuccess: (community) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.communities.detail(community.id) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.communities.list() });
+    },
+  });
+}
+
+/** Soft delete — the model stamps `deleted_at` and the list filters it out. */
+export function useDeleteCommunity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<null>(`/communities/${id}/`, {
+        method: 'DELETE',
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.communities.all });
+    },
+  });
+}
+
+/** Derives a slug from free text — for generating one from the community name. */
 export function slugify(value: string): string {
   return sanitizeSlug(value).replace(/-+$/, '');
 }

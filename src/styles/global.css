@@ -2836,3 +2836,58 @@ body:has(.onboarding),
   align-items: center;
   gap: var(--space-1);
 }
+
+/* ---------- Invite: blocked state, generated link, empty roster ---------- */
+
+/* Shown when the account genuinely cannot invite yet — not an error. */
+.invite-form__blocker {
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
+  border-radius: var(--radius-md);
+  background-color: color-mix(in srgb, var(--color-warning) 8%, var(--color-surface));
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-warning);
+}
+
+.invite-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 25%, var(--color-border));
+  border-radius: var(--radius-md);
+  background-color: color-mix(in srgb, var(--color-brand) 6%, var(--color-surface));
+  padding: var(--space-3);
+}
+
+.invite-link__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-brand-text);
+}
+
+.invite-link__text {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Wraps rather than scrolls: the whole token has to be selectable to copy. */
+.invite-link__value {
+  overflow-wrap: anywhere;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.roster__empty {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.roster__state--revoked {
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}

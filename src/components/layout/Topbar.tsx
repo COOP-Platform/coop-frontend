@@ -59,7 +59,7 @@ export function Topbar({ userName, userRole, notificationCount = 0 }: TopbarProp
         <div className="topbar__user">
           <span className="topbar__user-text">
             <span className="topbar__user-name">{userName}</span>
-            <span className="topbar__user-role">{userRole}</span>
+            {userRole !== '' && <span className="topbar__user-role">{userRole}</span>}
           </span>
           <span className="topbar__avatar" aria-hidden="true">
             {initials(userName)}

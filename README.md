@@ -147,6 +147,23 @@ Actions is the single deployer.
 If you ever want Vercel's automatic PR previews back, remove that key, but
 expect the double-deploy behaviour to return for `develop`.
 
+### Why `vercel.json` rewrites everything to `/index.html`
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```
+
+This is a client-routed SPA: only `/index.html` exists on disk, and TanStack
+Router resolves the path in the browser. Without the rewrite, Vercel answers
+any deep link with a hard 404 — `/login`, `/register` and every
+`/invitation/*` and `/onboarding/*` URL was unreachable except by navigating
+from `/`, which matters because invitation links are emailed as deep URLs.
+
+Vercel's Vite preset does not add this fallback on its own; it was verified
+missing against the live deployment. `rewrites` are evaluated *after* the
+filesystem check, so hashed assets under `/assets/` still serve normally and
+only unmatched paths fall through to the app.
+
 Required secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 The token must be scoped to the **team** that owns the project, not a personal
 account.

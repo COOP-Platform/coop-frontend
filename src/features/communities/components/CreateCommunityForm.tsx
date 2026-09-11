@@ -18,10 +18,9 @@ import {
 import type { RadioCardOption, SelectOption } from '@/components/ui';
 import { env } from '@/config/env';
 import { ApiError } from '@/lib/api/client';
-import { getUser } from '@/lib/auth/session';
 import type { FieldErrors } from '@/lib/api/client';
 
-import { sanitizeSlug, slugify, useCreateCommunity } from '../api/communities';
+import { useCreateCommunity } from '../api/communities';
 import type { CommunityType, CreateCommunityRequest } from '../api/communities';
 
 /**
@@ -59,14 +58,12 @@ const LANGUAGES: readonly SelectOption[] = [
 ];
 
 /**
- * Every field this form renders an input for. A 400 naming anything else —
- * `owner`, most likely, while the backend still requires it from the client —
- * has nowhere to appear, so it gets promoted to the form-level banner rather
- * than silently discarded.
+ * Every field this form renders an input for. A 400 naming anything else has
+ * nowhere to appear, so it is promoted to the form-level banner rather than
+ * silently discarded.
  */
 const RENDERED_FIELDS = new Set([
   'name',
-  'slug',
   'type',
   'description',
   'vision',
@@ -86,7 +83,6 @@ const DESCRIPTION_PLACEHOLDER =
 
 const INITIAL_FORM = {
   name: '',
-  slug: '',
   type: '',
   description: '',
   vision: '',
@@ -129,7 +125,6 @@ export function CreateCommunityForm() {
   const createCommunity = useCreateCommunity();
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [slugEdited, setSlugEdited] = useState(false);
   const [authorised, setAuthorised] = useState(false);
   // The type cards can't use native `required` (see RadioCardGroup), so the
   // one client-side check we own lives here.
@@ -139,27 +134,11 @@ export function CreateCommunityForm() {
     setForm((previous) => ({ ...previous, [key]: value }));
   }
 
-  // The slug tracks the name until the user takes it over, so the common case
-  // needs no typing and a deliberate edit is never overwritten.
-  function handleNameChange(value: string) {
-    setForm((previous) => ({
-      ...previous,
-      name: value,
-      slug: slugEdited ? previous.slug : slugify(value),
-    }));
-  }
-
-  function handleSlugChange(value: string) {
-    setSlugEdited(true);
-    update('slug', sanitizeSlug(value));
-  }
-
   function buildPayload(): CreateCommunityRequest {
     const localPhone = form.contactPhone.replace(/\D/g, '').replace(/^0+/, '');
 
     return {
       name: form.name.trim(),
-      slug: form.slug.trim().replace(/-+$/, ''),
       type: form.type as CommunityType,
       description: optional(form.description),
       vision: optional(form.vision),
@@ -172,10 +151,6 @@ export function CreateCommunityForm() {
       currency: form.currency,
       language: form.language,
       founded_year: form.foundedYear === '' ? undefined : Number(form.foundedYear),
-      // Required by the serializer and not derived server-side, so the
-      // signed-in user is sent as the founder. Empty when unauthenticated,
-      // which the API rejects with a field error rather than failing silently.
-      owner: getUser()?.id ?? '',
     };
   }
 
@@ -234,24 +209,12 @@ export function CreateCommunityForm() {
         <Input
           label="Community Name"
           value={form.name}
-          onChange={(event) => handleNameChange(event.target.value)}
+          onChange={(event) => update('name', event.target.value)}
           placeholder="Les Cousins Neretse"
           minLength={2}
           maxLength={120}
           autoComplete="organization"
           error={fieldErrors.name}
-          required
-        />
-
-        <Input
-          label="Community URL"
-          value={form.slug}
-          onChange={(event) => handleSlugChange(event.target.value)}
-          placeholder="les-cousins-neretse"
-          leading={<span className="field__prefix-text">/c/</span>}
-          maxLength={60}
-          hint="Lowercase letters, numbers and hyphens. Must be unique across all communities."
-          error={fieldErrors.slug}
           required
         />
 

@@ -1,9 +1,11 @@
-// Public surface of the Onboarding module (invitation + first-run screens).
+// Public surface of the Onboarding module (the public invitation screens).
 export { OnboardingLayout } from './components/OnboardingLayout';
 export { AcceptInvitation } from './components/AcceptInvitation';
-export { InvitationAccepted } from './components/InvitationAccepted';
-export { FirstTimeSignIn } from './components/FirstTimeSignIn';
-export { CreatePassword } from './components/CreatePassword';
 
-export { useInvitation, useAcceptInvitation } from './api/accept';
-export type { AcceptInvitationResult } from './api/accept';
+export { usePreviewInvitation, useAcceptInvitation, useRejectInvitation } from './api/invitation';
+export type {
+  InvitationPreview,
+  AcceptOutcome,
+  AcceptInvitationResponse,
+  AcceptInvitationInput,
+} from './api/invitation';

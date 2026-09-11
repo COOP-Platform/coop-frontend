@@ -1,5 +1,6 @@
 import { Panel } from '@/components/ui';
 
+import { useResendInvitation, useRevokeInvitation } from '../api/invitations';
 import type { Invitation, InvitationStatus } from '../api/invitations';
 
 interface RecentInvitationsProps {
@@ -17,24 +18,16 @@ function initials(name: string): string {
     .join('');
 }
 
-/** `pending` and `expired` both read as outstanding; the rest are terminal. */
-const STATE_CLASS: Record<InvitationStatus, string> = {
-  pending: 'pending',
-  expired: 'pending',
-  accepted: 'joined',
-  revoked: 'revoked',
-};
-
-const STATE_LABEL: Record<InvitationStatus, string> = {
-  pending: 'Pending',
-  expired: 'Expired',
-  accepted: 'Joined',
-  revoked: 'Revoked',
+const STATE: Record<InvitationStatus, { className: string; label: string }> = {
+  pending: { className: 'pending', label: 'Pending' },
+  expired: { className: 'expired', label: 'Expired' },
+  accepted: { className: 'joined', label: 'Joined' },
+  revoked: { className: 'revoked', label: 'Withdrawn' },
+  rejected: { className: 'revoked', label: 'Declined' },
 };
 
 function relativeDate(iso: string): string {
-  const then = new Date(iso).getTime();
-  const minutes = Math.round((Date.now() - then) / 60_000);
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
 
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
@@ -47,6 +40,10 @@ export function RecentInvitations({
   isPending,
   communityName,
 }: RecentInvitationsProps) {
+  const revoke = useRevokeInvitation();
+  const resend = useResendInvitation();
+  const busy = revoke.isPending || resend.isPending;
+
   return (
     <Panel
       title="Recent Invitations"
@@ -61,22 +58,52 @@ export function RecentInvitations({
         <p className="roster__empty">No invitations sent yet.</p>
       ) : (
         <ul className="roster" role="list">
-          {invitations.map((invitation) => (
-            <li key={invitation.id} className="roster__item">
-              <span className="roster__avatar" aria-hidden="true">
-                {initials(invitation.full_name)}
-              </span>
-              <span className="roster__body">
-                <span className="roster__name">{invitation.full_name}</span>
-                <span className="roster__detail">
-                  {invitation.email} · sent {relativeDate(invitation.created_at)}
+          {invitations.map((invitation) => {
+            const state = STATE[invitation.status];
+            const emailFailed = invitation.invitation_email_sent_at === null;
+            const open = invitation.status === 'pending';
+
+            return (
+              <li key={invitation.id} className="roster__item">
+                <span className="roster__avatar" aria-hidden="true">
+                  {initials(invitation.full_name)}
                 </span>
-              </span>
-              <span className={`roster__state roster__state--${STATE_CLASS[invitation.status]}`}>
-                {STATE_LABEL[invitation.status]}
-              </span>
-            </li>
-          ))}
+                <span className="roster__body">
+                  <span className="roster__name">{invitation.full_name}</span>
+                  <span className="roster__detail">
+                    {invitation.email} · {relativeDate(invitation.created_at)}
+                  </span>
+                  {/* The one state the owner has to act on. */}
+                  {emailFailed && open && (
+                    <span className="roster__warn">Email didn&apos;t send</span>
+                  )}
+                  {open && (
+                    <span className="roster__actions">
+                      <button
+                        type="button"
+                        className="roster__action"
+                        onClick={() => resend.mutate(invitation.id)}
+                        disabled={busy}
+                      >
+                        Resend
+                      </button>
+                      <button
+                        type="button"
+                        className="roster__action roster__action--danger"
+                        onClick={() => revoke.mutate(invitation.id)}
+                        disabled={busy}
+                      >
+                        Withdraw
+                      </button>
+                    </span>
+                  )}
+                </span>
+                <span className={`roster__state roster__state--${state.className}`}>
+                  {state.label}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </Panel>

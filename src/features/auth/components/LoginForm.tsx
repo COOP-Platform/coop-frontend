@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -83,10 +83,9 @@ export function LoginForm() {
           checked={rememberMe}
           onChange={(event) => setRememberMe(event.target.checked)}
         />
-        {/* TODO: point at the reset-password screen once it exists. */}
-        <a href="#" className="login-form__forgot">
+        <Link to="/forgot-password" className="login-form__forgot">
           Forgot password?
-        </a>
+        </Link>
       </div>
 
       {login.isError && (

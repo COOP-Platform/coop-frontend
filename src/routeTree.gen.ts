@@ -10,15 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root';
 import { Route as AppRouteImport } from './routes/_app';
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as RegisterRouteImport } from './routes/register';
+import { Route as ResetPasswordRouteImport } from './routes/reset-password';
 import { Route as AppIndexRouteImport } from './routes/_app.index';
 import { Route as AppStatusRouteImport } from './routes/_app.status';
-import { Route as InvitationIndexRouteImport } from './routes/invitation.index';
+import { Route as InvitationsAcceptRouteImport } from './routes/invitations.accept';
 import { Route as AppMembersInviteRouteImport } from './routes/_app.members.invite';
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any);
 const LoginRoute = LoginRouteImport.update({
@@ -31,6 +38,11 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any);
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -41,9 +53,9 @@ const AppStatusRoute = AppStatusRouteImport.update({
   path: '/status',
   getParentRoute: () => AppRoute,
 } as any);
-const InvitationIndexRoute = InvitationIndexRouteImport.update({
-  id: '/invitation/',
-  path: '/invitation/',
+const InvitationsAcceptRoute = InvitationsAcceptRouteImport.update({
+  id: '/invitations/accept',
+  path: '/invitations/accept',
   getParentRoute: () => rootRouteImport,
 } as any);
 const AppMembersInviteRoute = AppMembersInviteRouteImport.update({
@@ -54,63 +66,77 @@ const AppMembersInviteRoute = AppMembersInviteRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute;
+  '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
+  '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof AppStatusRoute;
-  '/invitation/': typeof InvitationIndexRoute;
+  '/invitations/accept': typeof InvitationsAcceptRoute;
   '/members/invite': typeof AppMembersInviteRoute;
 }
 export interface FileRoutesByTo {
+  '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
+  '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof AppStatusRoute;
+  '/invitations/accept': typeof InvitationsAcceptRoute;
   '/': typeof AppIndexRoute;
-  '/invitation': typeof InvitationIndexRoute;
   '/members/invite': typeof AppMembersInviteRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   '/_app': typeof AppRouteWithChildren;
+  '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
+  '/reset-password': typeof ResetPasswordRoute;
   '/_app/status': typeof AppStatusRoute;
+  '/invitations/accept': typeof InvitationsAcceptRoute;
   '/_app/': typeof AppIndexRoute;
-  '/invitation/': typeof InvitationIndexRoute;
   '/_app/members/invite': typeof AppMembersInviteRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/register'
+    | '/reset-password'
     | '/status'
-    | '/invitation/'
+    | '/invitations/accept'
     | '/members/invite';
   fileRoutesByTo: FileRoutesByTo;
   to:
+    | '/forgot-password'
     | '/login'
     | '/register'
+    | '/reset-password'
     | '/status'
+    | '/invitations/accept'
     | '/'
-    | '/invitation'
     | '/members/invite';
   id:
     | '__root__'
     | '/_app'
+    | '/forgot-password'
     | '/login'
     | '/register'
+    | '/reset-password'
     | '/_app/status'
+    | '/invitations/accept'
     | '/_app/'
-    | '/invitation/'
     | '/_app/members/invite';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren;
+  ForgotPasswordRoute: typeof ForgotPasswordRoute;
   LoginRoute: typeof LoginRoute;
   RegisterRoute: typeof RegisterRoute;
-  InvitationIndexRoute: typeof InvitationIndexRoute;
+  ResetPasswordRoute: typeof ResetPasswordRoute;
+  InvitationsAcceptRoute: typeof InvitationsAcceptRoute;
 }
 
 declare module '@tanstack/react-router' {
@@ -120,6 +146,13 @@ declare module '@tanstack/react-router' {
       path: '';
       fullPath: '/';
       preLoaderRoute: typeof AppRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/forgot-password': {
+      id: '/forgot-password';
+      path: '/forgot-password';
+      fullPath: '/forgot-password';
+      preLoaderRoute: typeof ForgotPasswordRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/login': {
@@ -136,6 +169,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/reset-password': {
+      id: '/reset-password';
+      path: '/reset-password';
+      fullPath: '/reset-password';
+      preLoaderRoute: typeof ResetPasswordRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_app/': {
       id: '/_app/';
       path: '/';
@@ -150,11 +190,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStatusRouteImport;
       parentRoute: typeof AppRoute;
     };
-    '/invitation/': {
-      id: '/invitation/';
-      path: '/invitation';
-      fullPath: '/invitation/';
-      preLoaderRoute: typeof InvitationIndexRouteImport;
+    '/invitations/accept': {
+      id: '/invitations/accept';
+      path: '/invitations/accept';
+      fullPath: '/invitations/accept';
+      preLoaderRoute: typeof InvitationsAcceptRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/_app/members/invite': {
@@ -183,9 +223,11 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
-  InvitationIndexRoute: InvitationIndexRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  InvitationsAcceptRoute: InvitationsAcceptRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

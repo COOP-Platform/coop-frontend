@@ -28,7 +28,13 @@ export function LoginForm() {
       {
         onSuccess: (result) => {
           saveSession(result.access, result.refresh, result.user, rememberMe);
-          void navigate({ to: result.must_change_password ? '/onboarding/password' : '/' });
+          /*
+           * No forced-password-change screen any more: an invited member sets
+           * their own password when accepting, and a reset sets a real one
+           * too, so `must_change_password` should never be true here. If a
+           * path ever sets it again, this is where that screen hooks in.
+           */
+          void navigate({ to: '/' });
         },
       },
     );

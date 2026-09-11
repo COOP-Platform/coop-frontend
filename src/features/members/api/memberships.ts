@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query-keys';
@@ -23,17 +23,11 @@ export interface Membership {
   updated_at: string;
 }
 
-export interface CreateMembershipRequest {
-  user: string;
-  community: string;
-  member_category: string;
-  status?: MembershipStatus;
-  /** Required once status is active — a CHECK constraint enforces it. */
-  join_date?: string;
-  family_relationship?: string;
-  notes?: string;
-}
-
+/**
+ * Members of a community. Read-only over the API: joining happens by
+ * accepting an invitation, and the owner's own membership is created with
+ * the community — so there is nothing for a client to POST here.
+ */
 export function useMemberships(communityId: string | undefined, status?: MembershipStatus) {
   return useQuery({
     queryKey: queryKeys.memberships.list(communityId, status),
@@ -45,41 +39,5 @@ export function useMemberships(communityId: string | undefined, status?: Members
       return apiFetch<Membership[]>(`/memberships/?${params.toString()}`);
     },
     enabled: communityId !== undefined && communityId !== '',
-  });
-}
-
-/**
- * Creating a community does not make its owner a member — verified against
- * the live API, where `/auth/me/` reports `memberships: []` straight after a
- * successful create. Until the backend does it, the client has to.
- */
-export function useCreateMembership() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (membership: CreateMembershipRequest) =>
-      apiFetch<Membership>('/memberships/', {
-        method: 'POST',
-        body: membership,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.memberships.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
-    },
-  });
-}
-
-export function useUpdateMembership() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, changes }: { id: string; changes: Partial<CreateMembershipRequest> }) =>
-      apiFetch<Membership>(`/memberships/${id}/`, {
-        method: 'PATCH',
-        body: changes,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.memberships.all });
-    },
   });
 }

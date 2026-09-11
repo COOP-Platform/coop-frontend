@@ -5,14 +5,11 @@ export {
   useCommunity,
   useCreateCommunity,
   useUpdateCommunity,
-  useDeleteCommunity,
-  slugify,
-  sanitizeSlug,
 } from './api/communities';
 export type {
   Community,
-  CommunityFields,
   CommunityStatus,
   CommunityType,
   CreateCommunityRequest,
+  UpdateCommunityRequest,
 } from './api/communities';

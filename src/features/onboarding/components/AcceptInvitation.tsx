@@ -1,114 +1,194 @@
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 
-import { Button, IconArrowRight, IconClock, IconUsers } from '@/components/ui';
-import { useCommunity } from '@/features/communities';
+import {
+  Button,
+  IconArrowRight,
+  IconCheckCircle,
+  IconClock,
+  IconEye,
+  IconEyeOff,
+  Input,
+} from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
+import type { FieldErrors } from '@/lib/api/client';
+import { saveTokens } from '@/lib/auth/session';
 
-import { useAcceptInvitation, useInvitation } from '../api/accept';
-import { ACTIVATION_STEPS, INVITE_ALLOCATION } from '../data/placeholder';
-import { storeAcceptedAccount } from '../data/handoff';
+import { useAcceptInvitation, usePreviewInvitation, useRejectInvitation } from '../api/invitation';
+import { ALLOCATION_BENEFITS } from '../data/copy';
 
 interface AcceptInvitationProps {
-  /** From `?id=` on the accept link. */
-  invitationId?: string;
+  /** From `?token=` on the emailed link. */
+  token?: string;
 }
 
 const LEGAL_NOTE =
-  'By accepting, your authenticated profile will be permanently bonded to the collective ' +
-  'charter under Rwandan Law N° 02/2010 on Cooperative Societies.';
+  'By accepting, your profile is bonded to the community charter under Rwandan Law ' +
+  'N° 02/2010 on Cooperative Societies.';
 
-export function AcceptInvitation({ invitationId }: AcceptInvitationProps) {
+export function AcceptInvitation({ token }: AcceptInvitationProps) {
   const navigate = useNavigate();
 
-  const invitationQuery = useInvitation(invitationId);
-  const invitation = invitationQuery.data;
-  const { data: community } = useCommunity(invitation?.community);
+  const preview = usePreviewInvitation();
   const accept = useAcceptInvitation();
+  const reject = useRejectInvitation();
 
-  if (invitationId === undefined) {
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [mismatch, setMismatch] = useState<string | undefined>(undefined);
+
+  /*
+   * Preview is a POST (the token must stay out of the URL), so it is a
+   * mutation rather than a query and has to be fired manually. Keyed on the
+   * token so a changed link re-checks, and guarded by `isIdle` so React's
+   * double-invoked effects in development don't send it twice.
+   */
+  const { mutate: runPreview, isIdle } = preview;
+  useEffect(() => {
+    if (token !== undefined && isIdle) {
+      runPreview(token);
+    }
+  }, [token, isIdle, runPreview]);
+
+  if (token === undefined) {
     return (
       <div className="accept">
         <h1 className="accept__title">No invitation in this link</h1>
         <p className="accept__lede">
-          An invitation link looks like <code>/invitation?id=…</code>. Ask whoever invited you to
-          resend theirs.
+          Open the link from your invitation email — it carries a token this page needs. If you
+          typed the address by hand, some of it is missing.
         </p>
       </div>
     );
   }
 
-  if (invitationQuery.isPending) {
+  if (preview.isPending || preview.isIdle) {
     return <p className="accept__loading">Checking your invitation…</p>;
   }
 
-  if (invitationQuery.isError || invitation === undefined) {
+  if (preview.isError) {
+    const status = preview.error instanceof ApiError ? preview.error.status : 0;
     return (
       <div className="accept">
-        <h1 className="accept__title">This invitation could not be found</h1>
+        <h1 className="accept__title">
+          {status === 404 ? 'This invitation link is not valid' : 'This invitation is closed'}
+        </h1>
         <p className="accept__lede">
-          {invitationQuery.error instanceof ApiError && invitationQuery.error.status === 404
-            ? 'The link may have been mistyped, or the invitation was withdrawn.'
+          {preview.error instanceof ApiError
+            ? preview.error.message
             : 'The invitation service could not be reached. Try again in a moment.'}
+        </p>
+        <p className="accept__lede">
+          If it was already used, accepted or withdrawn, ask whoever invited you to send a new one.
         </p>
       </div>
     );
   }
 
-  const alreadyHandled = invitation.status !== 'pending';
-  const expired = new Date(invitation.expires_at).getTime() < Date.now();
+  const invitation = preview.data;
   const firstName = invitation.full_name.split(/\s+/)[0] ?? invitation.full_name;
-  const communityName = community?.name ?? 'this community';
 
-  function handleAccept() {
+  // Declined: terminal, and there is nothing to sign in to.
+  if (reject.isSuccess) {
+    return (
+      <div className="accept">
+        <h1 className="accept__title">Invitation declined</h1>
+        <p className="accept__lede">
+          You have declined the invitation to {reject.data.community_name}. Nothing was created and
+          the link no longer works.
+        </p>
+      </div>
+    );
+  }
+
+  /*
+   * Accepted by someone who already had an account: no tokens come back, so
+   * they have to sign in with the password they already use.
+   */
+  if (accept.isSuccess && accept.data.outcome === 'existing_account') {
+    return (
+      <div className="accept">
+        <span className="accept__done" aria-hidden="true">
+          <IconCheckCircle />
+        </span>
+        <h1 className="accept__title">You&apos;re in</h1>
+        <p className="accept__lede">{accept.data.detail}</p>
+        <Link to="/login" className="btn btn--primary">
+          Go to Sign In
+          <IconArrowRight />
+        </Link>
+      </div>
+    );
+  }
+
+  function handleAccept(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (invitation.requires_password && password !== confirmation) {
+      setMismatch('Both passwords must match.');
+      return;
+    }
+    setMismatch(undefined);
+
     accept.mutate(
-      { invitation: invitation as NonNullable<typeof invitation> },
+      {
+        token: token as string,
+        password: invitation.requires_password ? password : undefined,
+      },
       {
         onSuccess: (result) => {
-          storeAcceptedAccount({
-            email: result.email,
-            temporaryPassword: result.temporaryPassword,
-            memberId: result.membershipId,
-            communityName,
-            roleName: INVITE_ALLOCATION.role,
-          });
-          void navigate({ to: '/invitation/accepted' });
+          if (result.access !== undefined && result.refresh !== undefined) {
+            /*
+             * Signed straight in — there is no separate sign-in step any more.
+             * Tokens only: the accept response carries no user id, and
+             * `useMe()` fetches the real record on the next screen.
+             */
+            saveTokens(result.access, result.refresh, false);
+            void navigate({ to: '/' });
+          }
         },
       },
     );
   }
 
+  const fieldErrors: FieldErrors = accept.error instanceof ApiError ? accept.error.fieldErrors : {};
+  const formError =
+    accept.error instanceof ApiError
+      ? Object.keys(accept.error.fieldErrors).length === 0
+        ? accept.error.message
+        : (fieldErrors.token ?? undefined)
+      : accept.error !== null
+        ? 'Something went wrong. Please try again.'
+        : undefined;
+
   return (
-    <div className="accept">
+    <form className="accept" onSubmit={handleAccept}>
       <div className="accept__status">
-        <span className="accept__tag">Exclusive invitation</span>
-        {alreadyHandled ? (
-          <span className="accept__used">Already {invitation.status}</span>
-        ) : expired ? (
-          <span className="accept__used">Expired</span>
-        ) : (
-          <span className="accept__verified">Invitation valid</span>
-        )}
+        <span className="accept__tag">Invitation</span>
+        <span className="accept__verified">Link verified</span>
       </div>
 
       <header className="accept__intro">
         <h1 className="accept__title">Welcome, {firstName}!</h1>
         <p className="accept__lede">
-          You have been invited to join the private governance &amp; mutual finance ledger of{' '}
-          <strong>{communityName}</strong>, as <strong>{invitation.email}</strong>.
+          You have been invited to join <strong>{invitation.community_name}</strong> as{' '}
+          <strong>{invitation.category_name}</strong>, using <strong>{invitation.email}</strong>.
         </p>
       </header>
 
       <section className="accept__allocation">
         <div className="accept__allocation-head">
           <div>
-            <p className="accept__eyebrow">Designated allocation</p>
-            <p className="accept__allocation-name">{INVITE_ALLOCATION.role}</p>
+            <p className="accept__eyebrow">Your category</p>
+            <p className="accept__allocation-name">{invitation.category_name}</p>
           </div>
           <span className="accept__approved">Pre-approved</span>
         </div>
 
         <ul className="accept__benefits" role="list">
-          {INVITE_ALLOCATION.benefits.map((benefit) => (
+          {ALLOCATION_BENEFITS.map((benefit) => (
             <li key={benefit.title} className="accept__benefit">
               <span className="accept__benefit-title">{benefit.title}</span>
               <span className="accept__benefit-detail">{benefit.detail}</span>
@@ -117,57 +197,90 @@ export function AcceptInvitation({ invitationId }: AcceptInvitationProps) {
         </ul>
       </section>
 
-      <section className="accept__requirements">
-        <p className="accept__requirements-head">
-          <span>
-            <IconClock />
-            Activation Requirements
-          </span>
-          <span className="accept__requirements-time">Takes ~2 minutes</span>
-        </p>
+      {invitation.requires_password ? (
+        <section className="accept__credentials">
+          <p className="accept__credentials-title">Choose your password</p>
+          <p className="accept__credentials-text">
+            This becomes your sign-in password. Nothing is emailed to you, and you will be signed in
+            as soon as you accept.
+          </p>
 
-        <ol className="accept__steps">
-          {ACTIVATION_STEPS.map((step, index) => (
-            <li key={step} className="accept__step">
-              <span className="accept__step-number">{index + 1}</span>
-              {step}
-            </li>
-          ))}
-        </ol>
+          <Input
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+            minLength={8}
+            error={fieldErrors.password}
+            required
+            trailing={
+              <button
+                type="button"
+                className="field__toggle"
+                onClick={() => setShowPassword((value) => !value)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <IconEyeOff /> : <IconEye />}
+              </button>
+            }
+          />
 
-        <p className="accept__expiry">
-          <IconUsers />
-          Invitation expires {new Date(invitation.expires_at).toLocaleDateString()}
-        </p>
-      </section>
-
-      {(alreadyHandled || expired) && (
-        <p className="accept__blocked" role="status">
-          {alreadyHandled
-            ? `This invitation was already ${invitation.status}, so it cannot be used again. If that was not you, contact whoever invited you.`
-            : 'This invitation has expired and needs to be reissued before it can be accepted.'}
+          <Input
+            label="Confirm password"
+            type={showPassword ? 'text' : 'password'}
+            value={confirmation}
+            onChange={(event) => setConfirmation(event.target.value)}
+            placeholder="Re-enter your password"
+            autoComplete="new-password"
+            error={mismatch}
+            required
+          />
+        </section>
+      ) : (
+        <p className="accept__existing" role="status">
+          This address already has an account, so keep using the password you have — accepting just
+          adds {invitation.community_name} to it.
         </p>
       )}
 
-      {accept.isError && (
+      <p className="accept__expiry">
+        <IconClock />
+        Invitation expires {new Date(invitation.expires_at).toLocaleDateString()}
+      </p>
+
+      {formError && (
         <p className="accept__error" role="alert">
-          {accept.error instanceof ApiError
-            ? (accept.error.fieldErrors.email ?? accept.error.message)
-            : 'Something went wrong. Please try again.'}
+          {formError}
         </p>
       )}
 
-      <Button
-        type="button"
-        variant="primary"
-        onClick={handleAccept}
-        disabled={accept.isPending || alreadyHandled || expired}
-      >
-        {accept.isPending ? 'Creating your account…' : 'Accept Invitation & Continue'}
+      {reject.isError && (
+        <p className="accept__error" role="alert">
+          {reject.error instanceof ApiError
+            ? reject.error.message
+            : 'Could not decline the invitation. Try again in a moment.'}
+        </p>
+      )}
+
+      <Button type="submit" variant="primary" disabled={accept.isPending || reject.isPending}>
+        {accept.isPending ? 'Setting up your account…' : 'Accept Invitation & Continue'}
         <IconArrowRight />
       </Button>
 
+      <p className="accept__secondary">
+        <button
+          type="button"
+          className="accept__decline"
+          onClick={() => reject.mutate(token as string)}
+          disabled={accept.isPending || reject.isPending}
+        >
+          {reject.isPending ? 'Declining…' : 'Decline this invitation'}
+        </button>
+      </p>
+
       <p className="accept__legal">{LEGAL_NOTE}</p>
-    </div>
+    </form>
   );
 }

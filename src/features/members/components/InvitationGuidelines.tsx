@@ -1,6 +1,6 @@
 import { Card, IconInfoCircle } from '@/components/ui';
 
-import type { Guideline } from '../data/placeholder';
+import type { Guideline } from '../data/guidelines';
 
 interface InvitationGuidelinesProps {
   guidelines: readonly Guideline[];

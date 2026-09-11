@@ -3,20 +3,20 @@ import { createFileRoute } from '@tanstack/react-router';
 import { AcceptInvitation, OnboardingLayout } from '@/features/onboarding';
 
 export const Route = createFileRoute('/invitation/')({
-  // `id` for now — see the note on useInvitation. It becomes `token` once an
-  // endpoint exists that can resolve one.
-  validateSearch: (search: Record<string, unknown>): { id?: string } => ({
-    id: typeof search.id === 'string' && search.id !== '' ? search.id : undefined,
+  // The emailed link carries `?token=`. The token only ever leaves this page
+  // in a request body — see features/onboarding/api/invitation.ts.
+  validateSearch: (search: Record<string, unknown>): { token?: string } => ({
+    token: typeof search.token === 'string' && search.token !== '' ? search.token : undefined,
   }),
   component: AcceptInvitationPage,
 });
 
 function AcceptInvitationPage() {
-  const { id } = Route.useSearch();
+  const { token } = Route.useSearch();
 
   return (
     <OnboardingLayout>
-      <AcceptInvitation invitationId={id} />
+      <AcceptInvitation token={token} />
     </OnboardingLayout>
   );
 }

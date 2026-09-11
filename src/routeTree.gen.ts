@@ -15,9 +15,6 @@ import { Route as RegisterRouteImport } from './routes/register';
 import { Route as AppIndexRouteImport } from './routes/_app.index';
 import { Route as AppStatusRouteImport } from './routes/_app.status';
 import { Route as InvitationIndexRouteImport } from './routes/invitation.index';
-import { Route as InvitationAcceptedRouteImport } from './routes/invitation.accepted';
-import { Route as OnboardingPasswordRouteImport } from './routes/onboarding.password';
-import { Route as OnboardingSignInRouteImport } from './routes/onboarding.sign-in';
 import { Route as AppMembersInviteRouteImport } from './routes/_app.members.invite';
 
 const AppRoute = AppRouteImport.update({
@@ -49,21 +46,6 @@ const InvitationIndexRoute = InvitationIndexRouteImport.update({
   path: '/invitation/',
   getParentRoute: () => rootRouteImport,
 } as any);
-const InvitationAcceptedRoute = InvitationAcceptedRouteImport.update({
-  id: '/invitation/accepted',
-  path: '/invitation/accepted',
-  getParentRoute: () => rootRouteImport,
-} as any);
-const OnboardingPasswordRoute = OnboardingPasswordRouteImport.update({
-  id: '/onboarding/password',
-  path: '/onboarding/password',
-  getParentRoute: () => rootRouteImport,
-} as any);
-const OnboardingSignInRoute = OnboardingSignInRouteImport.update({
-  id: '/onboarding/sign-in',
-  path: '/onboarding/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any);
 const AppMembersInviteRoute = AppMembersInviteRouteImport.update({
   id: '/members/invite',
   path: '/members/invite',
@@ -75,9 +57,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
   '/status': typeof AppStatusRoute;
-  '/invitation/accepted': typeof InvitationAcceptedRoute;
-  '/onboarding/password': typeof OnboardingPasswordRoute;
-  '/onboarding/sign-in': typeof OnboardingSignInRoute;
   '/invitation/': typeof InvitationIndexRoute;
   '/members/invite': typeof AppMembersInviteRoute;
 }
@@ -85,9 +64,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
   '/status': typeof AppStatusRoute;
-  '/invitation/accepted': typeof InvitationAcceptedRoute;
-  '/onboarding/password': typeof OnboardingPasswordRoute;
-  '/onboarding/sign-in': typeof OnboardingSignInRoute;
   '/': typeof AppIndexRoute;
   '/invitation': typeof InvitationIndexRoute;
   '/members/invite': typeof AppMembersInviteRoute;
@@ -98,9 +74,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
   '/_app/status': typeof AppStatusRoute;
-  '/invitation/accepted': typeof InvitationAcceptedRoute;
-  '/onboarding/password': typeof OnboardingPasswordRoute;
-  '/onboarding/sign-in': typeof OnboardingSignInRoute;
   '/_app/': typeof AppIndexRoute;
   '/invitation/': typeof InvitationIndexRoute;
   '/_app/members/invite': typeof AppMembersInviteRoute;
@@ -112,9 +85,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/status'
-    | '/invitation/accepted'
-    | '/onboarding/password'
-    | '/onboarding/sign-in'
     | '/invitation/'
     | '/members/invite';
   fileRoutesByTo: FileRoutesByTo;
@@ -122,9 +92,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/status'
-    | '/invitation/accepted'
-    | '/onboarding/password'
-    | '/onboarding/sign-in'
     | '/'
     | '/invitation'
     | '/members/invite';
@@ -134,9 +101,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/_app/status'
-    | '/invitation/accepted'
-    | '/onboarding/password'
-    | '/onboarding/sign-in'
     | '/_app/'
     | '/invitation/'
     | '/_app/members/invite';
@@ -146,9 +110,6 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren;
   LoginRoute: typeof LoginRoute;
   RegisterRoute: typeof RegisterRoute;
-  InvitationAcceptedRoute: typeof InvitationAcceptedRoute;
-  OnboardingPasswordRoute: typeof OnboardingPasswordRoute;
-  OnboardingSignInRoute: typeof OnboardingSignInRoute;
   InvitationIndexRoute: typeof InvitationIndexRoute;
 }
 
@@ -196,27 +157,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvitationIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    '/invitation/accepted': {
-      id: '/invitation/accepted';
-      path: '/invitation/accepted';
-      fullPath: '/invitation/accepted';
-      preLoaderRoute: typeof InvitationAcceptedRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    '/onboarding/password': {
-      id: '/onboarding/password';
-      path: '/onboarding/password';
-      fullPath: '/onboarding/password';
-      preLoaderRoute: typeof OnboardingPasswordRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    '/onboarding/sign-in': {
-      id: '/onboarding/sign-in';
-      path: '/onboarding/sign-in';
-      fullPath: '/onboarding/sign-in';
-      preLoaderRoute: typeof OnboardingSignInRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
     '/_app/members/invite': {
       id: '/_app/members/invite';
       path: '/members/invite';
@@ -245,9 +185,6 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
-  InvitationAcceptedRoute: InvitationAcceptedRoute,
-  OnboardingPasswordRoute: OnboardingPasswordRoute,
-  OnboardingSignInRoute: OnboardingSignInRoute,
   InvitationIndexRoute: InvitationIndexRoute,
 };
 export const routeTree = rootRouteImport

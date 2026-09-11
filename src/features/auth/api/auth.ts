@@ -10,11 +10,7 @@ export interface LoginCredentials {
   password: string;
 }
 
-/**
- * Matches `accounts.views.LoginView`: simplejwt access + refresh, plus the
- * flag that decides whether the user goes to the dashboard or is forced
- * through "set a permanent password" first.
- */
+/** `accounts.views.LoginView`: a simplejwt pair plus the signed-in user. */
 export interface LoginResponse {
   access: string;
   refresh: string;
@@ -39,19 +35,16 @@ export interface RegisterRequest {
   phone?: string;
 }
 
+/**
+ * Registration answers 202 with only a message — deliberately the same
+ * message whether the address was free or already taken, so the endpoint
+ * cannot be used to discover who has an account. There is no user object and
+ * no token: the caller signs in afterwards.
+ */
 export interface RegisterResponse {
-  message: string;
-  user: SessionUser & { must_change_password: boolean; created_by_invitation: boolean };
+  detail: string;
 }
 
-/**
- * Creates an owner account. `RegisterSerializer` sets
- * `must_change_password=false` and `created_by_invitation=false`, so this is
- * the self-signup path — invited members get their account from the (not yet
- * built) invitation-accept endpoint instead.
- *
- * Note it does not return tokens, so a sign-in has to follow.
- */
 export function useRegister() {
   return useMutation({
     mutationFn: (payload: RegisterRequest) =>
@@ -80,15 +73,15 @@ export interface CurrentUser {
 }
 
 /**
- * The signed-in user and their community memberships — the only endpoint that
- * ties a user to a community, so it is what the invite and community screens
- * read their `community` and `invited_by` ids from.
+ * The signed-in user and their memberships — the only thing that ties a user
+ * to a community, so it is what every community-scoped screen reads its ids
+ * from. Creating a community now enrols the owner, so this is populated from
+ * the first community onwards.
  */
 export function useMe() {
   return useQuery({
     queryKey: queryKeys.auth.me,
     queryFn: () => apiFetch<CurrentUser>('/auth/me/'),
-    // Pointless to ask while unauthenticated: it answers 401 by design.
     enabled: isSignedIn(),
     staleTime: 5 * 60_000,
   });
@@ -103,27 +96,21 @@ export function primaryMembership(user: CurrentUser | undefined): MembershipSumm
 }
 
 export interface ChangePasswordRequest {
-  userId: string;
-  password: string;
+  current_password: string;
+  new_password: string;
 }
 
 /**
- * There is no dedicated change-password endpoint, so this PATCHes the user
- * through the generic `/users/` viewset, where `password` is writable and
- * `UserSerializer.update` runs `set_password`. `must_change_password` is
- * cleared in the same call, otherwise the user is sent back here on next login.
- *
- * `UserViewSet` declares no `permission_classes`, and it was confirmed against
- * the live API that it accepts unauthenticated writes — so this same call lets
- * anyone reset anyone's password. It must be replaced by
- * `POST /auth/change-password/`, authenticated and verifying the old password.
+ * A voluntary change by someone who knows their current password.
+ * `POST /auth/change-password/` replaced the PATCH to `/users/{id}/` this
+ * used to go through — `password` is no longer writable there at all.
  */
 export function useChangePassword() {
   return useMutation({
-    mutationFn: ({ userId, password }: ChangePasswordRequest) =>
-      apiFetch<{ id: string }>(`/users/${userId}/`, {
-        method: 'PATCH',
-        body: { password, must_change_password: false },
+    mutationFn: (payload: ChangePasswordRequest) =>
+      apiFetch<{ detail: string }>('/auth/change-password/', {
+        method: 'POST',
+        body: payload,
       }),
   });
 }

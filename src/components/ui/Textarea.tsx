@@ -1,8 +1,12 @@
-import type { TextareaHTMLAttributes } from 'react';
+import type { ReactNode, TextareaHTMLAttributes } from 'react';
 import { useId } from 'react';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
+  /** Adds a muted "(Optional)" after the label. */
+  optional?: boolean;
+  /** Right-aligned note on the label row — "Required", "0 / 200". */
+  aside?: ReactNode;
   hint?: string;
   error?: string;
   /** Show the "Max N characters" limit under the field. Needs `maxLength`. */
@@ -11,6 +15,8 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 export function Textarea({
   label,
+  optional,
+  aside,
   hint,
   error,
   counter,
@@ -34,16 +40,28 @@ export function Textarea({
     ? 'field__error'
     : ['field__hint', message ? null : 'field__hint--end'].filter(Boolean).join(' ');
 
+  const labelElement = (
+    <label htmlFor={textareaId} className="field__label">
+      {label}
+      {optional && <span className="field__optional">(Optional)</span>}
+      {required && (
+        <span className="field__required" aria-hidden="true">
+          *
+        </span>
+      )}
+    </label>
+  );
+
   return (
     <div className="field">
-      <label htmlFor={textareaId} className="field__label">
-        {label}
-        {required && (
-          <span className="field__required" aria-hidden="true">
-            *
-          </span>
-        )}
-      </label>
+      {aside ? (
+        <div className="field__label-row">
+          {labelElement}
+          <span className="field__aside">{aside}</span>
+        </div>
+      ) : (
+        labelElement
+      )}
 
       <textarea
         id={textareaId}

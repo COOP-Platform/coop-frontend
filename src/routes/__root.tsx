@@ -4,8 +4,8 @@ import { createRootRoute, Link, Outlet } from '@tanstack/react-router';
 import { queryClient } from '@/lib/query-client';
 
 // Chrome-less on purpose: not every route wants the app header/nav/footer
-// (e.g. /login). Routes that do opt in via the `_app` pathless layout route,
-// which renders <AppLayout />.
+// (e.g. /login). The app shell comes from each app's layout route, such as
+// routes/community.tsx.
 export const Route = createRootRoute({
   component: RootComponent,
   notFoundComponent: NotFound,

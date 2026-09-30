@@ -4,6 +4,9 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 
 import { routeTree } from './routeTree.gen';
 import './styles/global.css';
+// After global.css on purpose: the shell and Sprint 2 screens refine a few base
+// rules (.card, .btn) and must win on source order.
+import './styles/app.css';
 
 const router = createRouter({
   routeTree,

@@ -3,6 +3,10 @@ import { useId } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  /** Adds a muted "(Optional)" after the label. */
+  optional?: boolean;
+  /** Right-aligned note on the label row — "Required", "0 / 200". */
+  aside?: ReactNode;
   /** Keeps `label` as the accessible name but hides it visually. */
   labelHidden?: boolean;
   icon?: ReactNode;
@@ -21,6 +25,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function Input({
   label,
+  optional,
+  aside,
   labelHidden,
   icon,
   trailing,
@@ -41,19 +47,31 @@ export function Input({
     .filter(Boolean)
     .join(' ');
 
+  const labelElement = (
+    <label
+      htmlFor={inputId}
+      className={labelHidden ? 'field__label visually-hidden' : 'field__label'}
+    >
+      {label}
+      {optional && <span className="field__optional">(Optional)</span>}
+      {required && (
+        <span className="field__required" aria-hidden="true">
+          *
+        </span>
+      )}
+    </label>
+  );
+
   return (
     <div className="field">
-      <label
-        htmlFor={inputId}
-        className={labelHidden ? 'field__label visually-hidden' : 'field__label'}
-      >
-        {label}
-        {required && (
-          <span className="field__required" aria-hidden="true">
-            *
-          </span>
-        )}
-      </label>
+      {aside ? (
+        <div className="field__label-row">
+          {labelElement}
+          <span className="field__aside">{aside}</span>
+        </div>
+      ) : (
+        labelElement
+      )}
 
       <div className={controlClasses}>
         {icon && <span className="field__icon">{icon}</span>}

@@ -9,18 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root';
-import { Route as AppRouteImport } from './routes/_app';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as CommunityRouteImport } from './routes/community';
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as RegisterRouteImport } from './routes/register';
 import { Route as ResetPasswordRouteImport } from './routes/reset-password';
-import { Route as AppIndexRouteImport } from './routes/_app.index';
-import { Route as AppStatusRouteImport } from './routes/_app.status';
+import { Route as StatusRouteImport } from './routes/status';
+import { Route as CommunityIndexRouteImport } from './routes/community.index';
+import { Route as CommunityPositionsRouteImport } from './routes/community.positions';
+import { Route as CommunityReportsRouteImport } from './routes/community.reports';
+import { Route as CommunitySettingsRouteImport } from './routes/community.settings';
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations.accept';
-import { Route as AppMembersInviteRouteImport } from './routes/_app.members.invite';
+import { Route as CommunityInvitationsIndexRouteImport } from './routes/community.invitations.index';
+import { Route as CommunityInvitationsNewRouteImport } from './routes/community.invitations.new';
+import { Route as CommunityMembersIndexRouteImport } from './routes/community.members.index';
+import { Route as CommunityMembersMemberIdRouteImport } from './routes/community.members.$memberId';
 
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
   getParentRoute: () => rootRouteImport,
 } as any);
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -43,109 +56,194 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any);
-const AppIndexRoute = AppIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppRoute,
-} as any);
-const AppStatusRoute = AppStatusRouteImport.update({
+const StatusRoute = StatusRouteImport.update({
   id: '/status',
   path: '/status',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => rootRouteImport,
+} as any);
+const CommunityIndexRoute = CommunityIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CommunityRoute,
+} as any);
+const CommunityPositionsRoute = CommunityPositionsRouteImport.update({
+  id: '/positions',
+  path: '/positions',
+  getParentRoute: () => CommunityRoute,
+} as any);
+const CommunityReportsRoute = CommunityReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => CommunityRoute,
+} as any);
+const CommunitySettingsRoute = CommunitySettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => CommunityRoute,
 } as any);
 const InvitationsAcceptRoute = InvitationsAcceptRouteImport.update({
   id: '/invitations/accept',
   path: '/invitations/accept',
   getParentRoute: () => rootRouteImport,
 } as any);
-const AppMembersInviteRoute = AppMembersInviteRouteImport.update({
-  id: '/members/invite',
-  path: '/members/invite',
-  getParentRoute: () => AppRoute,
+const CommunityInvitationsIndexRoute =
+  CommunityInvitationsIndexRouteImport.update({
+    id: '/invitations/',
+    path: '/invitations/',
+    getParentRoute: () => CommunityRoute,
+  } as any);
+const CommunityInvitationsNewRoute = CommunityInvitationsNewRouteImport.update({
+  id: '/invitations/new',
+  path: '/invitations/new',
+  getParentRoute: () => CommunityRoute,
 } as any);
+const CommunityMembersIndexRoute = CommunityMembersIndexRouteImport.update({
+  id: '/members/',
+  path: '/members/',
+  getParentRoute: () => CommunityRoute,
+} as any);
+const CommunityMembersMemberIdRoute =
+  CommunityMembersMemberIdRouteImport.update({
+    id: '/members/$memberId',
+    path: '/members/$memberId',
+    getParentRoute: () => CommunityRoute,
+  } as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppIndexRoute;
+  '/': typeof IndexRoute;
+  '/community': typeof CommunityRouteWithChildren;
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
-  '/status': typeof AppStatusRoute;
+  '/status': typeof StatusRoute;
+  '/community/positions': typeof CommunityPositionsRoute;
+  '/community/reports': typeof CommunityReportsRoute;
+  '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
-  '/members/invite': typeof AppMembersInviteRoute;
+  '/community/': typeof CommunityIndexRoute;
+  '/community/invitations/new': typeof CommunityInvitationsNewRoute;
+  '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
+  '/community/invitations/': typeof CommunityInvitationsIndexRoute;
+  '/community/members/': typeof CommunityMembersIndexRoute;
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute;
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
-  '/status': typeof AppStatusRoute;
+  '/status': typeof StatusRoute;
+  '/community/positions': typeof CommunityPositionsRoute;
+  '/community/reports': typeof CommunityReportsRoute;
+  '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
-  '/': typeof AppIndexRoute;
-  '/members/invite': typeof AppMembersInviteRoute;
+  '/community': typeof CommunityIndexRoute;
+  '/community/invitations/new': typeof CommunityInvitationsNewRoute;
+  '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
+  '/community/invitations': typeof CommunityInvitationsIndexRoute;
+  '/community/members': typeof CommunityMembersIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
-  '/_app': typeof AppRouteWithChildren;
+  '/': typeof IndexRoute;
+  '/community': typeof CommunityRouteWithChildren;
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
-  '/_app/status': typeof AppStatusRoute;
+  '/status': typeof StatusRoute;
+  '/community/positions': typeof CommunityPositionsRoute;
+  '/community/reports': typeof CommunityReportsRoute;
+  '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
-  '/_app/': typeof AppIndexRoute;
-  '/_app/members/invite': typeof AppMembersInviteRoute;
+  '/community/': typeof CommunityIndexRoute;
+  '/community/invitations/new': typeof CommunityInvitationsNewRoute;
+  '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
+  '/community/invitations/': typeof CommunityInvitationsIndexRoute;
+  '/community/members/': typeof CommunityMembersIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
+    | '/community'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/reset-password'
     | '/status'
+    | '/community/positions'
+    | '/community/reports'
+    | '/community/settings'
     | '/invitations/accept'
-    | '/members/invite';
+    | '/community/'
+    | '/community/invitations/new'
+    | '/community/members/$memberId'
+    | '/community/invitations/'
+    | '/community/members/';
   fileRoutesByTo: FileRoutesByTo;
   to:
+    | '/'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/reset-password'
     | '/status'
+    | '/community/positions'
+    | '/community/reports'
+    | '/community/settings'
     | '/invitations/accept'
-    | '/'
-    | '/members/invite';
+    | '/community'
+    | '/community/invitations/new'
+    | '/community/members/$memberId'
+    | '/community/invitations'
+    | '/community/members';
   id:
     | '__root__'
-    | '/_app'
+    | '/'
+    | '/community'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/reset-password'
-    | '/_app/status'
+    | '/status'
+    | '/community/positions'
+    | '/community/reports'
+    | '/community/settings'
     | '/invitations/accept'
-    | '/_app/'
-    | '/_app/members/invite';
+    | '/community/'
+    | '/community/invitations/new'
+    | '/community/members/$memberId'
+    | '/community/invitations/'
+    | '/community/members/';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  AppRoute: typeof AppRouteWithChildren;
+  IndexRoute: typeof IndexRoute;
+  CommunityRoute: typeof CommunityRouteWithChildren;
   ForgotPasswordRoute: typeof ForgotPasswordRoute;
   LoginRoute: typeof LoginRoute;
   RegisterRoute: typeof RegisterRoute;
   ResetPasswordRoute: typeof ResetPasswordRoute;
+  StatusRoute: typeof StatusRoute;
   InvitationsAcceptRoute: typeof InvitationsAcceptRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_app': {
-      id: '/_app';
-      path: '';
+    '/': {
+      id: '/';
+      path: '/';
       fullPath: '/';
-      preLoaderRoute: typeof AppRouteImport;
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/community': {
+      id: '/community';
+      path: '/community';
+      fullPath: '/community';
+      preLoaderRoute: typeof CommunityRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/forgot-password': {
@@ -176,19 +274,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    '/_app/': {
-      id: '/_app/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof AppIndexRouteImport;
-      parentRoute: typeof AppRoute;
-    };
-    '/_app/status': {
-      id: '/_app/status';
+    '/status': {
+      id: '/status';
       path: '/status';
       fullPath: '/status';
-      preLoaderRoute: typeof AppStatusRouteImport;
-      parentRoute: typeof AppRoute;
+      preLoaderRoute: typeof StatusRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/community/': {
+      id: '/community/';
+      path: '/';
+      fullPath: '/community/';
+      preLoaderRoute: typeof CommunityIndexRouteImport;
+      parentRoute: typeof CommunityRoute;
+    };
+    '/community/positions': {
+      id: '/community/positions';
+      path: '/positions';
+      fullPath: '/community/positions';
+      preLoaderRoute: typeof CommunityPositionsRouteImport;
+      parentRoute: typeof CommunityRoute;
+    };
+    '/community/reports': {
+      id: '/community/reports';
+      path: '/reports';
+      fullPath: '/community/reports';
+      preLoaderRoute: typeof CommunityReportsRouteImport;
+      parentRoute: typeof CommunityRoute;
+    };
+    '/community/settings': {
+      id: '/community/settings';
+      path: '/settings';
+      fullPath: '/community/settings';
+      preLoaderRoute: typeof CommunitySettingsRouteImport;
+      parentRoute: typeof CommunityRoute;
     };
     '/invitations/accept': {
       id: '/invitations/accept';
@@ -197,36 +316,71 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvitationsAcceptRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    '/_app/members/invite': {
-      id: '/_app/members/invite';
-      path: '/members/invite';
-      fullPath: '/members/invite';
-      preLoaderRoute: typeof AppMembersInviteRouteImport;
-      parentRoute: typeof AppRoute;
+    '/community/invitations/': {
+      id: '/community/invitations/';
+      path: '/invitations';
+      fullPath: '/community/invitations/';
+      preLoaderRoute: typeof CommunityInvitationsIndexRouteImport;
+      parentRoute: typeof CommunityRoute;
+    };
+    '/community/invitations/new': {
+      id: '/community/invitations/new';
+      path: '/invitations/new';
+      fullPath: '/community/invitations/new';
+      preLoaderRoute: typeof CommunityInvitationsNewRouteImport;
+      parentRoute: typeof CommunityRoute;
+    };
+    '/community/members/': {
+      id: '/community/members/';
+      path: '/members';
+      fullPath: '/community/members/';
+      preLoaderRoute: typeof CommunityMembersIndexRouteImport;
+      parentRoute: typeof CommunityRoute;
+    };
+    '/community/members/$memberId': {
+      id: '/community/members/$memberId';
+      path: '/members/$memberId';
+      fullPath: '/community/members/$memberId';
+      preLoaderRoute: typeof CommunityMembersMemberIdRouteImport;
+      parentRoute: typeof CommunityRoute;
     };
   }
 }
 
-interface AppRouteChildren {
-  AppStatusRoute: typeof AppStatusRoute;
-  AppIndexRoute: typeof AppIndexRoute;
-  AppMembersInviteRoute: typeof AppMembersInviteRoute;
+interface CommunityRouteChildren {
+  CommunityPositionsRoute: typeof CommunityPositionsRoute;
+  CommunityReportsRoute: typeof CommunityReportsRoute;
+  CommunitySettingsRoute: typeof CommunitySettingsRoute;
+  CommunityIndexRoute: typeof CommunityIndexRoute;
+  CommunityInvitationsNewRoute: typeof CommunityInvitationsNewRoute;
+  CommunityMembersMemberIdRoute: typeof CommunityMembersMemberIdRoute;
+  CommunityInvitationsIndexRoute: typeof CommunityInvitationsIndexRoute;
+  CommunityMembersIndexRoute: typeof CommunityMembersIndexRoute;
 }
 
-const AppRouteChildren: AppRouteChildren = {
-  AppStatusRoute: AppStatusRoute,
-  AppIndexRoute: AppIndexRoute,
-  AppMembersInviteRoute: AppMembersInviteRoute,
+const CommunityRouteChildren: CommunityRouteChildren = {
+  CommunityPositionsRoute: CommunityPositionsRoute,
+  CommunityReportsRoute: CommunityReportsRoute,
+  CommunitySettingsRoute: CommunitySettingsRoute,
+  CommunityIndexRoute: CommunityIndexRoute,
+  CommunityInvitationsNewRoute: CommunityInvitationsNewRoute,
+  CommunityMembersMemberIdRoute: CommunityMembersMemberIdRoute,
+  CommunityInvitationsIndexRoute: CommunityInvitationsIndexRoute,
+  CommunityMembersIndexRoute: CommunityMembersIndexRoute,
 };
 
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren);
+const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
+  CommunityRouteChildren,
+);
 
 const rootRouteChildren: RootRouteChildren = {
-  AppRoute: AppRouteWithChildren,
+  IndexRoute: IndexRoute,
+  CommunityRoute: CommunityRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  StatusRoute: StatusRoute,
   InvitationsAcceptRoute: InvitationsAcceptRoute,
 };
 export const routeTree = rootRouteImport

@@ -1,101 +1,65 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
 
-import logoUrl from '@/assets/coop-logo.svg';
-import {
-  IconBarChart,
-  IconBell,
-  IconCalendar,
-  IconChat,
-  IconCheckSquare,
-  IconFile,
-  IconHome,
-  IconLogout,
-  IconUser,
-  IconUsers,
-  IconWallet,
-} from '@/components/ui';
-import { env } from '@/config/env';
+import { IconLogout, IconSettings } from '@/components/ui';
+import type { AppDefinition } from '@/config/apps';
 import { clearSession } from '@/lib/auth/session';
-
-interface NavItem {
-  label: string;
-  icon: ReactNode;
-  /**
-   * Present only for routes that exist. TanStack's `Link` is typed against the
-   * generated route tree, so an entry for an unbuilt page could not compile —
-   * and shipping one as a raw anchor would just 404. Those render as
-   * non-interactive items until their screen lands.
-   */
-  to?: '/';
-}
-
-const NAV_ITEMS: readonly NavItem[] = [
-  { label: 'Dashboard', icon: <IconHome />, to: '/' },
-  { label: 'Members', icon: <IconUsers /> },
-  { label: 'Contributions', icon: <IconWallet /> },
-  { label: 'Events & Activities', icon: <IconCalendar /> },
-  { label: 'Meetings', icon: <IconChat /> },
-  { label: 'Reports', icon: <IconBarChart /> },
-  { label: 'Notifications', icon: <IconBell /> },
-  { label: 'Documents', icon: <IconFile /> },
-  { label: 'Voting', icon: <IconCheckSquare /> },
-  { label: 'Profile', icon: <IconUser /> },
-];
+import { queryClient } from '@/lib/query-client';
 
 interface SidebarProps {
-  /** From the signed-in user's membership; absent until /auth/me/ resolves. */
-  communityName?: string;
+  app: AppDefinition;
+  /** Called after any navigation so the mobile drawer can close. */
+  onNavigate?: () => void;
 }
 
-export function Sidebar({ communityName }: SidebarProps) {
+/** The selected app's pages. Switching apps (top bar) swaps this list. */
+export function Sidebar({ app, onNavigate }: SidebarProps) {
   const navigate = useNavigate();
 
   function handleLogout() {
     clearSession();
+    // Drop the previous user's cached /me and lists.
+    queryClient.clear();
     void navigate({ to: '/login' });
   }
 
   return (
     <div className="sidebar">
-      <div className="sidebar__brand">
-        <img src={logoUrl} alt="" className="sidebar__logo" />
-        <span className="sidebar__brand-names">
-          <span className="sidebar__brand-name">{env.appName}</span>
-          {communityName !== undefined && (
-            <span className="sidebar__brand-community">{communityName}</span>
-          )}
-        </span>
-      </div>
-
-      <nav className="sidebar__nav" aria-label="Main">
+      <nav className="sidebar__nav" aria-label={app.name}>
+        <p className="sidebar__section">{app.name}</p>
         <ul className="sidebar__list" role="list">
-          {NAV_ITEMS.map((item) => (
+          {app.nav.map((item) => (
             <li key={item.label}>
-              {item.to ? (
-                <Link
-                  to={item.to}
-                  className="sidebar__item"
-                  activeProps={{ className: 'is-active' }}
-                  activeOptions={{ exact: true }}
-                >
-                  <span className="sidebar__item-icon">{item.icon}</span>
-                  {item.label}
-                </Link>
-              ) : (
-                <span className="sidebar__item sidebar__item--pending" aria-disabled="true">
-                  <span className="sidebar__item-icon">{item.icon}</span>
-                  {item.label}
+              <Link
+                to={item.to}
+                className="sidebar__item"
+                activeProps={{ className: 'is-active', 'aria-current': 'page' }}
+                activeOptions={{ exact: item.exact === true }}
+                onClick={onNavigate}
+              >
+                <span className="sidebar__item-icon" aria-hidden="true">
+                  {item.icon}
                 </span>
-              )}
+                {item.label}
+              </Link>
             </li>
           ))}
         </ul>
       </nav>
 
       <div className="sidebar__footer">
-        <button type="button" className="sidebar__item sidebar__logout" onClick={handleLogout}>
-          <span className="sidebar__item-icon">
+        <Link
+          to="/community/settings"
+          className="sidebar__item"
+          activeProps={{ className: 'is-active', 'aria-current': 'page' }}
+          onClick={onNavigate}
+        >
+          <span className="sidebar__item-icon" aria-hidden="true">
+            <IconSettings />
+          </span>
+          Settings
+        </Link>
+        <button type="button" className="sidebar__item" onClick={handleLogout}>
+          <span className="sidebar__item-icon" aria-hidden="true">
             <IconLogout />
           </span>
           Logout

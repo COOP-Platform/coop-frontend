@@ -1,6 +1,22 @@
 export { Card } from './Card';
 export { Panel } from './Panel';
 export { Button } from './Button';
+export type { ButtonVariant } from './Button';
+export { Badge } from './Badge';
+export type { BadgeTone } from './Badge';
+export { Avatar } from './Avatar';
+export { initials, toneFor } from './avatar-utils';
+export type { AvatarTone } from './avatar-utils';
+export { IconTile } from './IconTile';
+export type { IconTileTone } from './IconTile';
+export { PageHeader } from './PageHeader';
+export { StatCard } from './StatCard';
+export { SegmentedControl } from './SegmentedControl';
+export { Dialog } from './Dialog';
+export { Drawer } from './Drawer';
+export { Dropdown } from './Dropdown';
+export { EmptyState } from './EmptyState';
+export { ErrorState, LoadingState } from './QueryState';
 export { Input } from './Input';
 export { Textarea } from './Textarea';
 export { Select } from './Select';
@@ -8,41 +24,4 @@ export type { SelectOption } from './Select';
 export { RadioCardGroup } from './RadioCardGroup';
 export type { RadioCardOption } from './RadioCardGroup';
 export { Checkbox } from './Checkbox';
-export {
-  IconUser,
-  IconLock,
-  IconEye,
-  IconEyeOff,
-  IconAtSign,
-  IconMapPin,
-  IconImage,
-  IconCamera,
-  IconShield,
-  IconHeart,
-  IconChevronDown,
-  IconChevronRight,
-  IconArrowRight,
-  IconHome,
-  IconUsers,
-  IconWallet,
-  IconCalendar,
-  IconChat,
-  IconBarChart,
-  IconBell,
-  IconFile,
-  IconCheckSquare,
-  IconLogout,
-  IconSearch,
-  IconUserPlus,
-  IconPlusCircle,
-  IconInfoCircle,
-  IconMail,
-  IconLayers,
-  IconSend,
-  IconCheckCircle,
-  IconCopy,
-  IconKey,
-  IconClock,
-  IconExternalLink,
-  IconWifi,
-} from './icons';
+export * from './icons';

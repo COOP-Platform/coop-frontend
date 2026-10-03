@@ -1,5 +1,5 @@
 import { env } from '@/config/env';
-import { getAccessToken } from '@/lib/auth/session';
+import { clearSession, getAccessToken } from '@/lib/auth/session';
 
 /** Field name -> first message, e.g. `{ slug: 'This slug is already taken.' }`. */
 export type FieldErrors = Record<string, string>;
@@ -7,6 +7,15 @@ export type FieldErrors = Record<string, string>;
 /** Error thrown for any non-2xx response, carrying the HTTP status. */
 export class ApiError extends Error {
   readonly fieldErrors: FieldErrors;
+
+  /**
+   * The backend's machine-readable reason, when it gives one:
+   * `{"detail": "...", "error": {"code": "last_admin" | "missing_permission" | ...}}`.
+   */
+  get code(): string | undefined {
+    const error = (this.body as { error?: { code?: unknown } } | null)?.error;
+    return typeof error?.code === 'string' ? error.code : undefined;
+  }
 
   constructor(
     message: string,
@@ -83,6 +92,20 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   });
 
   const payload = response.status === 204 ? null : await response.json().catch(() => null);
+
+  /*
+   * A signed-in request answered 401 means the access token has lapsed (it
+   * lives 30 minutes). The backend issues a refresh token but exposes no
+   * refresh endpoint, so the only way forward is signing in again — see
+   * docs/sprint-2-integration.md. Requests sent without a token (sign-in
+   * itself, the public invitation pages) keep their own 401 handling.
+   */
+  if (response.status === 401 && token !== null && !('Authorization' in (headers ?? {}))) {
+    clearSession();
+    if (window.location.pathname !== '/login') {
+      window.location.assign('/login');
+    }
+  }
 
   if (!response.ok) {
     const { message, fieldErrors } = parseErrorPayload(payload);

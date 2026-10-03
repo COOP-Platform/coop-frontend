@@ -55,12 +55,26 @@ export function useRegister() {
   });
 }
 
+/** `rbac.serializers.PositionSummarySerializer` — a position someone holds. */
+export interface PositionSummary {
+  id: string;
+  name: string;
+  /** Holds every permission needed to manage positions and members. */
+  is_admin: boolean;
+}
+
+/** `accounts.serializers.MeMembershipSerializer`. */
 export interface MembershipSummary {
   id: string;
   status: 'invited' | 'active' | 'suspended' | 'removed';
   join_date: string | null;
-  community: { id: string; name: string; slug: string };
+  community: { id: string; name: string; slug: string; type: string };
   member_category: { id: string; name: string };
+  /** Every live position held, whatever the membership's status. */
+  positions: PositionSummary[];
+  /** Resolved permission codes here — empty unless the membership is active. */
+  permissions: string[];
+  is_admin: boolean;
 }
 
 export interface CurrentUser {
@@ -69,6 +83,8 @@ export interface CurrentUser {
   phone: string | null;
   full_name: string;
   must_change_password: boolean;
+  is_platform_admin: boolean;
+  platform_permissions: string[];
   memberships: MembershipSummary[];
 }
 

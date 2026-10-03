@@ -26,6 +26,16 @@ export const queryKeys = {
     list: (communityId?: string, status?: string) =>
       ['invitations', 'list', communityId ?? null, status ?? null] as const,
   },
+  /** Every invitation record visible for a community (`/invitations/?community_id=`). */
+  invitationRecords: {
+    list: (communityId: string) => ['invitations', 'records', communityId] as const,
+  },
+  positions: {
+    all: (communityId: string) => ['positions', communityId] as const,
+    list: (communityId: string) => ['positions', communityId, 'list'] as const,
+    member: (communityId: string, membershipId: string) =>
+      ['positions', communityId, 'member', membershipId] as const,
+  },
   users: {
     all: ['users'] as const,
     list: () => ['users', 'list'] as const,

@@ -6,7 +6,10 @@ export { ForgotPasswordForm } from './components/ForgotPasswordForm';
 export { ResetPasswordForm } from './components/ResetPasswordForm';
 export { useLogin, useRegister, useMe, useChangePassword, primaryMembership } from './api/auth';
 export { useRequestPasswordReset, useConfirmPasswordReset } from './api/password-reset';
+export { useWorkspace, selectCommunity } from './api/workspace';
+export type { Workspace } from './api/workspace';
 export type {
+  PositionSummary,
   LoginCredentials,
   LoginResponse,
   RegisterRequest,

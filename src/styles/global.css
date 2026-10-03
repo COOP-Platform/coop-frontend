@@ -589,7 +589,11 @@ body:has(.auth-shell),
   inset: 0;
   background-size: cover;
   background-position: center;
-  opacity: 0.18;
+  /* Multiply (not plain alpha) so the illustration keeps its own colours and
+     the teal doesn't flatten everything; the white backdrop of the JPG
+     vanishes into the panel colour instead of brightening it. */
+  opacity: 0.6;
+  mix-blend-mode: multiply;
   pointer-events: none;
 }
 

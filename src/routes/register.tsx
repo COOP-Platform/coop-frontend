@@ -1,24 +1,24 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 
 import authIllustration from '@/assets/COOP_background_img.jpg';
-import { IconChevronRight, IconHeart, IconLock, IconShield } from '@/components/ui';
-import { AuthLayout } from '@/features/auth';
-import { CreateCommunityForm } from '@/features/communities';
+import { IconHeart, IconShield } from '@/components/ui';
+import { AuthLayout, redirectIfSignedIn, SignUpForm } from '@/features/auth';
 
 // Top-level route, deliberately NOT nested under `_app` — registration is
-// full-bleed with no header/nav/footer, same as /login.
+// full-bleed with no header/nav/footer, same as /login. It creates the
+// account only; founding a community follows on /onboarding.
 export const Route = createFileRoute('/register')({
+  beforeLoad: redirectIfSignedIn,
   component: RegisterPage,
 });
 
 const BRAND_MESSAGE =
-  'Register your cooperative, family trust, or association to manage shared resources, ' +
-  'preserve archives, and coordinate initiatives with complete transparency.';
+  'Manage shared resources, preserve archives, and coordinate upcoming gatherings with ' +
+  'complete transparency. Built exclusively for Les Cousins.';
 
 const BADGES = [
   { icon: <IconShield />, label: 'Bank-grade Security' },
   { icon: <IconHeart />, label: 'Family Managed' },
-  { icon: <IconLock />, label: 'End-to-End Encrypted' },
 ];
 
 function RegisterPage() {
@@ -26,24 +26,19 @@ function RegisterPage() {
     <AuthLayout
       illustrationSrc={authIllustration}
       brandTagline="Les Cousins"
-      title="A reliable hub for family harmony & collective growth"
+      title="A reliable hub for family harmony"
       message={BRAND_MESSAGE}
       badges={BADGES}
       // The form column carries this page's <h1>, so the brand panel must not
       // also be an h1 — it is hidden below 900px.
       brandTitleAs="p"
-      aside={
-        <p className="auth-brand__crosslink">
-          Already have an active community?
-          <Link to="/login" className="btn btn--ghost auth-brand__crosslink-action">
-            Sign In to Dashboard
-            <IconChevronRight />
-          </Link>
+      panelTop={
+        <p className="auth-panel__crosslink">
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       }
-      wide
     >
-      <CreateCommunityForm />
+      <SignUpForm />
     </AuthLayout>
   );
 }

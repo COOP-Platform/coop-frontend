@@ -149,11 +149,22 @@ Render sleeps idle services, so the first request after a pause can take a while
   - the Invitations badge shows the number sent.
 - **Other apps in the app switcher** (Contributions, Meetings, Events, Voting): listed as "Soon".
 
+### 3.10 Community logos and covers need the upload endpoints
+
+- **Design:** the create-community wizard (step 3) takes a logo and a cover banner as file uploads.
+- **Backend:** `POST /communities/{id}/logo/` and `/cover/` exist only on the unmerged backend branch `feat/supabase-image-uploads`. `develop` has no upload endpoint.
+- **Frontend now:**
+  - the community is created first, then each image is uploaded;
+  - an image that fails never undoes the create;
+  - the success screen lists what was not saved.
+  - Against `develop` this always reads "Image uploads are not available on this server yet."
+- **Proposed fix (BE):** merge `feat/supabase-image-uploads` and set its storage keys on Render. Nothing changes on the frontend.
+
 ## 4. How this was verified
 
 - **Automated checks:** `npm run typecheck` and `npm run lint` pass.
 - **End to end:** run against a **throwaway local copy** of the backend on its own SQLite database, with console email. Nothing was created on the live API or its database. The flows were driven in a real browser:
-  1. The founder registers, founds a savings group, and signs in through the login form.
+  1. The founder registers, founds a savings group, and signs in through the login form. (Superseded by §5: registration and founding are now separate steps.)
   2. They invite three people; one accepts via the emailed token and is made Treasurer.
   3. Dashboard, Members, Positions and Invitations all load with no failed requests.
   4. Sending an invitation from the form opens it in the details panel.
@@ -161,3 +172,25 @@ Render sleeps idle services, so the first request after a pause can take a while
   6. The only admin trying to leave is refused. The backend's `last_admin` error shows as "This would leave nobody able to manage the community…".
   7. Creating a position with a custom permission set works.
 - **Not yet checked against live:** the same flows with a real account. Sign in with an account that owns a community on live and click through §2.
+
+## 5. Account first, community second
+
+Registration no longer creates a community. The flow is:
+
+1. **`/register`:**
+   - creates the account (`POST /auth/register/`, which answers 202 with no token);
+   - signs straight in with the same password;
+   - goes to `/onboarding`;
+   - if that sign-in is refused, the address already had an account, so the form points to sign-in and password reset.
+2. **`/onboarding`:**
+   - the welcome page for a signed-in user with no community;
+   - someone with a community who lands here is sent to `/community`.
+3. **`/onboarding/create`:**
+   - a three-step wizard, then a summary of what the server saved;
+   - progress is kept as a draft in `localStorage`, per user, so "Save & Exit" and reloads lose nothing;
+   - the draft is only on that device.
+4. **`/community` guard:**
+   - a signed-in user with no community is redirected to `/onboarding`;
+   - this is also what happens on login with no community.
+
+The guards await `/auth/me` with `fetchQuery`, not `ensureQueryData`. After a create, the cached `/me` is invalidated, and `ensureQueryData` would return the stale copy with no memberships, which would send the new owner back to onboarding.

@@ -61,7 +61,7 @@ export function useRegister() {
  */
 export class ExistingAccountError extends Error {
   constructor() {
-    super('An account may already exist for this email address.');
+    super('A user with this email already exists.');
     this.name = 'ExistingAccountError';
   }
 }

@@ -19,7 +19,7 @@ const BRAND_MESSAGE =
  * Shell for the invitation and first-run screens.
  *
  * Deliberately separate from `AuthLayout` rather than another six optional
- * props on it: this shell's content column carries its own header and footer,
+ * props on it: this shell's content column carries its own header,
  * which that component has no concept of. The pinned-panel/single-scroller
  * behaviour is the same, so the CSS follows the same shape.
  */
@@ -76,15 +76,6 @@ export function OnboardingLayout({ children }: OnboardingLayoutProps) {
         <main className="onboarding__content">
           <div className="onboarding__inner">{children}</div>
         </main>
-
-        <footer className="onboarding__footer">
-          <span>End-to-end encrypted session · {env.appName}</span>
-          <span className="onboarding__footer-links">
-            {/* TODO: real policy documents. */}
-            <a href="#">Privacy Policy</a>
-            <a href="#">Group Terms</a>
-          </span>
-        </footer>
       </div>
     </div>
   );

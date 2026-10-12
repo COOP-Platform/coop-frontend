@@ -13,10 +13,7 @@ const DEFAULT_TITLE = 'A reliable hub for community management';
 const DEFAULT_MESSAGE =
   'Manage members, coordinate resources, and keep every community activity transparent — all in one place.';
 
-const DEFAULT_BADGES: readonly AuthBadge[] = [
-  { label: 'Secure encrypted access' },
-  { label: 'Community managed' },
-];
+const DEFAULT_BADGES: readonly AuthBadge[] = [{ label: 'Community managed' }];
 
 interface AuthLayoutProps {
   children: ReactNode;

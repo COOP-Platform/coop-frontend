@@ -61,6 +61,8 @@ export const LANGUAGES: readonly SelectOption[] = [
 export interface WizardForm {
   name: string;
   type: CommunityType | '';
+  /** Whether to seed officer positions (Treasurer, Secretary, …). */
+  committee: 'yes' | 'no';
   description: string;
   vision: string;
   mission: string;
@@ -79,6 +81,7 @@ export interface WizardForm {
 export const INITIAL_FORM: WizardForm = {
   name: '',
   type: '',
+  committee: 'yes',
   description: '',
   vision: '',
   mission: '',
@@ -100,6 +103,7 @@ export type WizardErrors = Partial<Record<keyof CreateCommunityRequest, string>>
 export const FIELD_STEP: Record<keyof CreateCommunityRequest, StepIndex> = {
   name: 0,
   type: 0,
+  with_committee: 0,
   description: 0,
   vision: 1,
   mission: 1,
@@ -191,6 +195,7 @@ export function buildPayload(form: WizardForm): CreateCommunityRequest {
   return {
     name: form.name.trim(),
     type: form.type as CommunityType,
+    with_committee: form.committee === 'yes',
     description: optional(form.description),
     vision: optional(form.vision),
     mission: optional(form.mission),

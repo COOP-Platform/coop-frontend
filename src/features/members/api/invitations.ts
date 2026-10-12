@@ -49,6 +49,21 @@ export function effectiveStatus(invitation: Invitation, now = Date.now()): Invit
   return invitation.status;
 }
 
+/** How long an accepted invitation stays on the invitations screen. */
+export const ACCEPTED_LISTED_FOR_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether an invitation belongs on the invitations screen. Once accepted, the
+ * person is a member and the Members page is where they live; the accepted
+ * invitation is shown for a day as confirmation, then dropped so the list is
+ * about invitations still in play. (Unanswered ones the backend deletes 30
+ * days after they lapse.)
+ */
+export function isStillListed(invitation: Invitation, now = Date.now()): boolean {
+  if (invitation.status !== 'accepted' || invitation.accepted_at === null) return true;
+  return now - new Date(invitation.accepted_at).getTime() < ACCEPTED_LISTED_FOR_MS;
+}
+
 /** Every invitation of a community, newest first. */
 export function useInvitations(communityId: string | undefined, enabled = true) {
   return useQuery({

@@ -18,7 +18,7 @@ import {
   Textarea,
 } from '@/components/ui';
 
-import { COMMUNITY_TYPES } from './community-types';
+import { COMMITTEE_OPTIONS, COMMUNITY_TYPES } from './community-types';
 import { ImageDrop } from './ImageDrop';
 import { COVER_SPEC, LOGO_SPEC } from './images';
 import { CURRENCIES, DIAL_CODES, LANGUAGES, LIMITS, currentYear } from './model';
@@ -116,6 +116,16 @@ export function BasicsStep({ form, errors, update }: StepProps) {
         onChange={(value) => update('type', value as WizardForm['type'])}
         error={errors.type}
         required
+      />
+
+      <RadioCardGroup
+        legend="Leadership Committee"
+        hint="Do you want officer positions such as Treasurer and Secretary? You can add, rename or delete positions at any time."
+        name="committee"
+        options={COMMITTEE_OPTIONS}
+        value={form.committee}
+        onChange={(value) => update('committee', value as WizardForm['committee'])}
+        error={errors.with_committee}
       />
 
       <Textarea

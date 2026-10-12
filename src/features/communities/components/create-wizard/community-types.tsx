@@ -4,6 +4,8 @@ import {
   IconGraduationCap,
   IconHandHeart,
   IconHandshake,
+  IconIdBadge,
+  IconUser,
   IconPiggyBank,
   IconSprout,
   IconUsers,
@@ -56,3 +58,19 @@ export const COMMUNITY_TYPES: readonly RadioCardOption[] = [
 export function communityTypeLabel(type: string): string {
   return COMMUNITY_TYPES.find((option) => option.value === type)?.title ?? type;
 }
+
+/** The committee question on step 1 — `with_committee` on the create request. */
+export const COMMITTEE_OPTIONS: readonly RadioCardOption[] = [
+  {
+    value: 'yes',
+    title: 'Yes, set up a committee',
+    description: 'Suggested officer positions for your type, ready to assign',
+    icon: <IconIdBadge />,
+  },
+  {
+    value: 'no',
+    title: 'No committee',
+    description: 'Just you as administrator — add positions later if needed',
+    icon: <IconUser />,
+  },
+];

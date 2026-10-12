@@ -1,11 +1,9 @@
 import { useNavigate } from '@tanstack/react-router';
-import type { FormEvent } from 'react';
 import { useState } from 'react';
 
 import {
   Badge,
   Button,
-  Dialog,
   EmptyState,
   ErrorState,
   IconIdBadge,
@@ -16,30 +14,19 @@ import {
   IconUser,
   IconUserCheck,
   IconUserPlus,
-  Input,
   LoadingState,
   PageHeader,
-  Select,
-  Textarea,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import type { DirectoryMember } from '@/features/members';
 import { useMemberDirectory } from '@/features/members';
-import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { PositionIcon } from '@/lib/positions';
 
 import type { Position } from '../api/positions';
-import {
-  useAssignPosition,
-  useCreatePosition,
-  useDeletePosition,
-  usePositions,
-  useUpdatePosition,
-} from '../api/positions';
-import { MEMBER_BASELINE, PERMISSION_CATALOG, PERMISSION_MODULES } from '../data/permissions';
-
-type Editing = { mode: 'create' } | { mode: 'edit'; position: Position } | null;
+import { usePositions } from '../api/positions';
+import { AssignMemberDialog, PositionFormDialog } from './PositionDialogs';
+import type { Editing } from './PositionDialogs';
 
 export function PositionsBoard() {
   const navigate = useNavigate();
@@ -127,7 +114,10 @@ export function PositionsBoard() {
               canEdit={can('position.update')}
               canAssign={can('position.assign')}
               onView={() =>
-                void navigate({ to: '/community/members', search: { role: position.id } })
+                void navigate({
+                  to: '/community/positions/$positionId',
+                  params: { positionId: position.id },
+                })
               }
               onEdit={() => setEditing({ mode: 'edit', position })}
               onAssign={() => setAssigning(position)}
@@ -232,247 +222,21 @@ function PositionCard({
       </dl>
 
       <div className="position-card__actions">
+        <Button variant="secondary" size="sm" onClick={onView}>
+          View Details
+        </Button>
         {vacant && canAssign ? (
           <Button variant="secondary" size="sm" icon={<IconUserPlus />} onClick={onAssign}>
             Assign
           </Button>
         ) : (
-          <Button variant="secondary" size="sm" onClick={onView}>
-            View Details
-          </Button>
-        )}
-        {canEdit ? (
-          <Button variant="secondary" size="sm" onClick={onEdit}>
-            Edit
-          </Button>
-        ) : (
-          canAssign &&
-          !vacant && (
-            <Button variant="secondary" size="sm" onClick={onAssign}>
-              Assign
+          canEdit && (
+            <Button variant="secondary" size="sm" onClick={onEdit}>
+              Edit
             </Button>
           )
         )}
       </div>
     </li>
-  );
-}
-
-function PositionFormDialog({
-  editing,
-  canDelete,
-  onClose,
-}: {
-  editing: Editing;
-  canDelete: boolean;
-  onClose: () => void;
-}) {
-  const { communityId } = useWorkspace();
-  const create = useCreatePosition(communityId ?? '');
-  const update = useUpdatePosition(communityId ?? '');
-  const remove = useDeletePosition(communityId ?? '');
-  const initial = editing?.mode === 'edit' ? editing.position : undefined;
-
-  const [name, setName] = useState(initial?.name ?? '');
-  const [description, setDescription] = useState(initial?.description ?? '');
-  const [permissions, setPermissions] = useState<Set<string>>(
-    new Set(initial?.permissions ?? MEMBER_BASELINE),
-  );
-  const [nameError, setNameError] = useState<string>();
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const saving = create.isPending || update.isPending;
-  const error = create.error ?? update.error ?? remove.error;
-
-  function toggle(code: string) {
-    setPermissions((current) => {
-      const next = new Set(current);
-      if (next.has(code)) next.delete(code);
-      else next.add(code);
-      return next;
-    });
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (name.trim() === '') {
-      setNameError('Give the position a name.');
-      return;
-    }
-    const input = {
-      name: name.trim(),
-      description: description.trim(),
-      permissions: [...permissions],
-    };
-    const onError = (e: Error) => {
-      if (e instanceof ApiError && e.fieldErrors.name) setNameError(e.fieldErrors.name);
-    };
-    if (initial) update.mutate({ id: initial.id, ...input }, { onSuccess: onClose, onError });
-    else create.mutate(input, { onSuccess: onClose, onError });
-  }
-
-  return (
-    <Dialog
-      open={editing !== null}
-      onClose={onClose}
-      title={initial ? `Edit ${initial.name}` : 'Create Position'}
-      subtitle={
-        initial
-          ? 'Changes apply at once to everyone holding this position.'
-          : 'Add a governance role to the community.'
-      }
-      icon={
-        <IconTile tone="brand" round>
-          <IconIdBadge />
-        </IconTile>
-      }
-    >
-      <form className="dialog__form" onSubmit={handleSubmit} noValidate>
-        <Input
-          label="Position name"
-          required
-          maxLength={60}
-          placeholder="e.g. Vice Treasurer"
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-            setNameError(undefined);
-          }}
-          error={nameError}
-        />
-        <Textarea
-          label="Description"
-          optional
-          rows={2}
-          maxLength={255}
-          placeholder="What this role is responsible for."
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-
-        <fieldset className="permission-picker">
-          <legend className="field__label">
-            Permissions <span className="field__optional">({permissions.size} selected)</span>
-          </legend>
-          {PERMISSION_MODULES.map((module) => (
-            <div key={module} className="permission-picker__group">
-              <p className="permission-picker__module">{module}</p>
-              {PERMISSION_CATALOG.filter((p) => p.module === module).map((permission) => (
-                <label key={permission.code} className="permission-picker__item">
-                  <input
-                    type="checkbox"
-                    checked={permissions.has(permission.code)}
-                    onChange={() => toggle(permission.code)}
-                  />
-                  <span>
-                    {permission.description}
-                    <span className="permission-picker__code">{permission.code}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          ))}
-        </fieldset>
-
-        {error && <p className="form-error">{errorMessage(error)}</p>}
-
-        {confirmDelete && initial ? (
-          <div className="details__confirm">
-            <p className="dialog__text">
-              Delete <strong>{initial.name}</strong>? The {initial.holder_count}{' '}
-              {initial.holder_count === 1 ? 'member' : 'members'} holding it lose it.
-            </p>
-            <div className="dialog__footer dialog__footer--flush">
-              <Button variant="tint" onClick={() => setConfirmDelete(false)}>
-                Keep it
-              </Button>
-              <Button
-                variant="danger"
-                disabled={remove.isPending}
-                onClick={() => remove.mutate(initial.id, { onSuccess: onClose })}
-              >
-                {remove.isPending ? 'Deleting…' : 'Delete Position'}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="dialog__footer dialog__footer--flush">
-            <Button variant="tint" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : initial ? 'Save Changes' : 'Create Position'}
-            </Button>
-          </div>
-        )}
-        {initial && canDelete && !confirmDelete && (
-          <button
-            type="button"
-            className="details__action details__action--danger"
-            onClick={() => setConfirmDelete(true)}
-          >
-            Delete this position
-          </button>
-        )}
-      </form>
-    </Dialog>
-  );
-}
-
-function AssignMemberDialog({
-  position,
-  members,
-  onClose,
-}: {
-  position: Position | null;
-  members: readonly DirectoryMember[];
-  onClose: () => void;
-}) {
-  const { communityId } = useWorkspace();
-  const assign = useAssignPosition(communityId ?? '');
-  const [membershipId, setMembershipId] = useState('');
-
-  const candidates = members.filter(
-    (m) => m.status === 'active' && !m.positions.some((p) => p.id === position?.id),
-  );
-
-  return (
-    <Dialog
-      open={position !== null}
-      onClose={onClose}
-      title={`Assign ${position?.name ?? 'Position'}`}
-      subtitle="Adds this position to a member. Their other positions stay."
-      icon={
-        <IconTile tone="brand" round>
-          <IconUserPlus />
-        </IconTile>
-      }
-      footer={
-        <>
-          <Button variant="tint" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            disabled={membershipId === '' || position === null || assign.isPending}
-            onClick={() => {
-              if (position)
-                assign.mutate({ membershipId, positionId: position.id }, { onSuccess: onClose });
-            }}
-          >
-            {assign.isPending ? 'Assigning…' : 'Confirm Change'}
-          </Button>
-        </>
-      }
-    >
-      <Select
-        label="Member"
-        placeholder="Select a member"
-        value={membershipId}
-        onChange={(event) => setMembershipId(event.target.value)}
-        options={candidates.map((m) => ({ value: m.membershipId, label: m.fullName }))}
-        hint="Active members who do not already hold this position."
-      />
-      {assign.error && <p className="form-error">{errorMessage(assign.error)}</p>}
-    </Dialog>
   );
 }

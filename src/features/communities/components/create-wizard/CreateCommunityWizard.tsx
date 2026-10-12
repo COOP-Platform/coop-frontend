@@ -44,6 +44,7 @@ const STEP_COPY: Record<StepIndex, { eyebrow: string; subtitle: string }> = {
 const API_FIELD: Record<keyof WizardForm, keyof CreateCommunityRequest> = {
   name: 'name',
   type: 'type',
+  committee: 'with_committee',
   description: 'description',
   vision: 'vision',
   mission: 'mission',
@@ -236,6 +237,7 @@ export function CreateCommunityWizard() {
             titleRef={headingRef}
             community={created.community}
             imageErrors={created.imageErrors}
+            withCommittee={form.committee === 'yes'}
             onContinue={() => {
               selectCommunity(created.community.id);
               void navigate({ to: '/community' });

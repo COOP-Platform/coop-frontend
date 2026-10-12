@@ -35,6 +35,12 @@ export interface CreateCommunityRequest {
   currency?: string;
   language?: string;
   founded_year?: number;
+  /**
+   * Not stored. True (the default) seeds the type's suggested officer
+   * positions — Treasurer, Secretary, …; false seeds only the founder's admin
+   * position and the baseline Member one.
+   */
+  with_committee?: boolean;
 }
 
 /** `CommunityUpdateSerializer` accepts a narrower set than create. */

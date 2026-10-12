@@ -16,6 +16,7 @@ export type { DirectoryMember } from './api/directory';
 
 export {
   effectiveStatus,
+  isStillListed,
   useInvitations,
   useSendInvitation,
   useRevokeInvitation,

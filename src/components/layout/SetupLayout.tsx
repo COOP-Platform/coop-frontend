@@ -89,17 +89,6 @@ export function SetupLayout({ children, context, center }: SetupLayoutProps) {
       </header>
 
       <main className="setup__main">{children}</main>
-
-      <footer className="setup__footer">
-        <span>
-          © {new Date().getFullYear()} {env.appName} Micro-Savings &amp; Cooperatives Network.
-        </span>
-        <span className="setup__footer-links">
-          {/* TODO: real policy documents. */}
-          <a href="#">Constitution &amp; Terms</a>
-          <a href="#">Ledger Security</a>
-        </span>
-      </footer>
     </div>
   );
 }

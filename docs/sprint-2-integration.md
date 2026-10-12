@@ -149,16 +149,14 @@ Render sleeps idle services, so the first request after a pause can take a while
   - the Invitations badge shows the number sent.
 - **Other apps in the app switcher** (Contributions, Meetings, Events, Voting): listed as "Soon".
 
-### 3.10 Community logos and covers need the upload endpoints
+### 3.10 Community logos and covers
 
-- **Design:** the create-community wizard (step 3) takes a logo and a cover banner as file uploads.
-- **Backend:** `POST /communities/{id}/logo/` and `/cover/` exist only on the unmerged backend branch `feat/supabase-image-uploads`. `develop` has no upload endpoint.
-- **Frontend now:**
+- **Backend:** `POST /communities/{id}/logo/` and `/cover/`, merged into backend `develop`. They need `community.update`.
+- **Frontend:**
   - the community is created first, then each image is uploaded;
   - an image that fails never undoes the create;
   - the success screen lists what was not saved.
-  - Against `develop` this always reads "Image uploads are not available on this server yet."
-- **Proposed fix (BE):** merge `feat/supabase-image-uploads` and set its storage keys on Render. Nothing changes on the frontend.
+- **Still needed:** the `SUPABASE_*` storage keys on Render. Without them the endpoints answer 503 and the summary says "Image uploads are not available on this server yet."
 
 ## 4. How this was verified
 
@@ -194,3 +192,23 @@ Registration no longer creates a community. The flow is:
    - this is also what happens on login with no community.
 
 The guards await `/auth/me` with `fetchQuery`, not `ensureQueryData`. After a create, the cached `/me` is invalidated, and `ensureQueryData` would return the stale copy with no memberships, which would send the new owner back to onboarding.
+
+## 6. Lean data, committee choice, position details
+
+- **Sign-up:** a taken email or phone is a 400 on that field. The form shows it with sign-in and reset links. Success is 201.
+- **Committee:**
+  - step 1 of the wizard asks whether to set up a committee (`with_committee` on `POST /communities/`);
+  - "No" seeds only the founder's admin position and the baseline Member;
+  - on the dashboard, "Not needed" on the vacant-positions alert deletes those seats, one `DELETE` per position; the admin seat is never offered.
+- **Invitations:**
+  - the backend deletes invitations that lapsed unanswered more than 30 days after their 14-day expiry, lazily on list/create, and with `manage.py purge_lapsed_invitations`;
+  - the invitations page shows accepted invitations for 24 hours; after that the person is only on Members.
+- **Leaving / removal:**
+  - deletes the membership, its positions, the invitation that brought the person in, and the dead invitations they sent; their open invitations pass to a remaining admin;
+  - their account and other communities stay;
+  - a member the ledger points at (contributions, expenses, meetings, announcements) is kept as `removed`, because deleting them would rewrite financial history;
+  - responses carry `deleted: bool`.
+- **Positions:**
+  - "View details" opens `/community/positions/$positionId`: holders, permissions, and assign / reassign / remove holder / edit / delete;
+  - vacant positions get the same page;
+  - reassign assigns the new holder first and then revokes the old one, so a failure in between never leaves the seat empty.

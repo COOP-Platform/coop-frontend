@@ -55,6 +55,8 @@ interface CommunityReadyProps {
   /** What the server saved — not what the form held — so the summary is the record. */
   community: Community;
   imageErrors: FoundCommunityResult['imageErrors'];
+  /** What the founder chose; the response does not echo it. */
+  withCommittee: boolean;
   /** Focused on arrival, so screen readers announce the outcome. */
   titleRef?: RefObject<HTMLHeadingElement>;
   onContinue: () => void;
@@ -65,6 +67,7 @@ const IMAGE_LABEL = { logo: 'logo', cover: 'cover banner' } as const;
 export function CommunityReady({
   community,
   imageErrors,
+  withCommittee,
   titleRef,
   onContinue,
 }: CommunityReadyProps) {
@@ -112,6 +115,9 @@ export function CommunityReady({
         <Section index={1} title="Community Basics">
           <Item label="Community name">{community.name}</Item>
           <Item label="Community type">{communityTypeLabel(community.type)}</Item>
+          <Item label="Leadership committee">
+            {withCommittee ? 'Suggested officer positions created' : 'No committee'}
+          </Item>
           <Item label="Description" wide>
             {community.description ?? NOT_SET}
           </Item>

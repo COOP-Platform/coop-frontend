@@ -35,6 +35,7 @@ import { useMemberDirectory } from '../api/directory';
 import type { Invitation, InvitationStatus } from '../api/invitations';
 import {
   effectiveStatus,
+  isStillListed,
   useInvitations,
   useResendInvitation,
   useRevokeInvitation,
@@ -66,7 +67,8 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
   const canInvite = can('member.invite');
   const invitations = useInvitations(communityId, canInvite);
 
-  const all = invitations.data ?? [];
+  // Accepted ones drop off after a day; the person is on Members by then.
+  const all = (invitations.data ?? []).filter((i) => isStillListed(i));
   const status: InvitationStatusFilter = search.status ?? 'all';
   const query = (search.q ?? '').trim().toLowerCase();
   const count = (s: InvitationStatus) => all.filter((i) => effectiveStatus(i) === s).length;
@@ -117,7 +119,7 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
       <PageHeader
         title="Invitations"
         badge={<Badge tone="info">{all.length} Sent</Badge>}
-        subtitle="Track and manage invitations sent to prospective cooperative members."
+        subtitle="Track and manage invitations sent to prospective cooperative members. Accepted invitations stay here for 24 hours; after that the person is on Members."
         actions={
           <>
             <Button variant="tint" inline icon={<IconDownload />} onClick={exportCsv}>

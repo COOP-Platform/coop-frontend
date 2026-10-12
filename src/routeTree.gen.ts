@@ -17,7 +17,6 @@ import { Route as RegisterRouteImport } from './routes/register';
 import { Route as ResetPasswordRouteImport } from './routes/reset-password';
 import { Route as StatusRouteImport } from './routes/status';
 import { Route as CommunityIndexRouteImport } from './routes/community.index';
-import { Route as CommunityPositionsRouteImport } from './routes/community.positions';
 import { Route as CommunityReportsRouteImport } from './routes/community.reports';
 import { Route as CommunitySettingsRouteImport } from './routes/community.settings';
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations.accept';
@@ -27,6 +26,8 @@ import { Route as CommunityInvitationsIndexRouteImport } from './routes/communit
 import { Route as CommunityInvitationsNewRouteImport } from './routes/community.invitations.new';
 import { Route as CommunityMembersIndexRouteImport } from './routes/community.members.index';
 import { Route as CommunityMembersMemberIdRouteImport } from './routes/community.members.$memberId';
+import { Route as CommunityPositionsIndexRouteImport } from './routes/community.positions.index';
+import { Route as CommunityPositionsPositionIdRouteImport } from './routes/community.positions.$positionId';
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -66,11 +67,6 @@ const StatusRoute = StatusRouteImport.update({
 const CommunityIndexRoute = CommunityIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => CommunityRoute,
-} as any);
-const CommunityPositionsRoute = CommunityPositionsRouteImport.update({
-  id: '/positions',
-  path: '/positions',
   getParentRoute: () => CommunityRoute,
 } as any);
 const CommunityReportsRoute = CommunityReportsRouteImport.update({
@@ -120,6 +116,17 @@ const CommunityMembersMemberIdRoute =
     path: '/members/$memberId',
     getParentRoute: () => CommunityRoute,
   } as any);
+const CommunityPositionsIndexRoute = CommunityPositionsIndexRouteImport.update({
+  id: '/positions/',
+  path: '/positions/',
+  getParentRoute: () => CommunityRoute,
+} as any);
+const CommunityPositionsPositionIdRoute =
+  CommunityPositionsPositionIdRouteImport.update({
+    id: '/positions/$positionId',
+    path: '/positions/$positionId',
+    getParentRoute: () => CommunityRoute,
+  } as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
@@ -129,7 +136,6 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
-  '/community/positions': typeof CommunityPositionsRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
@@ -138,8 +144,10 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
+  '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
   '/community/members/': typeof CommunityMembersIndexRoute;
+  '/community/positions/': typeof CommunityPositionsIndexRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
@@ -148,7 +156,6 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
-  '/community/positions': typeof CommunityPositionsRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
@@ -157,8 +164,10 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
+  '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
   '/community/invitations': typeof CommunityInvitationsIndexRoute;
   '/community/members': typeof CommunityMembersIndexRoute;
+  '/community/positions': typeof CommunityPositionsIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -169,7 +178,6 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
-  '/community/positions': typeof CommunityPositionsRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
@@ -178,8 +186,10 @@ export interface FileRoutesById {
   '/onboarding/': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
+  '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
   '/community/members/': typeof CommunityMembersIndexRoute;
+  '/community/positions/': typeof CommunityPositionsIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -191,7 +201,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/status'
-    | '/community/positions'
     | '/community/reports'
     | '/community/settings'
     | '/invitations/accept'
@@ -200,8 +209,10 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
+    | '/community/positions/$positionId'
     | '/community/invitations/'
-    | '/community/members/';
+    | '/community/members/'
+    | '/community/positions/';
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
@@ -210,7 +221,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/status'
-    | '/community/positions'
     | '/community/reports'
     | '/community/settings'
     | '/invitations/accept'
@@ -219,8 +229,10 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/community/invitations/new'
     | '/community/members/$memberId'
+    | '/community/positions/$positionId'
     | '/community/invitations'
-    | '/community/members';
+    | '/community/members'
+    | '/community/positions';
   id:
     | '__root__'
     | '/'
@@ -230,7 +242,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/status'
-    | '/community/positions'
     | '/community/reports'
     | '/community/settings'
     | '/invitations/accept'
@@ -239,8 +250,10 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
+    | '/community/positions/$positionId'
     | '/community/invitations/'
-    | '/community/members/';
+    | '/community/members/'
+    | '/community/positions/';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -314,13 +327,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommunityIndexRouteImport;
       parentRoute: typeof CommunityRoute;
     };
-    '/community/positions': {
-      id: '/community/positions';
-      path: '/positions';
-      fullPath: '/community/positions';
-      preLoaderRoute: typeof CommunityPositionsRouteImport;
-      parentRoute: typeof CommunityRoute;
-    };
     '/community/reports': {
       id: '/community/reports';
       path: '/reports';
@@ -384,29 +390,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommunityMembersMemberIdRouteImport;
       parentRoute: typeof CommunityRoute;
     };
+    '/community/positions/': {
+      id: '/community/positions/';
+      path: '/positions';
+      fullPath: '/community/positions/';
+      preLoaderRoute: typeof CommunityPositionsIndexRouteImport;
+      parentRoute: typeof CommunityRoute;
+    };
+    '/community/positions/$positionId': {
+      id: '/community/positions/$positionId';
+      path: '/positions/$positionId';
+      fullPath: '/community/positions/$positionId';
+      preLoaderRoute: typeof CommunityPositionsPositionIdRouteImport;
+      parentRoute: typeof CommunityRoute;
+    };
   }
 }
 
 interface CommunityRouteChildren {
-  CommunityPositionsRoute: typeof CommunityPositionsRoute;
   CommunityReportsRoute: typeof CommunityReportsRoute;
   CommunitySettingsRoute: typeof CommunitySettingsRoute;
   CommunityIndexRoute: typeof CommunityIndexRoute;
   CommunityInvitationsNewRoute: typeof CommunityInvitationsNewRoute;
   CommunityMembersMemberIdRoute: typeof CommunityMembersMemberIdRoute;
+  CommunityPositionsPositionIdRoute: typeof CommunityPositionsPositionIdRoute;
   CommunityInvitationsIndexRoute: typeof CommunityInvitationsIndexRoute;
   CommunityMembersIndexRoute: typeof CommunityMembersIndexRoute;
+  CommunityPositionsIndexRoute: typeof CommunityPositionsIndexRoute;
 }
 
 const CommunityRouteChildren: CommunityRouteChildren = {
-  CommunityPositionsRoute: CommunityPositionsRoute,
   CommunityReportsRoute: CommunityReportsRoute,
   CommunitySettingsRoute: CommunitySettingsRoute,
   CommunityIndexRoute: CommunityIndexRoute,
   CommunityInvitationsNewRoute: CommunityInvitationsNewRoute,
   CommunityMembersMemberIdRoute: CommunityMembersMemberIdRoute,
+  CommunityPositionsPositionIdRoute: CommunityPositionsPositionIdRoute,
   CommunityInvitationsIndexRoute: CommunityInvitationsIndexRoute,
   CommunityMembersIndexRoute: CommunityMembersIndexRoute,
+  CommunityPositionsIndexRoute: CommunityPositionsIndexRoute,
 };
 
 const CommunityRouteWithChildren = CommunityRoute._addFileChildren(

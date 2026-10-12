@@ -36,10 +36,9 @@ export interface RegisterRequest {
 }
 
 /**
- * Registration answers 202 with only a message — deliberately the same
- * message whether the address was free or already taken, so the endpoint
- * cannot be used to discover who has an account. There is no user object and
- * no token: the caller signs in afterwards.
+ * Registration answers 201 with only a message — no user object and no
+ * token: the caller signs in afterwards. A taken email (or phone) is a 400
+ * with the reason on that field.
  */
 export interface RegisterResponse {
   detail: string;
@@ -56,11 +55,9 @@ export function useRegister() {
 }
 
 /**
- * Registration succeeded (or was quietly absorbed) but signing in with the
- * same password failed — so the address already had an account, with a
- * different password. The register response cannot say so; this is the only
- * point at which the client learns it, and only because the caller just
- * typed the password themselves.
+ * Registration succeeded but signing in with the same password straight
+ * after did not. The register endpoint now refuses a taken email itself, so
+ * this is a backstop (an older API, or a race between two sign-ups).
  */
 export class ExistingAccountError extends Error {
   constructor() {

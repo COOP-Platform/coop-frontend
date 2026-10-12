@@ -1,5 +1,6 @@
 // Public surface of the Positions module (governance roles).
 export { PositionsBoard } from './components/PositionsBoard';
+export { PositionDetails } from './components/PositionDetails';
 export {
   usePositions,
   useMembersPositions,

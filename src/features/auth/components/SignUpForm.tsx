@@ -111,6 +111,11 @@ export function SignUpForm() {
         error={fieldErrors.email}
         required
       />
+      {fieldErrors.email !== undefined && /already exists/i.test(fieldErrors.email) && (
+        <p className="signup-form__taken">
+          <Link to="/login">Sign in</Link> · <Link to="/forgot-password">Reset your password</Link>
+        </p>
+      )}
 
       <Input
         label="Password"

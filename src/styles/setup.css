@@ -41,12 +41,6 @@
   margin-top: var(--space-1);
 }
 
-.signup-form__inline-link {
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
 .signup-form__foot {
   display: flex;
   align-items: center;
@@ -1160,16 +1154,4 @@ button.wizard-stepper__button:hover .wizard-stepper__title {
 
 .ready-hero__title:focus {
   outline: none;
-}
-
-.signup-form__taken {
-  margin-top: calc(var(--space-2) * -1);
-  font-size: var(--text-sm);
-}
-
-.signup-form__taken a {
-  font-weight: 600;
-  color: var(--color-brand-text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -111,11 +111,6 @@ export function SignUpForm() {
         error={fieldErrors.email}
         required
       />
-      {fieldErrors.email !== undefined && /already exists/i.test(fieldErrors.email) && (
-        <p className="signup-form__taken">
-          <Link to="/login">Sign in</Link> · <Link to="/forgot-password">Reset your password</Link>
-        </p>
-      )}
 
       <Input
         label="Password"
@@ -150,15 +145,7 @@ export function SignUpForm() {
 
       {signUp.error instanceof ExistingAccountError && (
         <p className="login-form__error" role="alert">
-          We couldn&apos;t sign you in with that password. If you already have an account,{' '}
-          <Link to="/login" className="signup-form__inline-link">
-            sign in
-          </Link>{' '}
-          or{' '}
-          <Link to="/forgot-password" className="signup-form__inline-link">
-            reset your password
-          </Link>
-          .
+          A user with this email already exists.
         </p>
       )}
 

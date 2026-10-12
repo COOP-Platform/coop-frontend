@@ -21,6 +21,8 @@ import { Route as CommunityPositionsRouteImport } from './routes/community.posit
 import { Route as CommunityReportsRouteImport } from './routes/community.reports';
 import { Route as CommunitySettingsRouteImport } from './routes/community.settings';
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations.accept';
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index';
+import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create';
 import { Route as CommunityInvitationsIndexRouteImport } from './routes/community.invitations.index';
 import { Route as CommunityInvitationsNewRouteImport } from './routes/community.invitations.new';
 import { Route as CommunityMembersIndexRouteImport } from './routes/community.members.index';
@@ -86,6 +88,16 @@ const InvitationsAcceptRoute = InvitationsAcceptRouteImport.update({
   path: '/invitations/accept',
   getParentRoute: () => rootRouteImport,
 } as any);
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
+  id: '/onboarding/create',
+  path: '/onboarding/create',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const CommunityInvitationsIndexRoute =
   CommunityInvitationsIndexRouteImport.update({
     id: '/invitations/',
@@ -121,7 +133,9 @@ export interface FileRoutesByFullPath {
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
+  '/onboarding/create': typeof OnboardingCreateRoute;
   '/community/': typeof CommunityIndexRoute;
+  '/onboarding/': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
@@ -138,7 +152,9 @@ export interface FileRoutesByTo {
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
+  '/onboarding/create': typeof OnboardingCreateRoute;
   '/community': typeof CommunityIndexRoute;
+  '/onboarding': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/invitations': typeof CommunityInvitationsIndexRoute;
@@ -157,7 +173,9 @@ export interface FileRoutesById {
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
+  '/onboarding/create': typeof OnboardingCreateRoute;
   '/community/': typeof CommunityIndexRoute;
+  '/onboarding/': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
@@ -177,7 +195,9 @@ export interface FileRouteTypes {
     | '/community/reports'
     | '/community/settings'
     | '/invitations/accept'
+    | '/onboarding/create'
     | '/community/'
+    | '/onboarding/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/invitations/'
@@ -194,7 +214,9 @@ export interface FileRouteTypes {
     | '/community/reports'
     | '/community/settings'
     | '/invitations/accept'
+    | '/onboarding/create'
     | '/community'
+    | '/onboarding'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/invitations'
@@ -212,7 +234,9 @@ export interface FileRouteTypes {
     | '/community/reports'
     | '/community/settings'
     | '/invitations/accept'
+    | '/onboarding/create'
     | '/community/'
+    | '/onboarding/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/invitations/'
@@ -228,6 +252,8 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute;
   StatusRoute: typeof StatusRoute;
   InvitationsAcceptRoute: typeof InvitationsAcceptRoute;
+  OnboardingCreateRoute: typeof OnboardingCreateRoute;
+  OnboardingIndexRoute: typeof OnboardingIndexRoute;
 }
 
 declare module '@tanstack/react-router' {
@@ -316,6 +342,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvitationsAcceptRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/onboarding/': {
+      id: '/onboarding/';
+      path: '/onboarding';
+      fullPath: '/onboarding/';
+      preLoaderRoute: typeof OnboardingIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/onboarding/create': {
+      id: '/onboarding/create';
+      path: '/onboarding/create';
+      fullPath: '/onboarding/create';
+      preLoaderRoute: typeof OnboardingCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/community/invitations/': {
       id: '/community/invitations/';
       path: '/invitations';
@@ -382,6 +422,8 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   StatusRoute: StatusRoute,
   InvitationsAcceptRoute: InvitationsAcceptRoute,
+  OnboardingCreateRoute: OnboardingCreateRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

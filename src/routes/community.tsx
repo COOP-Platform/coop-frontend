@@ -1,54 +1,36 @@
-import { createFileRoute, Link, Outlet, redirect } from '@tanstack/react-router';
+import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router';
 
 import { AppShell } from '@/components/layout/AppShell';
-import { EmptyState, IconCommunity, IconTile, LoadingState } from '@/components/ui';
+import { LoadingState } from '@/components/ui';
 import { COMMUNITY_APP } from '@/config/apps';
-import { useWorkspace } from '@/features/auth';
-import { isSignedIn } from '@/lib/auth/session';
+import { requireCommunity, useWorkspace } from '@/features/auth';
 
 /*
  * Layout for the Community app: every /community/* page renders inside the
  * shell with the Community sidebar, for a signed-in user with a community.
+ * Anyone without one yet — a fresh sign-up, or someone signing in before
+ * founding or joining — is sent to onboarding instead.
  *
- * The guard checks only that a token is stored. An expired one gets past it
- * and the first request's 401 signs the user out (lib/api/client).
+ * The token check is local; an expired one gets as far as the `/auth/me`
+ * the guard awaits, whose 401 signs the user out (lib/api/client).
  */
 export const Route = createFileRoute('/community')({
-  beforeLoad: () => {
-    if (!isSignedIn()) {
-      throw redirect({ to: '/login' });
-    }
-  },
+  beforeLoad: requireCommunity,
   component: CommunityLayout,
 });
 
 function CommunityLayout() {
   const { isPending, membership } = useWorkspace();
 
+  // The guard only runs on navigation. Leaving or being removed from the last
+  // community refetches /auth/me in place, so the same rule applies here too.
+  if (!isPending && membership === undefined) {
+    return <Navigate to="/onboarding" />;
+  }
+
   return (
     <AppShell app={COMMUNITY_APP}>
-      {isPending ? (
-        <LoadingState label="Loading your community…" />
-      ) : membership === undefined ? (
-        <section className="card">
-          <EmptyState
-            icon={
-              <IconTile tone="brand" size="lg">
-                <IconCommunity />
-              </IconTile>
-            }
-            title="You are not in a community yet"
-            message="Create one to get started, or accept an invitation from the email a community sent you."
-            action={
-              <Link to="/register" className="btn btn--primary btn--inline">
-                Create a community
-              </Link>
-            }
-          />
-        </section>
-      ) : (
-        <Outlet />
-      )}
+      {isPending ? <LoadingState label="Loading your community…" /> : <Outlet />}
     </AppShell>
   );
 }

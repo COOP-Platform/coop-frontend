@@ -107,7 +107,7 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
                     )}
                   </button>
                 ))}
-                <Link to="/register" className="menu__footer-link" onClick={close}>
+                <Link to="/onboarding/create" className="menu__footer-link" onClick={close}>
                   Create another community
                 </Link>
               </div>

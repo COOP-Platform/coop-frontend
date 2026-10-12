@@ -46,6 +46,8 @@ interface AuthLayoutProps {
   brandTitleAs?: 'h1' | 'p';
   /** Registration needs a wider form column than sign-in. */
   wide?: boolean;
+  /** Pinned to the top of the form column — the sign-in / sign-up cross-link. */
+  panelTop?: ReactNode;
 }
 
 /**
@@ -63,6 +65,7 @@ export function AuthLayout({
   aside,
   brandTitleAs = 'h1',
   wide,
+  panelTop,
 }: AuthLayoutProps) {
   return (
     <div className="auth-shell">
@@ -109,6 +112,7 @@ export function AuthLayout({
       </aside>
 
       <main className="auth-panel">
+        {panelTop && <div className="auth-panel__top">{panelTop}</div>}
         <div className={wide ? 'auth-panel__inner auth-panel__inner--wide' : 'auth-panel__inner'}>
           {children}
         </div>

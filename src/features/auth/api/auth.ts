@@ -1,6 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 
-import { apiFetch } from '@/lib/api/client';
+import { ApiError, apiFetch } from '@/lib/api/client';
 import { isSignedIn } from '@/lib/auth/session';
 import type { SessionUser } from '@/lib/auth/session';
 import { queryKeys } from '@/lib/query-keys';
@@ -55,6 +55,45 @@ export function useRegister() {
   });
 }
 
+/**
+ * Registration succeeded (or was quietly absorbed) but signing in with the
+ * same password failed — so the address already had an account, with a
+ * different password. The register response cannot say so; this is the only
+ * point at which the client learns it, and only because the caller just
+ * typed the password themselves.
+ */
+export class ExistingAccountError extends Error {
+  constructor() {
+    super('An account may already exist for this email address.');
+    this.name = 'ExistingAccountError';
+  }
+}
+
+/**
+ * Create an account and sign straight into it. Registration hands back no
+ * token by design (see `RegisterResponse`), so the follow-up login is what
+ * turns "account created" into a session.
+ */
+export function useSignUp() {
+  return useMutation({
+    mutationFn: async (payload: RegisterRequest): Promise<LoginResponse> => {
+      await apiFetch<RegisterResponse>('/auth/register/', { method: 'POST', body: payload });
+
+      try {
+        return await apiFetch<LoginResponse>('/auth/login/', {
+          method: 'POST',
+          body: { identifier: payload.email, password: payload.password },
+        });
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          throw new ExistingAccountError();
+        }
+        throw error;
+      }
+    },
+  });
+}
+
 /** `rbac.serializers.PositionSummarySerializer` — a position someone holds. */
 export interface PositionSummary {
   id: string;
@@ -89,18 +128,37 @@ export interface CurrentUser {
 }
 
 /**
+ * Shared by `useMe` and the route guards, which await it in `beforeLoad` to
+ * decide between the Community app and onboarding before anything renders.
+ */
+export const meQueryOptions = queryOptions({
+  queryKey: queryKeys.auth.me,
+  queryFn: () => apiFetch<CurrentUser>('/auth/me/'),
+  staleTime: 5 * 60_000,
+});
+
+/**
  * The signed-in user and their memberships — the only thing that ties a user
  * to a community, so it is what every community-scoped screen reads its ids
  * from. Creating a community now enrols the owner, so this is populated from
  * the first community onwards.
  */
 export function useMe() {
-  return useQuery({
-    queryKey: queryKeys.auth.me,
-    queryFn: () => apiFetch<CurrentUser>('/auth/me/'),
-    enabled: isSignedIn(),
-    staleTime: 5 * 60_000,
-  });
+  return useQuery({ ...meQueryOptions, enabled: isSignedIn() });
+}
+
+/** Memberships that give access to a community's screens (not removed). */
+export function usableMemberships(me: CurrentUser | undefined): MembershipSummary[] {
+  return (me?.memberships ?? []).filter((m) => m.status !== 'removed');
+}
+
+/**
+ * Whether the user has somewhere to land in the Community app. Without one,
+ * a signed-in user belongs on onboarding — fresh sign-ups, and anyone whose
+ * last membership was removed.
+ */
+export function hasCommunity(me: CurrentUser | undefined): boolean {
+  return usableMemberships(me).length > 0;
 }
 
 /** First active membership, else the first of any status. */

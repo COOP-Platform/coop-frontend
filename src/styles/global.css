@@ -311,21 +311,23 @@ body:has(.auth-shell),
   padding: var(--space-6) var(--space-8);
 }
 
-.auth-panel__brand {
+/* The COOP mark: on the brand panel, and above the form once the panel is hidden. */
+.auth-brand-mark {
   display: inline-flex;
   align-self: flex-start;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
-.auth-panel__logo {
+.auth-brand-mark__logo {
   width: auto;
   height: 3rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
-.auth-panel__brand-name {
-  font-size: var(--text-lg);
+.auth-brand-mark__name {
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: var(--color-brand-text);
@@ -360,28 +362,124 @@ body:has(.auth-shell),
   text-underline-offset: 3px;
 }
 
+/*
+ * Brand panel: light green behind the picture at the top, deepening into the
+ * brand green that carries the copy at the bottom.
+ */
 .auth-art {
-  display: none;
   position: relative;
-  flex: 1 1 50%;
+  display: none;
+  flex: 1 1 52%;
   min-width: 0;
+  flex-direction: column;
   overflow: hidden;
-  background-color: var(--color-brand-soft);
+  background: linear-gradient(
+    180deg,
+    var(--color-brand-soft) 0%,
+    var(--color-brand-soft) 50%,
+    color-mix(in srgb, var(--color-brand) 55%, var(--color-brand-soft)) 61%,
+    var(--color-brand) 70%,
+    var(--color-brand-hover) 100%
+  );
+  padding: var(--space-8) var(--space-12) var(--space-12);
+  color: var(--color-brand-contrast);
 }
 
-/* The illustration sits centred on the green, at a size that leaves it room. */
-.auth-art__image {
+/* A soft leaf-like shape in the corner, as in the design. */
+.auth-art::after {
+  content: '';
   position: absolute;
-  inset: 0;
+  right: -6rem;
+  bottom: -6rem;
+  width: 20rem;
+  height: 20rem;
+  border-radius: 60% 0 60% 0;
+  background: color-mix(in srgb, var(--color-brand-contrast) 7%, transparent);
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+
+.auth-art__picture {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: flex-start;
+  justify-content: center;
+  padding-block: var(--space-4) var(--space-12);
+}
+
+.auth-art__picture img {
   width: 100%;
-  height: 100%;
-  padding: 12%;
+  max-width: 28rem;
+  max-height: 100%;
   object-fit: contain;
+}
+
+.auth-art__copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 36rem;
+}
+
+.auth-art__title {
+  font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.auth-art__message {
+  font-size: var(--text-lg);
+  line-height: 1.6;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.auth-art__highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: var(--space-4);
+  list-style: none;
+  padding: 0;
+}
+
+.auth-art__highlights li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-left: 1px solid rgb(255 255 255 / 0.25);
+  padding-inline: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  color: rgb(255 255 255 / 0.9);
+}
+
+.auth-art__highlights li:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.auth-art__highlight-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-brand-soft-strong);
+}
+
+.auth-art__highlight-icon svg {
+  width: 30px;
+  height: 30px;
 }
 
 @media (min-width: 900px) {
   .auth-art {
-    display: block;
+    display: flex;
+  }
+
+  /* The panel carries the mark; the form column does not repeat it. */
+  .auth-brand-mark--panel {
+    display: none;
   }
 }
 

@@ -1,22 +1,7 @@
 import type { ReactNode } from 'react';
 
-import {
-  IconAtSign,
-  IconCalendar,
-  IconCommunity,
-  IconFlag,
-  IconImage,
-  IconInfoCircle,
-  IconMapPin,
-  IconPalette,
-  IconPhone,
-  IconSliders,
-  IconUploadCloud,
-  Input,
-  RadioCardGroup,
-  Select,
-  Textarea,
-} from '@/components/ui';
+import { IconImage, IconUploadCloud, Input, Select, Textarea } from '@/components/ui';
+import type { SelectOption } from '@/components/ui';
 
 import { COMMITTEE_OPTIONS, COMMUNITY_TYPES } from './community-types';
 import { ImageDrop } from './ImageDrop';
@@ -30,45 +15,34 @@ export interface StepProps {
   update: <K extends keyof WizardForm>(key: K, value: WizardForm[K]) => void;
 }
 
-function Counter({ value, max }: { value: string; max: number }) {
-  return (
-    <span className={value.length > max ? 'wizard-counter wizard-counter--over' : 'wizard-counter'}>
-      {value.length} / {max.toLocaleString('en-US')}
-    </span>
-  );
-}
+// Plain dropdowns, the same as every other field: the name, then what it means.
+const TYPE_OPTIONS: readonly SelectOption[] = COMMUNITY_TYPES.map((type) => ({
+  value: type.value,
+  label: `${type.title} — ${type.description}`,
+}));
 
-function Tag({ tone, children }: { tone: 'required' | 'optional'; children: ReactNode }) {
-  return <span className={`wizard-tag wizard-tag--${tone}`}>{children}</span>;
-}
+const COMMITTEE_SELECT: readonly SelectOption[] = COMMITTEE_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.title,
+}));
 
 function Card({
-  icon,
   title,
   subtitle,
-  aside,
   children,
 }: {
-  icon?: ReactNode;
   title?: string;
   subtitle?: string;
-  aside?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className="wizard-card">
       {title && (
         <header className="wizard-card__head">
-          {icon && (
-            <span className="wizard-card__icon" aria-hidden="true">
-              {icon}
-            </span>
-          )}
           <span className="wizard-card__heading">
             <h2 className="wizard-card__title">{title}</h2>
             {subtitle && <span className="wizard-card__subtitle">{subtitle}</span>}
           </span>
-          {aside}
         </header>
       )}
       <div className="wizard-card__body">{children}</div>
@@ -77,65 +51,47 @@ function Card({
 }
 
 export function BasicsStep({ form, errors, update }: StepProps) {
-  const name = form.name.trim();
-  const nameValid = name.length >= LIMITS.nameMin && name.length <= LIMITS.name;
-
   return (
     <Card>
       <Input
-        label="Community Name"
-        aside={
-          <>
-            <Tag tone="required">Required</Tag> <Counter value={form.name} max={LIMITS.name} />
-          </>
-        }
+        label="Community name"
         value={form.name}
         onChange={(event) => update('name', event.target.value)}
-        placeholder="e.g. Kigali Tech Artisans Cooperative"
-        icon={<IconCommunity />}
+        placeholder="Enter your community's name"
         maxLength={LIMITS.name}
         autoComplete="organization"
-        hint={`${LIMITS.nameMin} to ${LIMITS.name} characters · Appears on certificates and ledgers`}
+        hint={`${LIMITS.nameMin} to ${LIMITS.name} characters.`}
         error={errors.name}
-        trailing={
-          nameValid && !errors.name ? (
-            <span className="wizard-valid" aria-label="Valid name">
-              Valid
-            </span>
-          ) : undefined
-        }
+        required
       />
 
-      <RadioCardGroup
-        legend="Community Type"
-        hint="Select the model that best describes how your group is governed."
-        aside={form.type === '' ? undefined : <Tag tone="optional">1 type selected</Tag>}
-        name="community-type"
-        options={COMMUNITY_TYPES}
+      <Select
+        label="Community type"
+        placeholder="Select a type"
+        options={TYPE_OPTIONS}
         value={form.type}
-        onChange={(value) => update('type', value as WizardForm['type'])}
+        onChange={(event) => update('type', event.target.value as WizardForm['type'])}
+        hint="The model that best describes how your group is governed."
         error={errors.type}
         required
       />
 
-      <RadioCardGroup
-        legend="Leadership Committee"
-        hint="Do you want officer positions such as Treasurer and Secretary? You can add, rename or delete positions at any time."
-        name="committee"
-        options={COMMITTEE_OPTIONS}
+      <Select
+        label="Leadership committee"
+        options={COMMITTEE_SELECT}
         value={form.committee}
-        onChange={(value) => update('committee', value as WizardForm['committee'])}
+        onChange={(event) => update('committee', event.target.value as WizardForm['committee'])}
+        hint={
+          form.committee === 'yes'
+            ? 'Officer positions such as Treasurer and Secretary are created, ready to assign.'
+            : 'Only you, as administrator. Positions can be added later.'
+        }
         error={errors.with_committee}
       />
 
       <Textarea
         label="Description"
-        aside={
-          <>
-            <Tag tone="optional">Optional</Tag>{' '}
-            <Counter value={form.description} max={LIMITS.description} />
-          </>
-        }
+        optional
         value={form.description}
         onChange={(event) => update('description', event.target.value)}
         placeholder="What unites this community, who it is for, and what it does together…"
@@ -151,19 +107,13 @@ export function BasicsStep({ form, errors, update }: StepProps) {
 export function PurposeStep({ form, errors, update }: StepProps) {
   return (
     <>
-      <Card
-        icon={<IconFlag />}
-        title="Guiding Purpose"
-        subtitle="The long-term commitments and moral anchor of your group"
-        aside={<Tag tone="optional">Optional fields</Tag>}
-      >
+      <Card title="Guiding purpose" subtitle="The long-term commitments of your group.">
         <Textarea
           label="Vision"
           optional
-          aside={<Counter value={form.vision} max={LIMITS.vision} />}
           value={form.vision}
           onChange={(event) => update('vision', event.target.value)}
-          placeholder="The future outlook and long-term aspiration of the community…"
+          placeholder="Where the community wants to be in the long run…"
           rows={3}
           maxLength={LIMITS.vision}
           error={errors.vision}
@@ -171,35 +121,29 @@ export function PurposeStep({ form, errors, update }: StepProps) {
         <Textarea
           label="Mission"
           optional
-          aside={<Counter value={form.mission} max={LIMITS.mission} />}
           value={form.mission}
           onChange={(event) => update('mission', event.target.value)}
-          placeholder="The day-to-day commitment to members and community impact…"
+          placeholder="What the community does for its members, day to day…"
           rows={3}
           maxLength={LIMITS.mission}
           error={errors.mission}
         />
       </Card>
 
-      <Card
-        icon={<IconInfoCircle />}
-        title="Official Contact Channels"
-        subtitle="How members and partners reach the community"
-      >
+      <Card title="Contact details" subtitle="How members and partners reach the community.">
         <Input
-          label="Contact Email"
+          label="Contact email"
           optional
           type="email"
           value={form.contactEmail}
           onChange={(event) => update('contactEmail', event.target.value)}
-          placeholder="info@yourgroup.rw"
-          icon={<IconAtSign />}
+          placeholder="Enter the community's email"
           autoComplete="email"
           maxLength={LIMITS.email}
           error={errors.contact_email}
         />
         <Input
-          label="Contact Phone"
+          label="Contact phone"
           optional
           type="tel"
           value={form.contactPhone}
@@ -209,7 +153,6 @@ export function PurposeStep({ form, errors, update }: StepProps) {
           autoComplete="tel-national"
           leading={
             <span className="wizard-dial">
-              <IconPhone />
               <select
                 className="wizard-dial__select"
                 aria-label="Country code"
@@ -224,16 +167,14 @@ export function PurposeStep({ form, errors, update }: StepProps) {
               </select>
             </span>
           }
-          hint="Saved in international format, e.g. +250788123456."
           error={errors.contact_phone}
         />
         <Input
-          label="Physical Address / Office"
+          label="Address"
           optional
           value={form.contactAddress}
           onChange={(event) => update('contactAddress', event.target.value)}
-          placeholder="KG 12 Ave, Nyarugenge, Kigali"
-          icon={<IconMapPin />}
+          placeholder="e.g. KG 12 Ave, Nyarugenge, Kigali"
           autoComplete="street-address"
           maxLength={LIMITS.address}
           error={errors.contact_address}
@@ -246,16 +187,11 @@ export function PurposeStep({ form, errors, update }: StepProps) {
 export function BrandingStep({ form, errors, update }: StepProps) {
   return (
     <>
-      <Card
-        icon={<IconPalette />}
-        title="Branding & Media"
-        subtitle="Helps members recognise the community at a glance"
-        aside={<Tag tone="optional">Optional</Tag>}
-      >
+      <Card title="Logo and cover" subtitle="Optional. Helps members recognise the community.">
         <div className="wizard-media">
           <ImageDrop
-            label="Community Logo"
-            ratio="1:1 ratio"
+            label="Logo"
+            ratio="1:1"
             icon={<IconUploadCloud width={24} height={24} />}
             prompt="or drag and drop"
             hint="PNG, JPG or WebP · max 2 MB"
@@ -267,12 +203,12 @@ export function BrandingStep({ form, errors, update }: StepProps) {
             error={errors.logo_url}
           />
           <ImageDrop
-            label="Cover Banner"
-            ratio="16:9 ratio"
+            label="Cover banner"
+            ratio="16:9"
             icon={<IconImage width={24} height={24} />}
             prompt="or drag and drop"
-            hint="PNG, JPG or WebP · 1200 × 675 px recommended · max 5 MB"
-            browseLabel="Browse banner"
+            hint="PNG, JPG or WebP · 1200 × 675 px · max 5 MB"
+            browseLabel="Choose file"
             spec={COVER_SPEC}
             shape="wide"
             value={form.cover}
@@ -282,42 +218,34 @@ export function BrandingStep({ form, errors, update }: StepProps) {
         </div>
       </Card>
 
-      <Card
-        icon={<IconSliders />}
-        title="Localization & Accounting"
-        subtitle="Ledger currency, the language members are written to in, and your history"
-      >
+      <Card title="Preferences">
         <div className="form-grid form-grid--3">
           <Select
-            label="Primary Currency"
+            label="Currency"
             options={CURRENCIES}
             value={form.currency}
             onChange={(event) => update('currency', event.target.value)}
-            hint="Used for every contribution"
             error={errors.currency}
             required
           />
           <Select
-            label="Primary Language"
+            label="Language"
             options={LANGUAGES}
             value={form.language}
             onChange={(event) => update('language', event.target.value)}
-            hint="For notifications and emails"
             error={errors.language}
             required
           />
           <Input
-            label="Founded Year"
+            label="Founded year"
             optional
             type="number"
             inputMode="numeric"
             value={form.foundedYear}
             onChange={(event) => update('foundedYear', event.target.value)}
             placeholder={String(currentYear())}
-            icon={<IconCalendar />}
             min={LIMITS.yearMin}
             max={currentYear()}
-            hint={`${LIMITS.yearMin}–${currentYear()}`}
             error={errors.founded_year}
           />
         </div>

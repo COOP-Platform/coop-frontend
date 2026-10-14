@@ -9,7 +9,6 @@ import {
   IconArrowRight,
   IconCheckCircle,
   IconRocket,
-  IconShield,
 } from '@/components/ui';
 import { selectCommunity } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
@@ -25,17 +24,14 @@ import { BasicsStep, BrandingStep, PurposeStep } from './steps';
 import type { StepProps } from './steps';
 import { WizardStepper } from './WizardStepper';
 
-const STEP_COPY: Record<StepIndex, { eyebrow: string; subtitle: string }> = {
+const STEP_COPY: Record<StepIndex, { subtitle: string }> = {
   0: {
-    eyebrow: 'Community onboarding',
     subtitle: 'Step 1 of 3: Provide the core details to establish your group.',
   },
   1: {
-    eyebrow: 'Constitutional charter',
     subtitle: "Step 2 of 3: Define your community's guiding purpose and official contact channels.",
   },
   2: {
-    eyebrow: 'Final step',
     subtitle: 'Step 3 of 3: Add a visual identity and localization preferences, then launch.',
   },
 };
@@ -266,10 +262,6 @@ export function CreateCommunityWizard() {
 
         <form className="wizard__form" onSubmit={handleSubmit} noValidate>
           <header className="wizard__intro">
-            <span className="wizard__eyebrow">
-              <IconShield />
-              {STEP_COPY[step].eyebrow}
-            </span>
             <h1 ref={headingRef} tabIndex={-1} className="wizard__title">
               Create Your Community
             </h1>

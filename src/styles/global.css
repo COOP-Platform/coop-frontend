@@ -279,163 +279,162 @@ button {
   color: var(--color-text-muted);
 }
 
-/* ---------- Auth shell (sign in / sign up) ---------- */
+/* ---------- Auth screens (sign in, sign up, forgot / reset password) ---------- */
 
 /*
- * The brand panel is pinned to the viewport and only the form column scrolls,
- * so `height` (not `min-height`) plus `overflow: hidden` here: the shell must
- * not grow with its content, otherwise the page scrolls as one and the panel
- * scrolls away with it. `dvh` keeps it honest when mobile browser chrome
- * shows and hides.
+ * Form on the left, a quiet picture panel on the right. The shell is exactly
+ * the viewport and only the form column scrolls, so the picture stays put.
+ * `dvh` keeps it honest when mobile browser chrome shows and hides.
  */
 .auth-shell {
   display: flex;
   height: 100%;
   height: 100dvh;
   overflow: hidden;
+  background-color: var(--color-surface);
 }
 
-/*
- * Scoped to the auth screens only — the app shell still scrolls normally.
- * The form column is the sole scroller here, so no ancestor may present a
- * second scrollbar even if something inside overflows by a pixel.
- */
 html:has(.auth-shell),
 body:has(.auth-shell),
 #root:has(.auth-shell) {
   overflow: hidden;
 }
 
-.auth-brand {
-  position: relative;
-  display: none;
-  flex: 1;
+.auth-panel {
+  display: flex;
+  flex: 1 1 50%;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
-  gap: var(--space-6);
-  /* Safety net: scroll internally rather than silently clipping content
-     (e.g. the badges) if a viewport is ever too short to fit everything. */
   overflow-y: auto;
-  background-color: var(--color-brand);
-  color: var(--color-brand-contrast);
+  background-color: color-mix(in srgb, var(--color-brand-soft) 18%, var(--color-surface));
   padding: var(--space-6) var(--space-8);
 }
 
-.auth-brand__illustration {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  /* Multiply (not plain alpha) so the illustration keeps its own colours and
-     the teal doesn't flatten everything; the white backdrop of the JPG
-     vanishes into the panel colour instead of brightening it. */
-  opacity: 0.6;
-  mix-blend-mode: multiply;
-  pointer-events: none;
-}
-
-.auth-brand__mark {
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
-  display: flex;
+.auth-panel__brand {
+  display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: var(--space-2);
 }
 
-.auth-brand__logo {
-  height: 2rem;
-  width: auto;
-}
-
-.auth-brand__name {
-  font-size: var(--text-lg);
-  font-weight: 700;
-}
-
-.auth-brand__bottom {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.auth-panel__logo {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
   justify-content: center;
-  gap: var(--space-4);
-}
-
-.auth-brand__title {
-  font-size: var(--text-2xl);
+  border-radius: var(--radius-md);
+  background-color: var(--color-brand);
   font-weight: 700;
-  line-height: 1.25;
+  color: var(--color-brand-contrast);
 }
 
-.auth-brand__message {
-  max-width: 42ch;
-  color: rgb(255 255 255 / 0.85);
-}
-
-.auth-brand__badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-6);
-  list-style: none;
-  font-size: var(--text-xs);
-  color: rgb(255 255 255 / 0.85);
+.auth-panel__brand-name {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--color-brand-text);
 }
 
 /*
- * The one scrolling column. `min-height: 0` lets a flex child actually shrink
- * below its content height, which is what makes `overflow-y` take effect.
+ * `margin-block: auto` rather than centring the column: a flex item taller
+ * than its container would otherwise be pushed past the scroll origin. Auto
+ * margins centre short forms and collapse for tall ones.
  */
-.auth-panel {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  justify-content: center;
-  overflow-y: auto;
-  padding: var(--space-6);
+.auth-panel__inner {
+  width: 100%;
+  max-width: 22.5rem;
+  margin: auto;
+  padding-block: var(--space-8);
 }
 
-.auth-panel__inner {
-  /*
-   * `margin-block: auto` rather than `align-items: center` on the parent:
-   * centring a flex item taller than its container pushes the overflow past
-   * the scroll origin, leaving the top of a long form unreachable. Auto
-   * margins centre short content and collapse for tall content.
-   */
-  margin-block: auto;
+.auth-panel__footer {
+  margin-top: var(--space-6);
+  font-size: var(--text-sm);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.auth-panel__footer a {
+  font-weight: 600;
+  color: var(--color-brand-text);
+}
+
+.auth-panel__footer a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-art {
+  display: none;
+  position: relative;
+  flex: 1 1 50%;
+  min-width: 0;
+  overflow: hidden;
+  background-color: var(--color-brand-soft);
+}
+
+.auth-art__image {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 26rem;
+  height: 100%;
+  object-fit: cover;
 }
 
 @media (min-width: 900px) {
-  .auth-brand {
-    display: flex;
+  .auth-art {
+    display: block;
   }
 }
 
-/* ---------- Login form ---------- */
+@media (max-width: 640px) {
+  .auth-panel {
+    padding: var(--space-5) var(--space-4);
+  }
+}
+
+/* ---------- Auth forms ---------- */
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
+}
+
+.login-form__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  text-align: center;
+}
+
+/* Forgot / reset password put the heading straight in the form: centre it too. */
+.login-form > .login-form__title,
+.login-form > .login-form__subtitle {
+  text-align: center;
 }
 
 .login-form__title {
-  font-size: var(--text-xl);
+  font-size: 1.875rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-brand-text);
 }
 
 .login-form__subtitle {
+  font-size: var(--text-base);
   color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  margin-top: calc(var(--space-1) * -1);
 }
 
 .login-form__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .login-form__forgot {
@@ -445,7 +444,8 @@ body:has(.auth-shell),
 }
 
 .login-form__forgot:hover {
-  color: var(--color-brand-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .login-form__error {
@@ -678,66 +678,6 @@ body:has(.auth-shell),
   .form-grid--3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-}
-
-/* ---------- Auth brand panel additions ---------- */
-
-.auth-brand__names {
-  display: flex;
-  flex-direction: column;
-}
-
-.auth-brand__tagline {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgb(255 255 255 / 0.7);
-}
-
-.auth-brand__aside {
-  border-top: 1px solid rgb(255 255 255 / 0.2);
-  border-bottom: 1px solid rgb(255 255 255 / 0.2);
-  padding-block: var(--space-4);
-}
-
-.auth-brand__crosslink {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  font-size: var(--text-sm);
-  color: rgb(255 255 255 / 0.85);
-}
-
-.auth-brand__crosslink-action {
-  width: auto;
-  flex-shrink: 0;
-}
-
-.auth-brand__badges li {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.auth-brand__badge-icon {
-  display: inline-flex;
-  color: rgb(255 255 255 / 0.7);
-}
-
-.btn--ghost {
-  background-color: rgb(255 255 255 / 0.12);
-  border-color: rgb(255 255 255 / 0.25);
-  color: var(--color-brand-contrast);
-}
-
-.btn--ghost:hover:not(:disabled) {
-  background-color: rgb(255 255 255 / 0.2);
-}
-
-.auth-panel__inner--wide {
-  max-width: 46rem;
 }
 
 /* ---------- Panel ---------- */

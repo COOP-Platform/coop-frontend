@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 
-import authIllustration from '@/assets/COOP_background_img.jpg';
 import { AuthLayout, LoginForm, redirectIfSignedIn } from '@/features/auth';
 
 // Top-level route, deliberately NOT nested under `_app` — the sign-in screen
@@ -13,11 +12,10 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   return (
     <AuthLayout
-      illustrationSrc={authIllustration}
-      panelTop={
-        <p className="auth-panel__crosslink">
-          New to the platform? <Link to="/register">Create an account</Link>
-        </p>
+      footer={
+        <>
+          Don&apos;t have an account? <Link to="/register">Sign up</Link>
+        </>
       }
     >
       <LoginForm />

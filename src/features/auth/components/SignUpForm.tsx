@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { Button, IconEye, IconEyeOff, IconLock, IconMail, IconUser, Input } from '@/components/ui';
+import { Button, IconEye, IconEyeOff, Input } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 import type { FieldErrors } from '@/lib/api/client';
 import { saveSession } from '@/lib/auth/session';
@@ -79,18 +79,15 @@ export function SignUpForm() {
 
   return (
     <form className="login-form" onSubmit={handleSubmit}>
-      <div>
-        <h1 className="login-form__title">Create Account</h1>
-        <p className="login-form__subtitle signup-form__subtitle">
-          Join your community cooperative and participate with full transparency.
-        </p>
+      <div className="login-form__head">
+        <h1 className="login-form__title">Create an account</h1>
+        <p className="login-form__subtitle">Start organising your community in minutes.</p>
       </div>
 
       <Input
-        label="Full Name"
-        placeholder="e.g. Diane Mukamana"
+        label="Full name"
+        placeholder="Enter your name"
         autoComplete="name"
-        icon={<IconUser />}
         value={fullName}
         onChange={(event) => setFullName(event.target.value)}
         minLength={2}
@@ -100,11 +97,10 @@ export function SignUpForm() {
       />
 
       <Input
-        label="Email Address"
+        label="Email"
         type="email"
-        placeholder="you@example.com"
+        placeholder="Enter your email"
         autoComplete="email"
-        icon={<IconMail />}
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         maxLength={255}
@@ -114,11 +110,10 @@ export function SignUpForm() {
 
       <Input
         label="Password"
-        aside={`Min. ${MIN_PASSWORD} characters`}
+        hint={`Must be at least ${MIN_PASSWORD} characters.`}
         type={showPassword ? 'text' : 'password'}
         placeholder="••••••••••••"
         autoComplete="new-password"
-        icon={<IconLock />}
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         minLength={MIN_PASSWORD}
@@ -130,11 +125,10 @@ export function SignUpForm() {
       />
 
       <Input
-        label="Confirm Password"
+        label="Confirm password"
         type={showConfirm ? 'text' : 'password'}
         placeholder="••••••••••••"
         autoComplete="new-password"
-        icon={<IconLock />}
         value={confirm}
         onChange={(event) => setConfirm(event.target.value)}
         onBlur={() => setConfirmTouched(true)}
@@ -156,13 +150,8 @@ export function SignUpForm() {
       )}
 
       <Button type="submit" variant="primary" disabled={signUp.isPending}>
-        {signUp.isPending ? 'Creating account…' : 'Create Account'}
+        {signUp.isPending ? 'Creating account…' : 'Create account'}
       </Button>
-
-      <p className="signup-form__foot">
-        <IconLock width={14} height={14} />
-        Secure encrypted connection
-      </p>
     </form>
   );
 }

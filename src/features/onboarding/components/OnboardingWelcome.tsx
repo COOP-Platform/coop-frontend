@@ -1,7 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import illustration from '@/assets/COOP_background_img.jpg';
+import illustration from '@/assets/auth-art.svg';
 import { SetupLayout } from '@/components/layout/SetupLayout';
 import {
   IconArrowRight,

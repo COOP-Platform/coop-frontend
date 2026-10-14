@@ -2,7 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { Button, Checkbox, IconEye, IconEyeOff, IconLock, IconUser, Input } from '@/components/ui';
+import { Button, Checkbox, IconEye, IconEyeOff, Input } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 import { saveSession } from '@/lib/auth/session';
 
@@ -42,15 +42,16 @@ export function LoginForm() {
 
   return (
     <form className="login-form" onSubmit={handleSubmit}>
-      <h2 className="login-form__title">Sign In</h2>
-      <p className="login-form__subtitle">Enter your credentials to access your dashboard.</p>
+      <div className="login-form__head">
+        <h1 className="login-form__title">Welcome back</h1>
+        <p className="login-form__subtitle">Please enter your details.</p>
+      </div>
 
       <Input
-        label="Email or Username"
+        label="Email"
         type="text"
-        placeholder="you@example.com"
+        placeholder="Enter your email"
         autoComplete="username"
-        icon={<IconUser />}
         value={identifier}
         onChange={(event) => setIdentifier(event.target.value)}
         required
@@ -61,7 +62,6 @@ export function LoginForm() {
         type={showPassword ? 'text' : 'password'}
         placeholder="••••••••"
         autoComplete="current-password"
-        icon={<IconLock />}
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         required
@@ -97,7 +97,7 @@ export function LoginForm() {
       )}
 
       <Button type="submit" variant="primary" disabled={login.isPending}>
-        {login.isPending ? 'Signing in…' : 'Sign In to Dashboard'}
+        {login.isPending ? 'Signing in…' : 'Sign in'}
       </Button>
     </form>
   );

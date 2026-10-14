@@ -55,15 +55,9 @@
 }
 
 .setup__logo {
-  display: inline-flex;
-  width: 2.25rem;
-  height: 2.25rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background-color: var(--color-brand);
-  font-weight: 700;
-  color: var(--color-brand-contrast);
+  width: auto;
+  height: 3rem;
+  border-radius: var(--radius-sm);
 }
 
 .setup__brand-name {

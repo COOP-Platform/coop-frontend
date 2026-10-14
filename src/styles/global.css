@@ -319,15 +319,9 @@ body:has(.auth-shell),
 }
 
 .auth-panel__logo {
-  display: inline-flex;
-  width: 2.25rem;
-  height: 2.25rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background-color: var(--color-brand);
-  font-weight: 700;
-  color: var(--color-brand-contrast);
+  width: auto;
+  height: 3rem;
+  border-radius: var(--radius-sm);
 }
 
 .auth-panel__brand-name {
@@ -375,12 +369,14 @@ body:has(.auth-shell),
   background-color: var(--color-brand-soft);
 }
 
+/* The illustration sits centred on the green, at a size that leaves it room. */
 .auth-art__image {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  padding: 12%;
+  object-fit: contain;
 }
 
 @media (min-width: 900px) {

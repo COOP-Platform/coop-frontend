@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
+import logoUrl from '@/assets/coop-logo.svg';
 import { Dropdown, IconLogout, IconUser } from '@/components/ui';
 import { env } from '@/config/env';
 import { useMe } from '@/features/auth';
@@ -36,9 +37,7 @@ export function SetupLayout({ children, context, center }: SetupLayoutProps) {
       <header className="setup__bar">
         <div className="setup__start">
           <Link to="/" className="setup__brand">
-            <span className="setup__logo" aria-hidden="true">
-              {env.appName.charAt(0)}
-            </span>
+            <img src={logoUrl} alt="" className="setup__logo" />
             <span className="setup__brand-name">{env.appName}</span>
           </Link>
           {context && (

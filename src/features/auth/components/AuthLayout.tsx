@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
-import defaultIllustration from '@/assets/auth-art.svg';
+import logoUrl from '@/assets/coop-logo.svg';
+import defaultIllustration from '@/assets/online-community.svg';
 import { env } from '@/config/env';
 
 interface AuthLayoutProps {
@@ -27,9 +28,7 @@ export function AuthLayout({
     <div className="auth-shell">
       <main className="auth-panel">
         <Link to="/" className="auth-panel__brand">
-          <span className="auth-panel__logo" aria-hidden="true">
-            {env.appName.charAt(0)}
-          </span>
+          <img src={logoUrl} alt="" className="auth-panel__logo" />
           <span className="auth-panel__brand-name">{env.appName}</span>
         </Link>
 

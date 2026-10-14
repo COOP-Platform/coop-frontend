@@ -19,7 +19,7 @@ export function ForgotPasswordForm() {
   if (request.isSuccess) {
     return (
       <div className="login-form">
-        <h2 className="login-form__title">Check your email</h2>
+        <h1 className="login-form__title">Check your email</h1>
         {/*
           The API answers identically whether or not the address is
           registered, so this shows its message rather than promising an email
@@ -38,7 +38,7 @@ export function ForgotPasswordForm() {
 
   return (
     <form className="login-form" onSubmit={handleSubmit}>
-      <h2 className="login-form__title">Reset your password</h2>
+      <h1 className="login-form__title">Reset your password</h1>
       <p className="login-form__subtitle">
         Enter the email on your account and we will send you a link to set a new password.
       </p>

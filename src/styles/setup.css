@@ -5,52 +5,6 @@
  * button and dropdown menu from there.
  */
 
-/* ---------- Sign-up additions to the auth shell ---------- */
-
-/*
- * A column now, so the cross-link can sit above the form. The form keeps
- * `margin-block: auto` (see .auth-panel__inner) and so still centres when
- * short and scrolls from its top when tall.
- */
-.auth-panel {
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.auth-panel__top {
-  align-self: stretch;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.auth-panel__crosslink {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.auth-panel__crosslink a {
-  margin-left: var(--space-1);
-  font-weight: 600;
-  color: var(--color-brand-text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.signup-form__subtitle {
-  margin-top: var(--space-1);
-}
-
-.signup-form__foot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  font-size: var(--text-xs);
-  color: var(--color-text-subtle);
-}
-
 /* ---------- Accent button (onboarding call to action) ---------- */
 
 .btn--accent {

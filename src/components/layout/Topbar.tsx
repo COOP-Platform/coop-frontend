@@ -7,7 +7,6 @@ import {
   IconInstitution,
   IconLogout,
   IconMenu,
-  IconSearch,
   IconUser,
 } from '@/components/ui';
 import type { AppDefinition } from '@/config/apps';
@@ -197,17 +196,6 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
       </div>
 
       <div className="topbar__end">
-        {/* No search endpoint yet: present, but announced as unavailable. */}
-        <button
-          type="button"
-          className="topbar__icon-btn topbar__search"
-          aria-label="Search (not available yet)"
-          title="Search is not available yet"
-          aria-disabled="true"
-        >
-          <IconSearch width={22} height={22} />
-        </button>
-
         {/*
           No notifications endpoint. Those who invite see invitations awaiting
           an answer; everyone else sees only notes about themselves.

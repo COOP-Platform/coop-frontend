@@ -49,7 +49,7 @@ export function OnboardingWelcome() {
             <div className="onboard-home__actions">
               <Link
                 to="/onboarding/create"
-                className="btn btn--accent btn--inline onboard-home__cta"
+                className="btn btn--primary btn--inline onboard-home__cta"
               >
                 {draft ? 'Continue your draft' : 'Create Community'}
                 <IconArrowRight />

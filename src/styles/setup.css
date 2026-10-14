@@ -5,19 +5,6 @@
  * button and dropdown menu from there.
  */
 
-/* ---------- Accent button (onboarding call to action) ---------- */
-
-.btn--accent {
-  border-radius: var(--radius-pill);
-  background-color: var(--color-accent);
-  color: var(--color-accent-contrast);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--color-accent) 35%, transparent);
-}
-
-.btn--accent:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--color-accent) 88%, black);
-}
-
 /* ---------- Setup shell ---------- */
 
 .setup {

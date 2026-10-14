@@ -8,6 +8,9 @@ export type MembershipStatus = 'invited' | 'active' | 'suspended' | 'removed';
 export interface Membership {
   id: string;
   user: string;
+  /** The member's name and email (backend adds them to the list itself). */
+  full_name?: string;
+  email?: string;
   community: string;
   member_category: string;
   status: MembershipStatus;

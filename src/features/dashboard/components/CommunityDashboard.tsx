@@ -147,7 +147,9 @@ export function CommunityDashboard() {
         onClose={() => setRemovingVacant(null)}
       />
 
-      <RecentActivity entries={buildActivity(members, invitations.data ?? []).slice(0, 5)} />
+      <RecentActivity
+        entries={buildActivity(members, invitations.data ?? [], canInvite).slice(0, 5)}
+      />
     </div>
   );
 }

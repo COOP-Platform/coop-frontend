@@ -1,19 +1,10 @@
 /*
  * The member directory, assembled on the client.
  *
- * The backend has no "members of a community" endpoint that carries people's
- * names: `/memberships/` returns a user *id* per member, and `/users/` only
- * ever returns the caller. So a directory row is joined from three sources:
- *
- *   1. `/memberships/?community_id=`  — who is a member, status, dates.
- *   2. `/invitations/?community_id=`  — name and email for anyone who joined
- *      by accepting an invitation (`accepted_user` = the member's user id).
- *   3. `/auth/me/`                    — the signed-in user's own name.
- *
- * A member reached by none of those (in practice: a founder viewed by someone
- * else) gets a placeholder. Positions come per member from
- * `useMembersPositions`. All of this collapses to one request once the
- * backend adds the endpoint proposed in docs/sprint-2-integration.md.
+ * `/memberships/?community_id=` carries each member's name and email. Only
+ * those who send invitations also read `/invitations/` — for the "joined
+ * through" details on a profile; everyone else never receives invitations
+ * at all. Positions come per member from `useMembersPositions`.
  */
 import type { PositionSummary } from '@/features/auth';
 import { useWorkspace } from '@/features/auth';
@@ -52,7 +43,7 @@ export interface DirectoryMember {
 export function useMemberDirectory() {
   const { me, communityId, can } = useWorkspace();
   const memberships = useMemberships(communityId);
-  const invitations = useInvitations(communityId);
+  const invitations = useInvitations(communityId, can('member.invite'));
   const community = useCommunity(communityId);
 
   const rows = (memberships.data ?? []).filter((m) => m.status !== 'removed');
@@ -73,16 +64,19 @@ export function useMemberDirectory() {
     const isFounder = community.data?.owner === m.user;
     const held = positions.byMembership.get(m.id);
 
-    const fullName = isYou
-      ? (me?.full_name ?? '')
-      : (invitation?.full_name ?? (isFounder ? 'Community founder' : 'Unnamed member'));
+    // The membership's own name first; the fallbacks are for an older API.
+    const fullName =
+      m.full_name ??
+      (isYou
+        ? (me?.full_name ?? '')
+        : (invitation?.full_name ?? (isFounder ? 'Community founder' : 'Unnamed member')));
 
     return {
       membershipId: m.id,
       userId: m.user,
       fullName,
-      nameKnown: isYou || invitation !== undefined,
-      email: isYou ? (me?.email ?? null) : (invitation?.email ?? null),
+      nameKnown: m.full_name !== undefined || isYou || invitation !== undefined,
+      email: m.email ?? (isYou ? (me?.email ?? null) : (invitation?.email ?? null)),
       status: m.status,
       joinDate: m.join_date,
       activatedAt: m.activated_at,

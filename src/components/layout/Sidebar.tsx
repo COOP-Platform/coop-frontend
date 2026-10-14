@@ -2,6 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 
 import { IconLogout, IconSettings } from '@/components/ui';
 import type { AppDefinition } from '@/config/apps';
+import { useWorkspace } from '@/features/auth';
 import { clearSession } from '@/lib/auth/session';
 import { queryClient } from '@/lib/query-client';
 
@@ -14,6 +15,9 @@ interface SidebarProps {
 /** The selected app's pages. Switching apps (top bar) swaps this list. */
 export function Sidebar({ app, onNavigate }: SidebarProps) {
   const navigate = useNavigate();
+  const { can } = useWorkspace();
+  // Pages a member has no use for are left out rather than shown and refused.
+  const items = app.nav.filter((item) => item.permission === undefined || can(item.permission));
 
   function handleLogout() {
     clearSession();
@@ -27,7 +31,7 @@ export function Sidebar({ app, onNavigate }: SidebarProps) {
       <nav className="sidebar__nav" aria-label={app.name}>
         <p className="sidebar__section">{app.name}</p>
         <ul className="sidebar__list" role="list">
-          {app.nav.map((item) => (
+          {items.map((item) => (
             <li key={item.label}>
               <Link
                 to={item.to}

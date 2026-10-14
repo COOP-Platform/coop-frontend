@@ -15,7 +15,7 @@ import {
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { effectiveStatus, useInvitations, useMemberDirectory } from '@/features/members';
-import { usePositions } from '@/features/positions';
+import { useCommittee, usePositions } from '@/features/positions';
 import type { Position } from '@/features/positions';
 import { errorMessage } from '@/lib/api/errors';
 import { isPlainMemberPosition } from '@/lib/position-tone';
@@ -37,7 +37,9 @@ export function CommunityDashboard() {
 
   const directory = useMemberDirectory();
   const positions = usePositions(communityId, canViewPositions);
-  const invitations = useInvitations(communityId);
+  // Invitations are for those who send them; a member is not shown them.
+  const invitations = useInvitations(communityId, canInvite);
+  const committee = useCommittee(communityId, !canViewPositions);
   const [removingVacant, setRemovingVacant] = useState<readonly Position[] | null>(null);
 
   if (directory.isPending) return <LoadingState />;
@@ -100,18 +102,24 @@ export function CommunityDashboard() {
         />
         <StatCard
           label="Active Positions"
-          value={canViewPositions ? filledSeats.length : '—'}
-          caption={canViewPositions ? 'Assigned leadership roles' : 'Needs position.view'}
+          value={
+            canViewPositions
+              ? filledSeats.length
+              : (committee.data ?? []).filter((seat) => seat.holders.length > 0).length
+          }
+          caption={canViewPositions ? 'Assigned leadership roles' : 'Committee seats filled'}
           icon={<IconIdBadge />}
           tone="info"
         />
-        <StatCard
-          label="Pending Invitations"
-          value={pending.length}
-          caption="Awaiting response"
-          icon={<IconMail />}
-          tone="warning"
-        />
+        {canInvite && (
+          <StatCard
+            label="Pending Invitations"
+            value={pending.length}
+            caption="Awaiting response"
+            icon={<IconMail />}
+            tone="warning"
+          />
+        )}
       </div>
 
       <NeedsAttention

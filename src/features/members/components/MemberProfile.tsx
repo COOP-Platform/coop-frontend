@@ -25,6 +25,7 @@ import {
   IconShield,
   IconShieldCheck,
   IconTile,
+  IconUser,
   IconUserMinus,
   IconUserPen,
   IconUsers,
@@ -53,7 +54,33 @@ const PERMISSION_TEXT = new Map(PERMISSION_CATALOG.map((p) => [p.code, p.descrip
 
 export function MemberProfile({ memberId }: { memberId: string }) {
   const directory = useMemberDirectory();
+  const { membership } = useWorkspace();
   const member = directory.members.find((m) => m.membershipId === memberId);
+
+  // Non-admins see their own profile only; the list is all they get of others.
+  if (membership !== undefined && !membership.is_admin && memberId !== membership.id) {
+    return (
+      <div className="page">
+        <BackLink />
+        <section className="card">
+          <EmptyState
+            icon={<IconUser width={28} height={28} />}
+            title="Profiles are private"
+            message="You can see the member list and your own profile."
+            action={
+              <Link
+                to="/community/members/$memberId"
+                params={{ memberId: membership.id }}
+                className="btn btn--primary btn--inline"
+              >
+                View my profile
+              </Link>
+            }
+          />
+        </section>
+      </div>
+    );
+  }
 
   if (directory.isPending) return <LoadingState label="Loading member…" />;
 

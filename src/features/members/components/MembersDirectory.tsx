@@ -53,6 +53,9 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
   const navigate = useNavigate();
   const searchId = useId();
   const { membership, communityId, can } = useWorkspace();
+  // For now only admins open other members' profiles; everyone sees the
+  // list, and their own profile.
+  const isAdmin = membership?.is_admin === true;
   const directory = useMemberDirectory();
   const positions = usePositions(communityId, can('position.view'));
 
@@ -255,7 +258,11 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
               </thead>
               <tbody>
                 {visible.map((member) => (
-                  <MemberRow key={member.membershipId} member={member} />
+                  <MemberRow
+                    key={member.membershipId}
+                    member={member}
+                    canOpen={isAdmin || member.isYou}
+                  />
                 ))}
               </tbody>
             </table>
@@ -306,7 +313,7 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
   );
 }
 
-function MemberRow({ member }: { member: DirectoryMember }) {
+function MemberRow({ member, canOpen }: { member: DirectoryMember; canOpen: boolean }) {
   const badges = member.positions.filter((p) => !isPlainMemberPosition(p.name));
   const plain = member.positions.find((p) => isPlainMemberPosition(p.name));
 
@@ -359,14 +366,16 @@ function MemberRow({ member }: { member: DirectoryMember }) {
         )}
       </td>
       <td className="table__action-col">
-        <Link
-          to="/community/members/$memberId"
-          params={{ memberId: member.membershipId }}
-          className="link-button"
-          aria-label={`View details for ${member.fullName}`}
-        >
-          View Details
-        </Link>
+        {canOpen && (
+          <Link
+            to="/community/members/$memberId"
+            params={{ memberId: member.membershipId }}
+            className="link-button"
+            aria-label={member.isYou ? 'View my profile' : `View details for ${member.fullName}`}
+          >
+            {member.isYou ? 'My Profile' : 'View Details'}
+          </Link>
+        )}
       </td>
     </tr>
   );

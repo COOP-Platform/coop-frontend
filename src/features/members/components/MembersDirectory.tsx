@@ -228,15 +228,18 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
             </Dropdown>
           )}
 
-          <button
-            type="button"
-            className="toolbar__button toolbar__button--icon"
-            aria-label="Export members as CSV"
-            title="Export CSV"
-            onClick={exportCsv}
-          >
-            <IconDownload width={18} height={18} />
-          </button>
+          {/* Exporting the roster is an admin task; members only read the list. */}
+          {isAdmin && (
+            <button
+              type="button"
+              className="toolbar__button toolbar__button--icon"
+              aria-label="Export members as CSV"
+              title="Export CSV"
+              onClick={exportCsv}
+            >
+              <IconDownload width={18} height={18} />
+            </button>
+          )}
         </div>
       </div>
 

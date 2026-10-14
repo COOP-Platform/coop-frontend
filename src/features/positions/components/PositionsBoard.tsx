@@ -4,9 +4,7 @@ import { useState } from 'react';
 import {
   Badge,
   Button,
-  EmptyState,
   ErrorState,
-  IconIdBadge,
   IconInfoCircle,
   IconPlus,
   IconShieldCheck,
@@ -25,6 +23,7 @@ import { PositionIcon } from '@/lib/positions';
 
 import type { Position } from '../api/positions';
 import { usePositions } from '../api/positions';
+import { CommitteeView } from './CommitteeView';
 import { AssignMemberDialog, PositionFormDialog } from './PositionDialogs';
 import type { Editing } from './PositionDialogs';
 
@@ -36,20 +35,8 @@ export function PositionsBoard() {
   const [editing, setEditing] = useState<Editing>(null);
   const [assigning, setAssigning] = useState<Position | null>(null);
 
-  if (!can('position.view')) {
-    return (
-      <div className="page">
-        <PageHeader title="Positions" />
-        <section className="card">
-          <EmptyState
-            icon={<IconIdBadge width={28} height={28} />}
-            title="You can't view positions here"
-            message="Seeing positions needs the position.view permission."
-          />
-        </section>
-      </div>
-    );
-  }
+  // Members without position.view still get to know their committee.
+  if (!can('position.view')) return <CommitteeView />;
 
   const list = positions.data ?? [];
   const adminCount = list.filter((p) => p.is_admin).length;

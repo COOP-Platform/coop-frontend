@@ -37,6 +37,33 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
   const invitations = useInvitations(communityId, canInvite);
   const pending = (invitations.data ?? []).filter((i) => effectiveStatus(i) === 'pending');
 
+  /*
+   * A member who does not send invitations gets notes about themselves only,
+   * never about the community at large. There is no notifications endpoint,
+   * so these come from their own membership in /auth/me.
+   */
+  const personal: { id: string; title: string; detail: string; urgent: boolean }[] = [];
+  if (!canInvite && membership) {
+    if (membership.status === 'suspended') {
+      personal.push({
+        id: 'suspended',
+        title: 'Your membership is suspended',
+        detail: 'You cannot use this community until an administrator reinstates you.',
+        urgent: true,
+      });
+    }
+    const held = membership.positions.filter((p) => p.name !== 'Member');
+    if (held.length > 0) {
+      personal.push({
+        id: 'positions',
+        title: `You hold ${held.map((p) => p.name).join(', ')}`,
+        detail: 'Your positions in this community.',
+        urgent: false,
+      });
+    }
+  }
+  const alertCount = canInvite ? pending.length : personal.filter((n) => n.urgent).length;
+
   function handleLogout() {
     clearSession();
     queryClient.clear();
@@ -181,46 +208,59 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
           <IconSearch width={22} height={22} />
         </button>
 
-        {/* No notifications endpoint: the bell surfaces invitations awaiting an answer. */}
+        {/*
+          No notifications endpoint. Those who invite see invitations awaiting
+          an answer; everyone else sees only notes about themselves.
+        */}
         <Dropdown
           chevron={false}
           align="end"
-          label={
-            pending.length > 0
-              ? `Notifications, ${pending.length} pending invitations`
-              : 'Notifications'
-          }
+          label={alertCount > 0 ? `Notifications, ${alertCount} new` : 'Notifications'}
           triggerClassName="topbar__icon-btn topbar__bell"
           trigger={
             <>
               <IconBell width={22} height={22} />
-              {pending.length > 0 && <span className="topbar__dot" aria-hidden="true" />}
+              {alertCount > 0 && <span className="topbar__dot" aria-hidden="true" />}
             </>
           }
         >
-          {(close) => (
-            <div className="menu menu--wide">
-              <p className="menu__heading">Awaiting response</p>
-              {pending.length === 0 ? (
-                <p className="menu__note menu__item-meta">Nothing needs your attention.</p>
-              ) : (
-                pending.slice(0, 4).map((invitation) => (
-                  <div key={invitation.id} className="menu__note">
-                    <span className="menu__item-title">{invitation.full_name}</span>
-                    <span className="menu__item-meta">
-                      Invited {formatRelative(invitation.created_at)} · expires{' '}
-                      {formatRelative(invitation.expires_at)}
-                    </span>
-                  </div>
-                ))
-              )}
-              {canInvite && (
+          {(close) =>
+            canInvite ? (
+              <div className="menu menu--wide">
+                <p className="menu__heading">Awaiting response</p>
+                {pending.length === 0 ? (
+                  <p className="menu__note menu__item-meta">Nothing needs your attention.</p>
+                ) : (
+                  pending.slice(0, 4).map((invitation) => (
+                    <div key={invitation.id} className="menu__note">
+                      <span className="menu__item-title">{invitation.full_name}</span>
+                      <span className="menu__item-meta">
+                        Invited {formatRelative(invitation.created_at)} · expires{' '}
+                        {formatRelative(invitation.expires_at)}
+                      </span>
+                    </div>
+                  ))
+                )}
                 <Link to="/community/invitations" className="menu__footer-link" onClick={close}>
                   View invitations
                 </Link>
-              )}
-            </div>
-          )}
+              </div>
+            ) : (
+              <div className="menu menu--wide">
+                <p className="menu__heading">For you</p>
+                {personal.length === 0 ? (
+                  <p className="menu__note menu__item-meta">Nothing new for you.</p>
+                ) : (
+                  personal.map((note) => (
+                    <div key={note.id} className="menu__note">
+                      <span className="menu__item-title">{note.title}</span>
+                      <span className="menu__item-meta">{note.detail}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )
+          }
         </Dropdown>
 
         <span className="topbar__divider" aria-hidden="true" />

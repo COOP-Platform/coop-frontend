@@ -2915,3 +2915,83 @@
   gap: var(--space-2);
   font-weight: 600;
 }
+
+/* ---------- Member roster (members without admin rights: three columns) ---------- */
+
+.table--roster {
+  table-layout: fixed;
+}
+
+.table--roster__member {
+  width: 50%;
+}
+
+.table--roster__position {
+  width: 32%;
+}
+
+.table--roster__status {
+  width: 18%;
+}
+
+.table--roster .table__status-col {
+  text-align: right;
+}
+
+/* Long names and addresses wrap within their column instead of widening it. */
+.table--roster .table__stack {
+  min-width: 0;
+}
+
+.table--roster .table__name,
+.table--roster .table__muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table--roster .table__person {
+  min-width: 0;
+}
+
+/* A position badge stays inside its column, cut short rather than spilling over. */
+.table--roster .badge-row {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.table--roster .badge-row .badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .table--roster th,
+  .table--roster td {
+    padding-inline: var(--space-3);
+  }
+
+  .table--roster__member {
+    width: 42%;
+  }
+
+  .table--roster__position {
+    width: 31%;
+  }
+
+  .table--roster__status {
+    width: 27%;
+  }
+
+  .table--roster .table__person .avatar,
+  .table--roster .badge-row .badge__icon {
+    display: none;
+  }
+
+  .table--roster .badge {
+    padding-inline: var(--space-2);
+  }
+}

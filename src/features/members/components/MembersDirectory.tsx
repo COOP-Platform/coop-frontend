@@ -24,7 +24,7 @@ import {
   StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
-import { usePositions } from '@/features/positions';
+import { useCommittee, usePositions } from '@/features/positions';
 import { errorMessage } from '@/lib/api/errors';
 import { downloadCsv } from '@/lib/csv';
 import { isPlainMemberPosition, positionTone } from '@/lib/position-tone';
@@ -53,10 +53,23 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
   const navigate = useNavigate();
   const searchId = useId();
   const { membership, communityId, can } = useWorkspace();
-  // For now only admins open other members' profiles; everyone sees the
-  // list, and their own profile.
+  // For now only admins open member profiles from here. Everyone else gets
+  // a three-column list -- name, position, status -- and reaches their own
+  // profile from the account menu.
   const isAdmin = membership?.is_admin === true;
   const directory = useMemberDirectory();
+  // Without position.view the directory cannot say who holds what; the
+  // committee endpoint (open to every member) can, for the officer seats.
+  const committee = useCommittee(communityId, !can('position.view'));
+  const seatsByMember = new Map<string, string[]>();
+  for (const seat of committee.data ?? []) {
+    for (const holder of seat.holders) {
+      seatsByMember.set(holder.membership_id, [
+        ...(seatsByMember.get(holder.membership_id) ?? []),
+        seat.name,
+      ]);
+    }
+  }
   const positions = usePositions(communityId, can('position.view'));
 
   const members = directory.members;
@@ -245,15 +258,26 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
           />
         ) : (
           <div className="table-scroll">
-            <table className="table">
+            <table className={isAdmin ? 'table' : 'table table--roster'}>
+              {!isAdmin && (
+                <colgroup>
+                  <col className="table--roster__member" />
+                  <col className="table--roster__position" />
+                  <col className="table--roster__status" />
+                </colgroup>
+              )}
               <thead>
                 <tr>
                   <th scope="col">Member</th>
                   <th scope="col">Position</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" className="table__action-col">
-                    Action
+                  <th scope="col" className={isAdmin ? undefined : 'table__status-col'}>
+                    Status
                   </th>
+                  {isAdmin && (
+                    <th scope="col" className="table__action-col">
+                      Action
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -261,7 +285,12 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
                   <MemberRow
                     key={member.membershipId}
                     member={member}
-                    canOpen={isAdmin || member.isYou}
+                    showActions={isAdmin}
+                    committeeSeats={
+                      member.positionsKnown
+                        ? undefined
+                        : (seatsByMember.get(member.membershipId) ?? [])
+                    }
                   />
                 ))}
               </tbody>
@@ -313,8 +342,20 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
   );
 }
 
-function MemberRow({ member, canOpen }: { member: DirectoryMember; canOpen: boolean }) {
-  const badges = member.positions.filter((p) => !isPlainMemberPosition(p.name));
+function MemberRow({
+  member,
+  showActions,
+  committeeSeats,
+}: {
+  member: DirectoryMember;
+  showActions: boolean;
+  /** Seat names from the committee, when the member's own positions are not readable. */
+  committeeSeats?: readonly string[];
+}) {
+  const badges =
+    committeeSeats !== undefined
+      ? committeeSeats.map((name) => ({ id: name, name }))
+      : member.positions.filter((p) => !isPlainMemberPosition(p.name));
   const plain = member.positions.find((p) => isPlainMemberPosition(p.name));
 
   return (
@@ -332,7 +373,7 @@ function MemberRow({ member, canOpen }: { member: DirectoryMember; canOpen: bool
         </span>
       </td>
       <td>
-        {!member.positionsKnown ? (
+        {!member.positionsKnown && committeeSeats === undefined ? (
           <span className="table__muted">—</span>
         ) : badges.length > 0 ? (
           <span className="badge-row">
@@ -347,10 +388,12 @@ function MemberRow({ member, canOpen }: { member: DirectoryMember; canOpen: bool
             ))}
           </span>
         ) : (
-          <span className="table__muted">{plain?.name ?? 'No position'}</span>
+          <span className="table__muted">
+            {committeeSeats !== undefined ? 'Member' : (plain?.name ?? 'No position')}
+          </span>
         )}
       </td>
-      <td>
+      <td className={showActions ? undefined : 'table__status-col'}>
         {member.status === 'active' ? (
           <Badge tone="success" dot>
             Active
@@ -365,18 +408,18 @@ function MemberRow({ member, canOpen }: { member: DirectoryMember; canOpen: bool
           </Badge>
         )}
       </td>
-      <td className="table__action-col">
-        {canOpen && (
+      {showActions && (
+        <td className="table__action-col">
           <Link
             to="/community/members/$memberId"
             params={{ memberId: member.membershipId }}
             className="link-button"
-            aria-label={member.isYou ? 'View my profile' : `View details for ${member.fullName}`}
+            aria-label={`View details for ${member.fullName}`}
           >
-            {member.isYou ? 'My Profile' : 'View Details'}
+            View Details
           </Link>
-        )}
-      </td>
+        </td>
+      )}
     </tr>
   );
 }

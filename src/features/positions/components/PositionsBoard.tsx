@@ -5,7 +5,6 @@ import {
   Badge,
   Button,
   ErrorState,
-  IconInfoCircle,
   IconPlus,
   IconShieldCheck,
   IconTile,
@@ -112,16 +111,6 @@ export function PositionsBoard() {
           ))}
         </ul>
       )}
-
-      <aside className="notice notice--info">
-        <IconInfoCircle aria-hidden="true" />
-        <p className="notice__text">
-          Positions dictate executive sign-off thresholds and formal delegation rules for{' '}
-          {membership?.community.name}. A member can hold several positions and gets the permissions
-          of all of them. Changes take effect immediately, and the community always keeps at least
-          one admin position.
-        </p>
-      </aside>
 
       <PositionFormDialog
         // Fresh fields for every open; closing resets a cancelled draft.

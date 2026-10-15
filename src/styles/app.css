@@ -2820,13 +2820,6 @@
   accent-color: var(--color-brand);
 }
 
-.permission-picker__code {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  color: var(--color-text-subtle);
-}
-
 /* ---------- Position details ---------- */
 
 .holder-list {
@@ -2988,4 +2981,24 @@
   .table--roster .badge {
     padding-inline: var(--space-2);
   }
+}
+
+/* ---------- Position form in the side panel ---------- */
+
+/*
+ * A fieldset will not shrink below its content's width by default, which
+ * pushed the panel past the screen edge. Let it shrink, and keep the long
+ * permission list inside the panel.
+ */
+.position-form .permission-picker {
+  min-inline-size: 0;
+}
+
+.position-form .permission-picker__group {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.drawer:has(.position-form) {
+  width: min(32rem, 100vw);
+  overflow-x: hidden;
 }

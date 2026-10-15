@@ -28,6 +28,7 @@ import { useWorkspace } from '@/features/auth';
 import type { DirectoryMember } from '@/features/members';
 import { useMemberDirectory } from '@/features/members';
 import { errorMessage } from '@/lib/api/errors';
+import { isPlainMemberPosition } from '@/lib/position-tone';
 import { PositionIcon } from '@/lib/positions';
 
 import type { Position } from '../api/positions';
@@ -153,7 +154,8 @@ export function PositionDetails({ positionId }: { positionId: string }) {
                 Edit
               </Button>
             )}
-            {can('position.delete') && (
+            {/* The Member position is everyone's fallback: it is never deleted. */}
+            {can('position.delete') && !isPlainMemberPosition(position.name) && (
               <Button
                 variant="secondary"
                 inline

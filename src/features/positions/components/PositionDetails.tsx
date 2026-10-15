@@ -10,16 +10,13 @@ import {
   ErrorState,
   IconCheckCircle,
   IconIdBadge,
-  IconLayers,
   IconPencil,
   IconPlus,
   IconRefresh,
-  IconShieldCheck,
   IconTile,
   IconTrash,
   IconUserMinus,
   IconUserPlus,
-  IconUsers,
   LoadingState,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -148,7 +145,6 @@ export function PositionDetails({
         onReassign={setReplacing}
         onRevoke={setRevoking}
       />
-      <AboutCard position={position} />
       <PermissionsCard position={position} />
 
       <AssignMemberDialog
@@ -202,23 +198,17 @@ function HoldersCard({
   onRevoke: (member: DirectoryMember) => void;
 }) {
   return (
-    <section className="card" aria-labelledby="holders-title">
-      <header className="section-head">
-        <IconTile tone="brand" size="lg">
-          <IconUsers />
-        </IconTile>
-        <div className="section-head__text">
-          <p className="section-head__eyebrow">Who holds it</p>
-          <h2 id="holders-title" className="section-head__title">
-            Assigned Members
-          </h2>
-        </div>
+    <section className="panel-section" aria-labelledby="holders-title">
+      <div className="panel-section__head">
+        <h3 id="holders-title" className="panel-section__title">
+          Assigned members
+        </h3>
         {canAssign && holders.length > 0 && (
           <Button variant="secondary" size="sm" inline icon={<IconPlus />} onClick={onAssign}>
             Add
           </Button>
         )}
-      </header>
+      </div>
 
       {!holdersKnown ? (
         <LoadingState label="Loading members…" />
@@ -288,21 +278,13 @@ function PermissionsCard({ position }: { position: Position }) {
   const granted = new Set(position.permissions);
 
   return (
-    <section className="card" aria-labelledby="permissions-title">
-      <header className="section-head">
-        <IconTile tone="info" size="lg">
-          <IconShieldCheck />
-        </IconTile>
-        <div className="section-head__text">
-          <p className="section-head__eyebrow">What it allows</p>
-          <h2 id="permissions-title" className="section-head__title">
-            Permissions ({position.permissions.length})
-          </h2>
-        </div>
-      </header>
+    <section className="panel-section" aria-labelledby="permissions-title">
+      <h3 id="permissions-title" className="panel-section__title">
+        Permissions ({position.permissions.length})
+      </h3>
 
       {position.permissions.length === 0 ? (
-        <p className="card__lede">This position grants no permissions.</p>
+        <p className="table__muted">This position grants no permissions.</p>
       ) : (
         PERMISSION_MODULES.map((module) => {
           const inModule = PERMISSION_CATALOG.filter(
@@ -311,7 +293,7 @@ function PermissionsCard({ position }: { position: Position }) {
           if (inModule.length === 0) return null;
           return (
             <div key={module} className="position-permissions">
-              <h3 className="subheading">{module}</h3>
+              <h4 className="subheading">{module}</h4>
               <ul className="permission-list" role="list">
                 {inModule.map((permission) => (
                   <li key={permission.code} title={permission.code}>
@@ -324,42 +306,6 @@ function PermissionsCard({ position }: { position: Position }) {
           );
         })
       )}
-    </section>
-  );
-}
-
-function AboutCard({ position }: { position: Position }) {
-  return (
-    <section className="card" aria-labelledby="about-title">
-      <header className="section-head">
-        <IconTile tone="neutral" size="lg">
-          <IconLayers />
-        </IconTile>
-        <div className="section-head__text">
-          <p className="section-head__eyebrow">Position</p>
-          <h2 id="about-title" className="section-head__title">
-            Details
-          </h2>
-        </div>
-      </header>
-      <dl className="info-list">
-        <div className="info-list__row">
-          <dt>Origin</dt>
-          <dd>{position.is_system ? 'Suggested for this community type' : 'Created here'}</dd>
-        </div>
-        <div className="info-list__row">
-          <dt>Admin position</dt>
-          <dd>{position.is_admin ? 'Yes — can manage members and positions' : 'No'}</dd>
-        </div>
-        <div className="info-list__row">
-          <dt>Holders</dt>
-          <dd>{position.holder_count === 0 ? 'Vacant' : position.holder_count}</dd>
-        </div>
-        <div className="info-list__row">
-          <dt>Permissions</dt>
-          <dd>{position.permissions.length}</dd>
-        </div>
-      </dl>
     </section>
   );
 }

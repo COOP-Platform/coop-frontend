@@ -8,20 +8,12 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
-  IconAlertTriangle,
-  IconAtSign,
-  IconCalendar,
   IconCheckCircle,
-  IconChevronRight,
   IconClose,
   IconGavel,
   IconIdBadge,
-  IconInfoCircle,
-  IconLayers,
   IconLogout,
   IconPauseCircle,
-  IconPencil,
-  IconShield,
   IconShieldCheck,
   IconTile,
   IconUser,
@@ -33,6 +25,7 @@ import {
 import { useWorkspace } from '@/features/auth';
 import {
   PERMISSION_CATALOG,
+  PERMISSION_MODULES,
   useAssignPosition,
   usePositions,
   useRevokePosition,
@@ -48,8 +41,6 @@ import { useLeaveCommunity, useMemberLifecycle } from '../api/lifecycle';
 import { useMemberCategories } from '../api/member-categories';
 
 type PendingAction = 'assign' | LifecycleAction | 'leave' | null;
-
-const PERMISSION_TEXT = new Map(PERMISSION_CATALOG.map((p) => [p.code, p.description]));
 
 /**
  * A member's details, shown in the side panel over the Members list.
@@ -89,32 +80,32 @@ export function MemberPanel({ memberId }: { memberId: string }) {
 
 function Profile({ member }: { member: DirectoryMember }) {
   const [pending, setPending] = useState<PendingAction>(null);
-  const { can } = useWorkspace();
-  const isActive = member.status === 'active';
+  const { can, communityId } = useWorkspace();
+  const revoke = useRevokePosition(communityId ?? '');
+  const categories = useMemberCategories(communityId);
+  const category = categories.data?.find((c) => c.id === member.categoryId);
 
+  const isActive = member.status === 'active';
   const canAssign = can('position.assign');
   const canSuspend = can('member.suspend') && !member.isYou;
   const canRemove = can('member.remove') && !member.isYou;
-  const hasActions = canAssign || canSuspend || canRemove || member.isYou;
+  const granted = new Set(member.permissions);
 
   return (
     <div className="member-panel">
-      <section className="profile-hero">
-        <div className="profile-hero__identity">
-          <span className="profile-hero__avatar">
-            <Avatar name={member.fullName} tone="brand" size="lg" square />
-            {isActive && (
-              <span className="profile-hero__verified" aria-label="Active">
-                <IconCheckCircle width={16} height={16} />
-              </span>
-            )}
-          </span>
+      <header className="details__head">
+        <div className="member-panel__identity">
+          <Avatar name={member.fullName} tone="brand" size="lg" square />
           <div>
-            <div className="profile-hero__name-row">
-              <h2 className="profile-hero__name">{member.fullName}</h2>
+            <p className="section-head__eyebrow">Member</p>
+            <div className="position-panel__title-row">
+              <h2 className="section-head__title">
+                {member.fullName}
+                {member.isYou && <span className="table__muted"> (you)</span>}
+              </h2>
               {isActive ? (
                 <Badge tone="success" dot>
-                  Active Member
+                  Active
                 </Badge>
               ) : member.status === 'suspended' ? (
                 <Badge tone="warning" dot>
@@ -125,128 +116,164 @@ function Profile({ member }: { member: DirectoryMember }) {
                   Invited
                 </Badge>
               )}
+              {member.isAdmin && <Badge tone="brand">Admin</Badge>}
+              {member.isFounder && <Badge tone="info">Founder</Badge>}
             </div>
-            {member.joinDate && (
-              <p className="profile-hero__since">
-                <IconCalendar width={18} height={18} aria-hidden="true" />
-                Member since <strong>{formatMonthYear(member.joinDate)}</strong>
-              </p>
-            )}
+            <p className="section-head__subtitle">
+              {member.email ?? 'No email on record'}
+              {member.joinDate && ` · Member since ${formatMonthYear(member.joinDate)}`}
+            </p>
           </div>
         </div>
-        <div className="profile-hero__chips">
-          {member.isAdmin && (
-            <span className="chip">
-              <IconShieldCheck width={18} height={18} aria-hidden="true" />
-              Community Admin
-            </span>
+      </header>
+
+      {(canAssign || canSuspend || canRemove || member.isYou) && (
+        <div className="position-panel__actions">
+          {canAssign && (
+            <Button size="sm" inline icon={<IconUserPen />} onClick={() => setPending('assign')}>
+              Assign Position
+            </Button>
           )}
-          {member.isFounder && (
-            <span className="chip">
-              <IconGavel width={18} height={18} aria-hidden="true" />
-              Founder
-            </span>
+          {canSuspend && isActive && (
+            <Button
+              variant="secondary"
+              size="sm"
+              inline
+              icon={<IconPauseCircle />}
+              onClick={() => setPending('suspend')}
+            >
+              Suspend
+            </Button>
+          )}
+          {canSuspend && member.status === 'suspended' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              inline
+              icon={<IconShieldCheck />}
+              onClick={() => setPending('reinstate')}
+            >
+              Reinstate
+            </Button>
+          )}
+          {canRemove && (
+            <Button
+              variant="secondary"
+              size="sm"
+              inline
+              icon={<IconUserMinus />}
+              onClick={() => setPending('remove')}
+            >
+              Remove
+            </Button>
+          )}
+          {member.isYou && (
+            <Button
+              variant="secondary"
+              size="sm"
+              inline
+              icon={<IconLogout />}
+              onClick={() => setPending('leave')}
+            >
+              Leave Community
+            </Button>
           )}
         </div>
+      )}
+
+      <section className="panel-section" aria-labelledby="member-positions-title">
+        <h3 id="member-positions-title" className="panel-section__title">
+          Positions
+        </h3>
+        {!member.positionsKnown ? (
+          <p className="table__muted">You need the position.view permission to see positions.</p>
+        ) : (
+          <ul className="panel-chips" role="list">
+            {member.positions.map((position) => (
+              <li key={position.id} className="panel-chip">
+                <PositionIcon name={position.name} width={16} height={16} aria-hidden="true" />
+                {position.name}
+                {canAssign && (
+                  <button
+                    type="button"
+                    className="panel-chip__remove"
+                    aria-label={`Remove ${position.name} from ${member.fullName}`}
+                    title="Remove this position"
+                    disabled={revoke.isPending}
+                    onClick={() =>
+                      revoke.mutate({
+                        membershipId: member.membershipId,
+                        positionId: position.id,
+                      })
+                    }
+                  >
+                    <IconClose width={14} height={14} />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {revoke.error && <p className="form-error">{errorMessage(revoke.error)}</p>}
+        {member.status === 'suspended' && (
+          <p className="table__muted">
+            Suspended: their positions stay, but grant nothing until they are reinstated.
+          </p>
+        )}
       </section>
 
-      <div className="member-panel__sections">
-        <div className="member-panel__main">
-          <GovernanceCard member={member} canRevoke={canAssign} />
-          <MembershipCard member={member} />
-        </div>
-
-        {hasActions && (
+      <section className="panel-section" aria-labelledby="member-membership-title">
+        <h3 id="member-membership-title" className="panel-section__title">
+          Membership
+        </h3>
+        <dl className="panel-facts">
           <div>
-            <section className="card" aria-labelledby="actions-title">
-              <header className="section-head">
-                <IconTile tone="info" size="lg">
-                  <IconShield />
-                </IconTile>
-                <div className="section-head__text">
-                  <p className="section-head__eyebrow">Executive Actions</p>
-                  <h2 id="actions-title" className="section-head__title">
-                    Management Portal
-                  </h2>
-                </div>
-                {!member.isYou && <Badge tone="warning">Admin Only</Badge>}
-              </header>
-
-              <p className="card__lede">
-                {member.isYou
-                  ? 'Changes to your own participation in this community.'
-                  : `Execute constitutionally sanctioned modifications to ${member.fullName}'s community participation level.`}
-              </p>
-
-              <div className="action-list">
-                {canAssign && (
-                  <button type="button" className="action-row" onClick={() => setPending('assign')}>
-                    <IconUserPen aria-hidden="true" />
-                    <span className="action-row__label">Assign Position</span>
-                    <IconPencil aria-hidden="true" />
-                  </button>
-                )}
-                {canSuspend &&
-                  (isActive ? (
-                    <button
-                      type="button"
-                      className="action-row action-row--warning"
-                      onClick={() => setPending('suspend')}
-                    >
-                      <IconPauseCircle aria-hidden="true" />
-                      <span className="action-row__label">Suspend Member</span>
-                      <IconChevronRight aria-hidden="true" />
-                    </button>
-                  ) : member.status === 'suspended' ? (
-                    <button
-                      type="button"
-                      className="action-row action-row--success"
-                      onClick={() => setPending('reinstate')}
-                    >
-                      <IconShieldCheck aria-hidden="true" />
-                      <span className="action-row__label">Reinstate Member</span>
-                      <IconChevronRight aria-hidden="true" />
-                    </button>
-                  ) : null)}
-                {canRemove && (
-                  <button
-                    type="button"
-                    className="action-row action-row--danger"
-                    onClick={() => setPending('remove')}
-                  >
-                    <IconUserMinus aria-hidden="true" />
-                    <span className="action-row__label">Remove Member</span>
-                    <IconAlertTriangle aria-hidden="true" />
-                  </button>
-                )}
-                {member.isYou && (
-                  <button
-                    type="button"
-                    className="action-row action-row--danger"
-                    onClick={() => setPending('leave')}
-                  >
-                    <IconLogout aria-hidden="true" />
-                    <span className="action-row__label">Leave Community</span>
-                    <IconAlertTriangle aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-
-              <aside className="notice notice--warning">
-                <IconInfoCircle aria-hidden="true" />
-                <div>
-                  <p className="notice__title">Constitutional Notice</p>
-                  <p className="notice__text">
-                    Destructive actions require confirmation: Suspending or removing a member
-                    terminates active voting rights and revokes constitutional registry privileges
-                    immediately. A community always keeps at least one admin.
-                  </p>
-                </div>
-              </aside>
-            </section>
+            <dt>Category</dt>
+            <dd>{category?.name ?? '—'}</dd>
           </div>
-        )}
-      </div>
+          <div>
+            <dt>Joined</dt>
+            <dd>{member.joinDate ? formatLongDate(member.joinDate) : '—'}</dd>
+          </div>
+          {member.suspendedAt && member.status === 'suspended' && (
+            <div>
+              <dt>Suspended</dt>
+              <dd>{formatLongDate(member.suspendedAt)}</dd>
+            </div>
+          )}
+          <div>
+            <dt>Joined via</dt>
+            <dd>{member.isFounder ? 'Founded the community' : 'Invitation'}</dd>
+          </div>
+        </dl>
+      </section>
+
+      {member.permissions.length > 0 && (
+        <section className="panel-section" aria-labelledby="member-permissions-title">
+          <h3 id="member-permissions-title" className="panel-section__title">
+            Permissions ({member.permissions.length})
+          </h3>
+          {PERMISSION_MODULES.map((module) => {
+            const inModule = PERMISSION_CATALOG.filter(
+              (p) => p.module === module && granted.has(p.code),
+            );
+            if (inModule.length === 0) return null;
+            return (
+              <div key={module} className="position-permissions">
+                <h4 className="subheading">{module}</h4>
+                <ul className="permission-list" role="list">
+                  {inModule.map((permission) => (
+                    <li key={permission.code}>
+                      <IconCheckCircle width={18} height={18} aria-hidden="true" />
+                      {permission.description}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {canAssign && (
         <AssignPositionDialog
@@ -261,175 +288,6 @@ function Profile({ member }: { member: DirectoryMember }) {
         onClose={() => setPending(null)}
       />
     </div>
-  );
-}
-
-function GovernanceCard({ member, canRevoke }: { member: DirectoryMember; canRevoke: boolean }) {
-  const { communityId } = useWorkspace();
-  const revoke = useRevokePosition(communityId ?? '');
-  const primary = member.positions[0];
-
-  return (
-    <section className="card" aria-labelledby="role-title">
-      <header className="section-head">
-        <IconTile tone="brand" size="lg">
-          <IconIdBadge />
-        </IconTile>
-        <div className="section-head__text">
-          <p className="section-head__eyebrow">Governance Role</p>
-          <h2 id="role-title" className="section-head__title">
-            {member.positions.length > 1 ? 'Positions Held' : 'Elected Position'}
-          </h2>
-        </div>
-      </header>
-
-      {!member.positionsKnown ? (
-        <p className="card__lede">You need the position.view permission to see positions.</p>
-      ) : member.positions.length === 0 ? (
-        <aside className="notice notice--warning designation-empty">
-          <IconInfoCircle aria-hidden="true" />
-          <div>
-            <p className="notice__title">No position yet</p>
-            <p className="notice__text">
-              A member without a position has no permissions, so they cannot open any community
-              screen. Assign one to give them access.
-            </p>
-          </div>
-        </aside>
-      ) : (
-        <dl className="designation">
-          <div className="designation__row">
-            <dt>Designation</dt>
-            <dd className="designation__roles">
-              {member.positions.map((position) => (
-                <span key={position.id} className="designation__role">
-                  <PositionIcon name={position.name} width={20} height={20} aria-hidden="true" />
-                  {position.name}
-                  {canRevoke && member.positions.length > 0 && (
-                    <button
-                      type="button"
-                      className="designation__revoke"
-                      aria-label={`Remove ${position.name} from ${member.fullName}`}
-                      title="Remove this position"
-                      disabled={revoke.isPending}
-                      onClick={() =>
-                        revoke.mutate({
-                          membershipId: member.membershipId,
-                          positionId: position.id,
-                        })
-                      }
-                    >
-                      <IconClose width={14} height={14} />
-                    </button>
-                  )}
-                </span>
-              ))}
-            </dd>
-          </div>
-          {primary?.is_admin && (
-            <div className="designation__row">
-              <dt>Authority</dt>
-              <dd>Administers positions and members</dd>
-            </div>
-          )}
-        </dl>
-      )}
-      {revoke.error && <p className="form-error">{errorMessage(revoke.error)}</p>}
-
-      {member.permissions.length > 0 && (
-        <>
-          <h3 className="subheading">Responsibilities &amp; Delegated Permissions</h3>
-          <ul className="permission-list" role="list">
-            {member.permissions.map((code) => (
-              <li key={code} title={code}>
-                <IconCheckCircle width={18} height={18} aria-hidden="true" />
-                {PERMISSION_TEXT.get(code) ?? code}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {member.status === 'suspended' && member.positions.length > 0 && (
-        <p className="card__lede">
-          Suspended: their positions stay, but grant nothing until they are reinstated.
-        </p>
-      )}
-    </section>
-  );
-}
-
-function MembershipCard({ member }: { member: DirectoryMember }) {
-  const { communityId } = useWorkspace();
-  const categories = useMemberCategories(communityId);
-  const category = categories.data?.find((c) => c.id === member.categoryId);
-
-  return (
-    <section className="card" aria-labelledby="membership-title">
-      <header className="section-head">
-        <IconTile tone="info" size="lg">
-          <IconIdBadge />
-        </IconTile>
-        <div className="section-head__text">
-          <p className="section-head__eyebrow">Institutional Status</p>
-          <h2 id="membership-title" className="section-head__title">
-            Membership Information
-          </h2>
-        </div>
-      </header>
-
-      <dl className="info-list">
-        <div className="info-list__row">
-          <dt>
-            <IconLayers aria-hidden="true" />
-            Member Category
-          </dt>
-          <dd>
-            <span className="info-list__pill">{category?.name ?? '—'}</span>
-          </dd>
-        </div>
-        <div className="info-list__row">
-          <dt>
-            <IconAtSign aria-hidden="true" />
-            Email
-          </dt>
-          <dd>{member.email ?? <span className="table__muted">Not available</span>}</dd>
-        </div>
-        <div className="info-list__row">
-          <dt>
-            <IconCalendar aria-hidden="true" />
-            Joined
-          </dt>
-          <dd>{member.joinDate ? formatLongDate(member.joinDate) : '—'}</dd>
-        </div>
-        {member.suspendedAt && member.status === 'suspended' && (
-          <div className="info-list__row">
-            <dt>
-              <IconPauseCircle aria-hidden="true" />
-              Suspended
-            </dt>
-            <dd>{formatLongDate(member.suspendedAt)}</dd>
-          </div>
-        )}
-        {member.invitation && (
-          <div className="info-list__row">
-            <dt>
-              <IconCheckCircle aria-hidden="true" />
-              Joined Via
-            </dt>
-            <dd>
-              <Badge tone="success" icon={<IconCheckCircle width={16} height={16} />}>
-                Accepted invitation
-              </Badge>
-            </dd>
-          </div>
-        )}
-      </dl>
-      {!member.nameKnown && (
-        <p className="card__lede">
-          The API does not share this member&apos;s name or email with the directory yet.
-        </p>
-      )}
-    </section>
   );
 }
 

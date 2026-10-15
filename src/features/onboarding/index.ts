@@ -1,5 +1,4 @@
 // Public surface of the Onboarding module (the public invitation screens).
-export { OnboardingLayout } from './components/OnboardingLayout';
 export { AcceptInvitation } from './components/AcceptInvitation';
 export { OnboardingWelcome } from './components/OnboardingWelcome';
 

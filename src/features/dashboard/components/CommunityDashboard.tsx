@@ -74,7 +74,9 @@ export function CommunityDashboard() {
                 variant="tint"
                 inline
                 icon={<IconUserPlus />}
-                onClick={() => void navigate({ to: '/community/invitations/new' })}
+                onClick={() =>
+                  void navigate({ to: '/community/invitations', search: { invite: true } })
+                }
               >
                 Invite Member
               </Button>

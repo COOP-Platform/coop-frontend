@@ -35,6 +35,8 @@ export interface InvitationsSearch {
   q?: string;
   /** Invitation id shown in the details rail. */
   selected?: string;
+  /** The invite popup is open. */
+  invite?: boolean;
 }
 
 export function parseInvitationsSearch(raw: Record<string, unknown>): InvitationsSearch {
@@ -44,5 +46,6 @@ export function parseInvitationsSearch(raw: Record<string, unknown>): Invitation
       status === 'pending' || status === 'accepted' || status === 'expired' ? status : undefined,
     q: typeof raw.q === 'string' && raw.q !== '' ? raw.q : undefined,
     selected: typeof raw.selected === 'string' ? raw.selected : undefined,
+    invite: raw.invite === true || raw.invite === 'true' ? true : undefined,
   };
 }

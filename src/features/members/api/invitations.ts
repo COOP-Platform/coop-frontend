@@ -78,8 +78,8 @@ export interface SendInvitationInput {
   communityId: string;
   full_name: string;
   email: string;
-  /** Required by the backend: which contribution category the member joins. */
-  category_id: string;
+  /** Optional: without it the backend uses the community's default category. */
+  category_id?: string;
 }
 
 /** Needs `member.invite`. 201 even if the email failed — check `invitation_email_sent_at`. */

@@ -71,7 +71,6 @@ export function BasicsStep({ form, errors, update }: StepProps) {
         options={TYPE_OPTIONS}
         value={form.type}
         onChange={(event) => update('type', event.target.value as WizardForm['type'])}
-        hint="The model that best describes how your group is governed."
         error={errors.type}
         required
       />
@@ -81,11 +80,6 @@ export function BasicsStep({ form, errors, update }: StepProps) {
         options={COMMITTEE_SELECT}
         value={form.committee}
         onChange={(event) => update('committee', event.target.value as WizardForm['committee'])}
-        hint={
-          form.committee === 'yes'
-            ? 'Officer positions such as Treasurer and Secretary are created, ready to assign.'
-            : 'Only you, as administrator. Positions can be added later.'
-        }
         error={errors.with_committee}
       />
 
@@ -97,7 +91,6 @@ export function BasicsStep({ form, errors, update }: StepProps) {
         placeholder="What unites this community, who it is for, and what it does together…"
         rows={4}
         maxLength={LIMITS.description}
-        hint="Shown on invitation links and to members."
         error={errors.description}
       />
     </Card>

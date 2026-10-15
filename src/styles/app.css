@@ -2379,13 +2379,6 @@
 /* ---------- Email preview & quick stats ---------- */
 
 .preview,
-.quick-stats {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-6);
-}
-
 .preview__head {
   display: flex;
   align-items: center;
@@ -2513,38 +2506,6 @@
 
 .preview__foot svg {
   color: var(--color-warning-fill);
-}
-
-.quick-stats__grid {
-  display: grid;
-  gap: var(--space-3);
-  grid-template-columns: 1fr 1fr;
-}
-
-.quick-stats__grid > div {
-  border-radius: var(--radius-md);
-  background-color: var(--color-surface-tint);
-  padding: var(--space-3) var(--space-4);
-}
-
-.quick-stats__grid dt {
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
-.quick-stats__grid dd {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.quick-stats__warn {
-  color: var(--color-warning-fill);
-}
-
-.quick-stats__note {
-  color: var(--color-text-muted);
 }
 
 /* ---------- Positions ---------- */
@@ -3007,4 +2968,61 @@
 .drawer:has(.position-form) {
   width: min(32rem, 100vw);
   overflow-x: hidden;
+}
+
+/* ---------- Member and position details panels ---------- */
+
+.drawer:has(.member-panel),
+.drawer:has(.position-panel) {
+  width: min(36rem, 100vw);
+  overflow-x: hidden;
+}
+
+.member-panel,
+.position-panel,
+.member-panel__sections,
+.member-panel__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* In the panel the hero is a plain header, not a card on the page. */
+.member-panel .profile-hero {
+  gap: var(--space-4);
+  padding-right: var(--space-12);
+  background: none;
+}
+
+.member-panel .profile-hero__identity {
+  gap: var(--space-4);
+}
+
+.member-panel .profile-hero__name {
+  font-size: var(--text-xl);
+}
+
+/* Cards inside the panel: lighter, so they read as sections. */
+.member-panel .card,
+.position-panel .card {
+  box-shadow: none;
+  padding: var(--space-5);
+}
+
+.position-panel__head {
+  padding-right: var(--space-12);
+}
+
+.position-panel__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block: var(--space-1);
+}
+
+.position-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }

@@ -12,6 +12,8 @@ export interface MembersSearch {
   /** A position id, or `none` for members holding no position. */
   role?: string;
   page?: number;
+  /** Membership id shown in the details panel. */
+  selected?: string;
 }
 
 export function parseMembersSearch(raw: Record<string, unknown>): MembersSearch {
@@ -22,6 +24,7 @@ export function parseMembersSearch(raw: Record<string, unknown>): MembersSearch 
     status: status === 'active' || status === 'suspended' ? status : undefined,
     role: typeof raw.role === 'string' && raw.role !== '' ? raw.role : undefined,
     page: Number.isInteger(page) && page > 1 ? page : undefined,
+    selected: typeof raw.selected === 'string' && raw.selected !== '' ? raw.selected : undefined,
   };
 }
 

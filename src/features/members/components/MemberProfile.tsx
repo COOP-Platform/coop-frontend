@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import {
@@ -9,7 +9,6 @@ import {
   EmptyState,
   ErrorState,
   IconAlertTriangle,
-  IconArrowLeft,
   IconAtSign,
   IconCalendar,
   IconCheckCircle,
@@ -52,7 +51,11 @@ type PendingAction = 'assign' | LifecycleAction | 'leave' | null;
 
 const PERMISSION_TEXT = new Map(PERMISSION_CATALOG.map((p) => [p.code, p.description]));
 
-export function MemberProfile({ memberId }: { memberId: string }) {
+/**
+ * A member's details, shown in the side panel over the Members list.
+ * Admins open anyone; everyone else only themselves (from "My profile").
+ */
+export function MemberPanel({ memberId }: { memberId: string }) {
   const directory = useMemberDirectory();
   const { membership } = useWorkspace();
   const member = directory.members.find((m) => m.membershipId === memberId);
@@ -60,68 +63,28 @@ export function MemberProfile({ memberId }: { memberId: string }) {
   // Non-admins see their own profile only; the list is all they get of others.
   if (membership !== undefined && !membership.is_admin && memberId !== membership.id) {
     return (
-      <div className="page">
-        <BackLink />
-        <section className="card">
-          <EmptyState
-            icon={<IconUser width={28} height={28} />}
-            title="Profiles are private"
-            message="You can see the member list and your own profile."
-            action={
-              <Link
-                to="/community/members/$memberId"
-                params={{ memberId: membership.id }}
-                className="btn btn--primary btn--inline"
-              >
-                View my profile
-              </Link>
-            }
-          />
-        </section>
-      </div>
+      <EmptyState
+        icon={<IconUser width={28} height={28} />}
+        title="Profiles are private"
+        message="You can see the member list and your own profile."
+      />
     );
   }
 
   if (directory.isPending) return <LoadingState label="Loading member…" />;
-
-  if (directory.error) {
-    return (
-      <div className="page">
-        <BackLink />
-        <section className="card">
-          <ErrorState message={errorMessage(directory.error)} />
-        </section>
-      </div>
-    );
-  }
+  if (directory.error) return <ErrorState message={errorMessage(directory.error)} />;
 
   if (!member) {
     return (
-      <div className="page">
-        <BackLink />
-        <section className="card">
-          <EmptyState
-            icon={<IconUsers width={28} height={28} />}
-            title="Member not found"
-            message="They may have left or been removed from the community."
-          />
-        </section>
-      </div>
+      <EmptyState
+        icon={<IconUsers width={28} height={28} />}
+        title="Member not found"
+        message="They may have left or been removed from the community."
+      />
     );
   }
 
   return <Profile member={member} />;
-}
-
-function BackLink() {
-  return (
-    <div className="profile-top">
-      <Link to="/community/members" className="back-link">
-        <IconArrowLeft width={20} height={20} />
-        Back to Members
-      </Link>
-    </div>
-  );
 }
 
 function Profile({ member }: { member: DirectoryMember }) {
@@ -135,13 +98,11 @@ function Profile({ member }: { member: DirectoryMember }) {
   const hasActions = canAssign || canSuspend || canRemove || member.isYou;
 
   return (
-    <div className="page">
-      <BackLink />
-
-      <section className="card profile-hero">
+    <div className="member-panel">
+      <section className="profile-hero">
         <div className="profile-hero__identity">
           <span className="profile-hero__avatar">
-            <Avatar name={member.fullName} tone="brand" size="xl" square />
+            <Avatar name={member.fullName} tone="brand" size="lg" square />
             {isActive && (
               <span className="profile-hero__verified" aria-label="Active">
                 <IconCheckCircle width={16} height={16} />
@@ -150,7 +111,7 @@ function Profile({ member }: { member: DirectoryMember }) {
           </span>
           <div>
             <div className="profile-hero__name-row">
-              <h1 className="profile-hero__name">{member.fullName}</h1>
+              <h2 className="profile-hero__name">{member.fullName}</h2>
               {isActive ? (
                 <Badge tone="success" dot>
                   Active Member
@@ -189,14 +150,14 @@ function Profile({ member }: { member: DirectoryMember }) {
         </div>
       </section>
 
-      <div className="profile-grid">
-        <div className="profile-grid__main">
+      <div className="member-panel__sections">
+        <div className="member-panel__main">
           <GovernanceCard member={member} canRevoke={canAssign} />
           <MembershipCard member={member} />
         </div>
 
         {hasActions && (
-          <div className="profile-grid__rail">
+          <div>
             <section className="card" aria-labelledby="actions-title">
               <header className="section-head">
                 <IconTile tone="info" size="lg">

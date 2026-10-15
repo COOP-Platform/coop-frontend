@@ -275,8 +275,8 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
               {me && <p className="menu__heading">{me.email}</p>}
               {membership && (
                 <Link
-                  to="/community/members/$memberId"
-                  params={{ memberId: membership.id }}
+                  to="/community/members"
+                  search={{ selected: membership.id }}
                   className="menu__item"
                   onClick={close}
                 >

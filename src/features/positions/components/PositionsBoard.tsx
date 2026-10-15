@@ -1,9 +1,9 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import {
   Badge,
   Button,
+  Drawer,
   ErrorState,
   IconPlus,
   IconShieldCheck,
@@ -23,11 +23,17 @@ import { PositionIcon } from '@/lib/positions';
 import type { Position } from '../api/positions';
 import { usePositions } from '../api/positions';
 import { CommitteeView } from './CommitteeView';
+import { PositionDetails } from './PositionDetails';
 import { AssignMemberDialog, PositionFormDialog } from './PositionDialogs';
 import type { Editing } from './PositionDialogs';
 
-export function PositionsBoard() {
-  const navigate = useNavigate();
+interface PositionsBoardProps {
+  /** Position shown in the details panel. */
+  selected?: string;
+  onSelect: (positionId: string | undefined) => void;
+}
+
+export function PositionsBoard({ selected, onSelect }: PositionsBoardProps) {
   const { membership, communityId, can } = useWorkspace();
   const positions = usePositions(communityId, can('position.view'));
   const directory = useMemberDirectory();
@@ -99,12 +105,7 @@ export function PositionsBoard() {
               holdersKnown={!directory.positionsPending}
               canEdit={can('position.update')}
               canAssign={can('position.assign')}
-              onView={() =>
-                void navigate({
-                  to: '/community/positions/$positionId',
-                  params: { positionId: position.id },
-                })
-              }
+              onView={() => onSelect(position.id)}
               onEdit={() => setEditing({ mode: 'edit', position })}
               onAssign={() => setAssigning(position)}
             />
@@ -119,6 +120,19 @@ export function PositionsBoard() {
         canDelete={can('position.delete')}
         onClose={() => setEditing(null)}
       />
+      <Drawer
+        open={selected !== undefined}
+        onClose={() => onSelect(undefined)}
+        label="Position details"
+      >
+        {selected && (
+          <PositionDetails
+            key={selected}
+            positionId={selected}
+            onClose={() => onSelect(undefined)}
+          />
+        )}
+      </Drawer>
       <AssignMemberDialog
         key={assigning?.id ?? 'none'}
         position={assigning}

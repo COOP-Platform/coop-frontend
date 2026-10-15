@@ -8,7 +8,6 @@ import {
   EmptyState,
   IconAtSign,
   IconChevronRight,
-  IconCommunity,
   IconEye,
   IconLayers,
   IconMail,
@@ -24,9 +23,8 @@ import { useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 
-import { effectiveStatus, useInvitations, useSendInvitation } from '../api/invitations';
+import { useSendInvitation } from '../api/invitations';
 import { useMemberCategories } from '../api/member-categories';
-import { useMemberships } from '../api/memberships';
 import { INVITATION_VALID_DAYS } from '../constants';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,8 +40,6 @@ export function InviteMember() {
   const navigate = useNavigate();
   const { me, membership, communityId, can } = useWorkspace();
   const categories = useMemberCategories(communityId);
-  const memberships = useMemberships(communityId);
-  const invitations = useInvitations(communityId, can('member.invite'));
   const send = useSendInvitation();
 
   const activeCategories = (categories.data ?? []).filter((c) => c.is_active);
@@ -57,10 +53,6 @@ export function InviteMember() {
     categoryId || (activeCategories.length === 1 ? (activeCategories[0]?.id ?? '') : '');
 
   const communityName = membership?.community.name ?? 'the';
-  const memberCount = (memberships.data ?? []).filter((m) => m.status === 'active').length;
-  const pendingCount = (invitations.data ?? []).filter(
-    (i) => effectiveStatus(i) === 'pending',
-  ).length;
 
   if (!can('member.invite')) {
     return (
@@ -279,27 +271,6 @@ export function InviteMember() {
             <p className="preview__foot">
               <IconShield width={16} height={16} aria-hidden="true" />
               Link valid for {INVITATION_VALID_DAYS} days upon send
-            </p>
-          </section>
-
-          <section className="card quick-stats" aria-labelledby="quick-stats-title">
-            <h2 id="quick-stats-title" className="preview__title">
-              <IconCommunity aria-hidden="true" />
-              Community Quick Stats
-            </h2>
-            <dl className="quick-stats__grid">
-              <div>
-                <dt>Total Members</dt>
-                <dd>{memberCount}</dd>
-              </div>
-              <div>
-                <dt>Pending Invites</dt>
-                <dd className="quick-stats__warn">{pendingCount}</dd>
-              </div>
-            </dl>
-            <p className="quick-stats__note">
-              Active membership is governed by collective community consensus under the{' '}
-              {communityName} charter.
             </p>
           </section>
         </div>

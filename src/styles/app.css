@@ -824,6 +824,8 @@
 
 .page-header__text {
   display: flex;
+  /* Takes the room beside the actions, and wraps its text within it. */
+  flex: 1 1 24rem;
   min-width: 0;
   flex-direction: column;
   gap: var(--space-1);
@@ -850,8 +852,12 @@
 
 .page-header__actions {
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-3);
+  /* Right-hand side, also when the header wraps onto two lines. */
+  margin-left: auto;
 }
 
 .eyebrow {

@@ -4,9 +4,8 @@
 // all on the live API. Where the API does not carry what a design shows, see
 // docs/sprint-2-integration.md.
 export { MembersDirectory } from './components/MembersDirectory';
-export { MemberProfile } from './components/MemberProfile';
+export { MemberPanel } from './components/MemberProfile';
 export { InvitationsBoard } from './components/InvitationsBoard';
-export { InviteMember } from './components/InviteMember';
 
 export { parseInvitationsSearch, parseMembersSearch } from './search';
 export type { InvitationsSearch, MembersSearch } from './search';

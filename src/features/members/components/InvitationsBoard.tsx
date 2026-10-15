@@ -1,4 +1,3 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 
 import {
@@ -31,6 +30,7 @@ import { downloadCsv } from '@/lib/csv';
 import { formatDate, formatRelative, formatShortDate } from '@/lib/format/date';
 
 import { useMemberDirectory } from '../api/directory';
+import { InviteMemberDialog } from './InviteMemberDialog';
 import type { Invitation, InvitationStatus } from '../api/invitations';
 import {
   effectiveStatus,
@@ -59,7 +59,6 @@ interface InvitationsBoardProps {
 }
 
 export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardProps) {
-  const navigate = useNavigate();
   const filterId = useId();
   const { membership, communityId, can } = useWorkspace();
   const canInvite = can('member.invite');
@@ -126,7 +125,7 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
             <Button
               inline
               icon={<IconUserPlus />}
-              onClick={() => void navigate({ to: '/community/invitations/new' })}
+              onClick={() => onSearchChange({ ...search, invite: true })}
             >
               Invite Member
             </Button>
@@ -216,6 +215,13 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
           </div>
         )}
       </section>
+
+      <InviteMemberDialog
+        key={search.invite ? 'open' : 'closed'}
+        open={search.invite === true}
+        onClose={() => onSearchChange({ ...search, invite: undefined })}
+        onSent={(created) => onSearchChange({ ...search, invite: undefined, selected: created.id })}
+      />
 
       <Drawer
         open={selected !== undefined}

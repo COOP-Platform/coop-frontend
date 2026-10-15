@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useId } from 'react';
 
 import {
@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Dropdown,
+  Drawer,
   EmptyState,
   ErrorState,
   IconAward,
@@ -32,6 +33,7 @@ import { PositionIcon } from '@/lib/positions';
 
 import type { DirectoryMember } from '../api/directory';
 import { useMemberDirectory } from '../api/directory';
+import { MemberPanel } from './MemberProfile';
 import type { MembersSearch, MemberStatusFilter } from '../search';
 
 const PAGE_SIZE = 8;
@@ -130,7 +132,9 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
             <Button
               inline
               icon={<IconUserPlus />}
-              onClick={() => void navigate({ to: '/community/invitations/new' })}
+              onClick={() =>
+                void navigate({ to: '/community/invitations', search: { invite: true } })
+              }
             >
               Invite Member
             </Button>
@@ -286,6 +290,7 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
               <tbody>
                 {visible.map((member) => (
                   <MemberRow
+                    onOpen={() => onSearchChange({ ...search, selected: member.membershipId })}
                     key={member.membershipId}
                     member={member}
                     showActions={isAdmin}
@@ -341,15 +346,25 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
           )}
         </footer>
       </section>
+
+      <Drawer
+        open={search.selected !== undefined}
+        onClose={() => onSearchChange({ ...search, selected: undefined })}
+        label="Member details"
+      >
+        {search.selected && <MemberPanel memberId={search.selected} />}
+      </Drawer>
     </div>
   );
 }
 
 function MemberRow({
+  onOpen,
   member,
   showActions,
   committeeSeats,
 }: {
+  onOpen: () => void;
   member: DirectoryMember;
   showActions: boolean;
   /** Seat names from the committee, when the member's own positions are not readable. */
@@ -413,14 +428,14 @@ function MemberRow({
       </td>
       {showActions && (
         <td className="table__action-col">
-          <Link
-            to="/community/members/$memberId"
-            params={{ memberId: member.membershipId }}
+          <button
+            type="button"
             className="link-button"
             aria-label={`View details for ${member.fullName}`}
+            onClick={onOpen}
           >
             View Details
-          </Link>
+          </button>
         </td>
       )}
     </tr>

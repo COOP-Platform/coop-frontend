@@ -12,6 +12,8 @@ export interface MembersSearch {
   /** A position id, or `none` for members holding no position. */
   role?: string;
   page?: number;
+  /** Membership id shown in the details panel. */
+  selected?: string;
 }
 
 export function parseMembersSearch(raw: Record<string, unknown>): MembersSearch {
@@ -22,6 +24,7 @@ export function parseMembersSearch(raw: Record<string, unknown>): MembersSearch 
     status: status === 'active' || status === 'suspended' ? status : undefined,
     role: typeof raw.role === 'string' && raw.role !== '' ? raw.role : undefined,
     page: Number.isInteger(page) && page > 1 ? page : undefined,
+    selected: typeof raw.selected === 'string' && raw.selected !== '' ? raw.selected : undefined,
   };
 }
 
@@ -32,6 +35,8 @@ export interface InvitationsSearch {
   q?: string;
   /** Invitation id shown in the details rail. */
   selected?: string;
+  /** The invite popup is open. */
+  invite?: boolean;
 }
 
 export function parseInvitationsSearch(raw: Record<string, unknown>): InvitationsSearch {
@@ -41,5 +46,6 @@ export function parseInvitationsSearch(raw: Record<string, unknown>): Invitation
       status === 'pending' || status === 'accepted' || status === 'expired' ? status : undefined,
     q: typeof raw.q === 'string' && raw.q !== '' ? raw.q : undefined,
     selected: typeof raw.selected === 'string' ? raw.selected : undefined,
+    invite: raw.invite === true || raw.invite === 'true' ? true : undefined,
   };
 }

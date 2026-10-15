@@ -1,13 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { PositionDetails } from '@/features/positions';
-
+// Position details open in a side panel over the Positions list. Old links
+// to a position's own page land there instead.
 export const Route = createFileRoute('/community/positions/$positionId')({
-  component: PositionDetailsPage,
+  beforeLoad: ({ params }) => {
+    throw redirect({ to: '/community/positions', search: { selected: params.positionId } });
+  },
 });
-
-function PositionDetailsPage() {
-  const { positionId } = Route.useParams();
-  // Keyed so moving between positions starts each page's dialogs fresh.
-  return <PositionDetails key={positionId} positionId={positionId} />;
-}

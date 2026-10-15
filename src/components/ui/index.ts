@@ -16,6 +16,7 @@ export { Dialog } from './Dialog';
 export { Drawer } from './Drawer';
 export { Dropdown } from './Dropdown';
 export { EmptyState } from './EmptyState';
+export { ComingSoon } from './ComingSoon';
 export { ErrorState, LoadingState } from './QueryState';
 export { Input } from './Input';
 export { Textarea } from './Textarea';

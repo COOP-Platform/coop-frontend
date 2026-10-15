@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import {
@@ -9,7 +9,6 @@ import {
   EmptyState,
   ErrorState,
   IconCheckCircle,
-  IconChevronRight,
   IconIdBadge,
   IconLayers,
   IconPencil,
@@ -22,7 +21,6 @@ import {
   IconUserPlus,
   IconUsers,
   LoadingState,
-  PageHeader,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import type { DirectoryMember } from '@/features/members';
@@ -37,12 +35,19 @@ import { PERMISSION_CATALOG, PERMISSION_MODULES } from '../data/permissions';
 import { AssignMemberDialog, DeletePositionDialog, PositionFormDialog } from './PositionDialogs';
 
 /**
- * One position: who holds it, what it allows, and every action on it —
- * assign, reassign, take it off someone, edit, delete. Vacant positions get
- * the same page; their holder list is simply the place to fill the seat.
+ * One position, in the side panel over the Positions list: who holds it,
+ * what it allows, and every action on it — assign, reassign, take it off
+ * someone, edit, delete. Vacant positions get the same panel; their holder
+ * list is simply the place to fill the seat.
  */
-export function PositionDetails({ positionId }: { positionId: string }) {
-  const navigate = useNavigate();
+export function PositionDetails({
+  positionId,
+  onClose,
+}: {
+  positionId: string;
+  /** Closes the panel — after a delete, the position is gone. */
+  onClose: () => void;
+}) {
   const { communityId, can } = useWorkspace();
   const positions = usePositions(communityId, can('position.view'));
   const directory = useMemberDirectory();
@@ -53,50 +58,27 @@ export function PositionDetails({ positionId }: { positionId: string }) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const backToList = () => void navigate({ to: '/community/positions' });
-
   if (!can('position.view')) {
     return (
-      <div className="page">
-        <section className="card">
-          <EmptyState
-            icon={<IconIdBadge width={28} height={28} />}
-            title="You can't view positions here"
-            message="Seeing positions needs the position.view permission."
-          />
-        </section>
-      </div>
+      <EmptyState
+        icon={<IconIdBadge width={28} height={28} />}
+        title="You can't view positions here"
+        message="Seeing positions needs the position.view permission."
+      />
     );
   }
 
   if (positions.isPending) return <LoadingState label="Loading position…" />;
-  if (positions.error) {
-    return (
-      <div className="page">
-        <section className="card">
-          <ErrorState message={errorMessage(positions.error)} />
-        </section>
-      </div>
-    );
-  }
+  if (positions.error) return <ErrorState message={errorMessage(positions.error)} />;
 
   const position = positions.data.find((p) => p.id === positionId);
   if (position === undefined) {
     return (
-      <div className="page">
-        <section className="card">
-          <EmptyState
-            icon={<IconIdBadge width={28} height={28} />}
-            title="This position no longer exists"
-            message="It may have been deleted."
-            action={
-              <Link to="/community/positions" className="btn btn--primary btn--inline">
-                Back to Positions
-              </Link>
-            }
-          />
-        </section>
-      </div>
+      <EmptyState
+        icon={<IconIdBadge width={28} height={28} />}
+        title="This position no longer exists"
+        message="It may have been deleted."
+      />
     );
   }
 
@@ -104,28 +86,15 @@ export function PositionDetails({ positionId }: { positionId: string }) {
   const canAssign = can('position.assign');
 
   return (
-    <div className="page">
-      <nav className="breadcrumb" aria-label="Breadcrumb">
-        <IconIdBadge width={16} height={16} aria-hidden="true" />
-        <Link to="/community/positions" className="breadcrumb__link">
-          Positions
-        </Link>
-        <IconChevronRight width={14} height={14} aria-hidden="true" />
-        <span className="breadcrumb__current" aria-current="page">
-          {position.name}
-        </span>
-      </nav>
-
-      <PageHeader
-        eyebrow={
-          <span className="eyebrow eyebrow--muted">
-            <PositionIcon name={position.name} />
-            Governance position
-          </span>
-        }
-        title={position.name}
-        badge={
-          <>
+    <div className="position-panel">
+      <header className="details__head position-panel__head">
+        <div>
+          <p className="section-head__eyebrow">Position</p>
+          <div className="position-panel__title-row">
+            <IconTile tone={position.is_admin ? 'brand' : 'neutral'}>
+              <PositionIcon name={position.name} />
+            </IconTile>
+            <h2 className="section-head__title">{position.name}</h2>
             {position.is_admin && <Badge tone="brand">Admin</Badge>}
             {position.holder_count === 0 ? (
               <Badge tone="warning" dot>
@@ -134,58 +103,53 @@ export function PositionDetails({ positionId }: { positionId: string }) {
             ) : (
               <Badge tone="success">{position.holder_count} assigned</Badge>
             )}
-          </>
-        }
-        subtitle={position.description ?? 'No description yet.'}
-        actions={
-          <>
-            {canAssign && (
-              <Button inline icon={<IconUserPlus />} onClick={() => setAssigning(true)}>
-                Assign Member
-              </Button>
-            )}
-            {can('position.update') && (
-              <Button
-                variant="secondary"
-                inline
-                icon={<IconPencil />}
-                onClick={() => setEditing(true)}
-              >
-                Edit
-              </Button>
-            )}
-            {/* The Member position is everyone's fallback: it is never deleted. */}
-            {can('position.delete') && !isPlainMemberPosition(position.name) && (
-              <Button
-                variant="secondary"
-                inline
-                icon={<IconTrash />}
-                onClick={() => setDeleting(true)}
-              >
-                Delete
-              </Button>
-            )}
-          </>
-        }
-      />
+          </div>
+          <p className="section-head__subtitle">{position.description ?? 'No description yet.'}</p>
+        </div>
+      </header>
 
-      <div className="profile-grid">
-        <div className="profile-grid__main">
-          <HoldersCard
-            position={position}
-            holders={holders}
-            holdersKnown={!directory.positionsPending}
-            canAssign={canAssign}
-            onAssign={() => setAssigning(true)}
-            onReassign={setReplacing}
-            onRevoke={setRevoking}
-          />
-          <PermissionsCard position={position} />
-        </div>
-        <div className="profile-grid__rail">
-          <AboutCard position={position} />
-        </div>
+      <div className="position-panel__actions">
+        {canAssign && (
+          <Button size="sm" inline icon={<IconUserPlus />} onClick={() => setAssigning(true)}>
+            Assign Member
+          </Button>
+        )}
+        {can('position.update') && (
+          <Button
+            variant="secondary"
+            size="sm"
+            inline
+            icon={<IconPencil />}
+            onClick={() => setEditing(true)}
+          >
+            Edit
+          </Button>
+        )}
+        {/* The Member position is everyone's fallback: it is never deleted. */}
+        {can('position.delete') && !isPlainMemberPosition(position.name) && (
+          <Button
+            variant="secondary"
+            size="sm"
+            inline
+            icon={<IconTrash />}
+            onClick={() => setDeleting(true)}
+          >
+            Delete
+          </Button>
+        )}
       </div>
+
+      <HoldersCard
+        position={position}
+        holders={holders}
+        holdersKnown={!directory.positionsPending}
+        canAssign={canAssign}
+        onAssign={() => setAssigning(true)}
+        onReassign={setReplacing}
+        onRevoke={setRevoking}
+      />
+      <AboutCard position={position} />
+      <PermissionsCard position={position} />
 
       <AssignMemberDialog
         key={assigning ? 'assign' : replacing ? `re-${replacing.membershipId}` : 'none'}
@@ -208,13 +172,13 @@ export function PositionDetails({ positionId }: { positionId: string }) {
         editing={editing ? { mode: 'edit', position } : null}
         canDelete={can('position.delete')}
         onClose={() => setEditing(false)}
-        onDeleted={backToList}
+        onDeleted={onClose}
       />
       <DeletePositionDialog
         position={position}
         open={deleting}
         onClose={() => setDeleting(false)}
-        onDeleted={backToList}
+        onDeleted={onClose}
       />
     </div>
   );
@@ -278,8 +242,8 @@ function HoldersCard({
               <Avatar name={member.fullName} />
               <div className="holder-list__who">
                 <Link
-                  to="/community/members/$memberId"
-                  params={{ memberId: member.membershipId }}
+                  to="/community/members"
+                  search={{ selected: member.membershipId }}
                   className="holder-list__name"
                 >
                   {member.fullName}

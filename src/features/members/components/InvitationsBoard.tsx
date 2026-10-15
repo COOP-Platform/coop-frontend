@@ -18,7 +18,6 @@ import {
   IconRefresh,
   IconSearch,
   IconSend,
-  IconShield,
   IconUser,
   IconUserPlus,
   LoadingState,
@@ -41,7 +40,6 @@ import {
   useRevokeInvitation,
   useSendInvitation,
 } from '../api/invitations';
-import { INVITATION_VALID_DAYS } from '../constants';
 import type { InvitationsSearch, InvitationStatusFilter } from '../search';
 
 const STATUS: Record<InvitationStatus, { label: string; detail: string; tone: BadgeTone }> = {
@@ -218,18 +216,6 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
           </div>
         )}
       </section>
-
-      <aside className="notice notice--info">
-        <IconShield aria-hidden="true" />
-        <div>
-          <p className="notice__title">Tontine &amp; Cooperative Bylaws Governance</p>
-          <p className="notice__text">
-            Pending invitations automatically expire after {INVITATION_VALID_DAYS} calendar days to
-            ensure creditworthiness calculations and rotating payout slots stay aligned with active
-            verified contributors. Resending issues a fresh link and cancels the old one.
-          </p>
-        </div>
-      </aside>
 
       <Drawer
         open={selected !== undefined}

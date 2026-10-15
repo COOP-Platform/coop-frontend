@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   Button,
   Dialog,
+  Drawer,
   IconIdBadge,
   IconRefresh,
   IconUserPlus,
@@ -16,6 +17,7 @@ import { useWorkspace } from '@/features/auth';
 import type { DirectoryMember } from '@/features/members';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
+import { isPlainMemberPosition } from '@/lib/position-tone';
 
 import type { Position } from '../api/positions';
 import {
@@ -86,26 +88,34 @@ export function PositionFormDialog({
     else create.mutate(input, { onSuccess: onClose, onError });
   }
 
+  // The Member position is how every member's baseline rights are found:
+  // its name is fixed and it cannot be deleted (the API refuses both).
+  const isMember = initial !== undefined && isPlainMemberPosition(initial.name);
+
   return (
-    <Dialog
+    <Drawer
       open={editing !== null}
       onClose={onClose}
-      title={initial ? `Edit ${initial.name}` : 'Create Position'}
-      subtitle={
-        initial
-          ? 'Changes apply at once to everyone holding this position.'
-          : 'Add a governance role to the community.'
-      }
-      icon={
-        <IconTile tone="brand" round>
-          <IconIdBadge />
-        </IconTile>
-      }
+      label={initial ? `Edit ${initial.name}` : 'Create position'}
     >
-      <form className="dialog__form" onSubmit={handleSubmit} noValidate>
+      <form className="details position-form" onSubmit={handleSubmit} noValidate>
+        <header className="details__head">
+          <div>
+            <p className="section-head__eyebrow">{initial ? 'Edit position' : 'New position'}</p>
+            <h2 className="section-head__title">{initial ? initial.name : 'Create Position'}</h2>
+            <p className="section-head__subtitle">
+              {initial
+                ? 'Changes apply at once to everyone holding this position.'
+                : 'Add a governance role to the community.'}
+            </p>
+          </div>
+        </header>
+
         <Input
           label="Position name"
           required
+          disabled={isMember}
+          hint={isMember ? 'The Member position keeps its name.' : undefined}
           maxLength={60}
           placeholder="e.g. Vice Treasurer"
           value={name}
@@ -139,10 +149,7 @@ export function PositionFormDialog({
                     checked={permissions.has(permission.code)}
                     onChange={() => toggle(permission.code)}
                   />
-                  <span>
-                    {permission.description}
-                    <span className="permission-picker__code">{permission.code}</span>
-                  </span>
+                  <span>{permission.description}</span>
                 </label>
               ))}
             </div>
@@ -175,7 +182,7 @@ export function PositionFormDialog({
             </Button>
           </div>
         )}
-        {initial && canDelete && !confirmDelete && (
+        {initial && canDelete && !isMember && !confirmDelete && (
           <button
             type="button"
             className="details__action details__action--danger"
@@ -185,7 +192,7 @@ export function PositionFormDialog({
           </button>
         )}
       </form>
-    </Dialog>
+    </Drawer>
   );
 }
 

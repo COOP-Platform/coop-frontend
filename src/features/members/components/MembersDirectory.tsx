@@ -434,7 +434,8 @@ function MemberRow({
             aria-label={`View details for ${member.fullName}`}
             onClick={onOpen}
           >
-            View Details
+            View details
+            <IconChevronRight width={16} height={16} aria-hidden="true" />
           </button>
         </td>
       )}

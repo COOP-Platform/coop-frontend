@@ -1,31 +1,39 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 
-import {
-  Button,
-  IconArrowRight,
-  IconCheckCircle,
-  IconClock,
-  IconEye,
-  IconEyeOff,
-  Input,
-} from '@/components/ui';
+import { Button, IconEye, IconEyeOff, Input } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 import type { FieldErrors } from '@/lib/api/client';
 import { saveTokens } from '@/lib/auth/session';
 
 import { useAcceptInvitation, usePreviewInvitation, useRejectInvitation } from '../api/invitation';
-import { ALLOCATION_BENEFITS } from '../data/copy';
 
 interface AcceptInvitationProps {
-  /** From `?token=` on the emailed link. */
+  /** From `#token=` on the emailed link. */
   token?: string;
 }
 
-const LEGAL_NOTE =
-  'By accepting, your profile is bonded to the community charter under Rwandan Law ' +
-  'N° 02/2010 on Cooperative Societies.';
+/** A heading and a line or two — every non-form state of the page. */
+function Message({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="login-form">
+      <div className="login-form__head">
+        <h1 className="login-form__title">{title}</h1>
+        <p className="login-form__subtitle">{children}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
 
 export function AcceptInvitation({ token }: AcceptInvitationProps) {
   const navigate = useNavigate();
@@ -54,72 +62,57 @@ export function AcceptInvitation({ token }: AcceptInvitationProps) {
 
   if (token === undefined) {
     return (
-      <div className="accept">
-        <h1 className="accept__title">No invitation in this link</h1>
-        <p className="accept__lede">
-          Open the link from your invitation email — it carries a token this page needs. If you
-          typed the address by hand, some of it is missing.
-        </p>
-      </div>
+      <Message title="No invitation in this link">
+        Open the link from your invitation email. If you typed the address by hand, part of it is
+        missing.
+      </Message>
     );
   }
 
   if (preview.isPending || preview.isIdle) {
-    return <p className="accept__loading">Checking your invitation…</p>;
+    return <Message title="Checking your invitation…">One moment.</Message>;
   }
 
   if (preview.isError) {
     const status = preview.error instanceof ApiError ? preview.error.status : 0;
-    return (
-      <div className="accept">
-        <h1 className="accept__title">
-          {status === 404 ? 'This invitation link is not valid' : 'This invitation is closed'}
-        </h1>
-        <p className="accept__lede">
-          {preview.error instanceof ApiError
-            ? preview.error.message
-            : 'The invitation service could not be reached. Try again in a moment.'}
-        </p>
-        <p className="accept__lede">
-          If it was already used, accepted or withdrawn, ask whoever invited you to send a new one.
-        </p>
-      </div>
-    );
+    const title =
+      status === 404 ? 'This invitation link is not valid' : 'This invitation is closed';
+    // The API's own reason (expired, withdrawn, already used), unless it just
+    // repeats the heading.
+    const reason =
+      preview.error instanceof ApiError
+        ? preview.error.message.replace(/.$/, '').toLowerCase() === title.toLowerCase()
+          ? ''
+          : `${preview.error.message} `
+        : 'The invitation could not be checked. ';
+    return <Message title={title}>{reason}Ask whoever invited you to send a new one.</Message>;
   }
 
   const invitation = preview.data;
-  const firstName = invitation.full_name.split(/\s+/)[0] ?? invitation.full_name;
 
   // Declined: terminal, and there is nothing to sign in to.
   if (reject.isSuccess) {
     return (
-      <div className="accept">
-        <h1 className="accept__title">Invitation declined</h1>
-        <p className="accept__lede">
-          You have declined the invitation to {reject.data.community_name}. Nothing was created and
-          the link no longer works.
-        </p>
-      </div>
+      <Message title="Invitation declined">
+        You declined the invitation to {reject.data.community_name}. The link no longer works.
+      </Message>
     );
   }
 
-  /*
-   * Accepted by someone who already had an account: no tokens come back, so
-   * they have to sign in with the password they already use.
-   */
+  // Accepted with an existing account: no tokens come back, so they sign in.
   if (accept.isSuccess && accept.data.outcome === 'existing_account') {
     return (
-      <div className="accept">
-        <span className="accept__done" aria-hidden="true">
-          <IconCheckCircle />
-        </span>
-        <h1 className="accept__title">You&apos;re in</h1>
-        <p className="accept__lede">{accept.data.detail}</p>
-        <Link to="/login" className="btn btn--primary">
-          Go to Sign In
-          <IconArrowRight />
-        </Link>
-      </div>
+      <Message
+        title="You're in"
+        action={
+          <Link to="/login" className="btn btn--primary">
+            Sign in
+          </Link>
+        }
+      >
+        {invitation.community_name} has been added to your account. Sign in with your usual
+        password.
+      </Message>
     );
   }
 
@@ -127,7 +120,7 @@ export function AcceptInvitation({ token }: AcceptInvitationProps) {
     event.preventDefault();
 
     if (invitation.requires_password && password !== confirmation) {
-      setMismatch('Both passwords must match.');
+      setMismatch('Passwords do not match.');
       return;
     }
     setMismatch(undefined);
@@ -140,11 +133,7 @@ export function AcceptInvitation({ token }: AcceptInvitationProps) {
       {
         onSuccess: (result) => {
           if (result.access !== undefined && result.refresh !== undefined) {
-            /*
-             * Signed straight in — there is no separate sign-in step any more.
-             * Tokens only: the accept response carries no user id, and
-             * `useMe()` fetches the real record on the next screen.
-             */
+            // Signed straight in; `useMe()` fetches the account on the next screen.
             saveTokens(result.access, result.refresh, false);
             void navigate({ to: '/' });
           }
@@ -162,57 +151,30 @@ export function AcceptInvitation({ token }: AcceptInvitationProps) {
       : accept.error !== null
         ? 'Something went wrong. Please try again.'
         : undefined;
+  const busy = accept.isPending || reject.isPending;
 
   return (
-    <form className="accept" onSubmit={handleAccept}>
-      <div className="accept__status">
-        <span className="accept__tag">Invitation</span>
-        <span className="accept__verified">Link verified</span>
+    <form className="login-form" onSubmit={handleAccept}>
+      <div className="login-form__head">
+        <h1 className="login-form__title">Join {invitation.community_name}</h1>
+        <p className="login-form__subtitle">
+          {invitation.requires_password
+            ? `You've been invited as ${invitation.email}. Choose a password to accept.`
+            : `You already have an account with ${invitation.email}. Accept to add this community to it.`}
+        </p>
       </div>
 
-      <header className="accept__intro">
-        <h1 className="accept__title">Welcome, {firstName}!</h1>
-        <p className="accept__lede">
-          You have been invited to join <strong>{invitation.community_name}</strong> as{' '}
-          <strong>{invitation.category_name}</strong>, using <strong>{invitation.email}</strong>.
-        </p>
-      </header>
-
-      <section className="accept__allocation">
-        <div className="accept__allocation-head">
-          <div>
-            <p className="accept__eyebrow">Your category</p>
-            <p className="accept__allocation-name">{invitation.category_name}</p>
-          </div>
-          <span className="accept__approved">Pre-approved</span>
-        </div>
-
-        <ul className="accept__benefits" role="list">
-          {ALLOCATION_BENEFITS.map((benefit) => (
-            <li key={benefit.title} className="accept__benefit">
-              <span className="accept__benefit-title">{benefit.title}</span>
-              <span className="accept__benefit-detail">{benefit.detail}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {invitation.requires_password ? (
-        <section className="accept__credentials">
-          <p className="accept__credentials-title">Choose your password</p>
-          <p className="accept__credentials-text">
-            This becomes your sign-in password. Nothing is emailed to you, and you will be signed in
-            as soon as you accept.
-          </p>
-
+      {invitation.requires_password && (
+        <>
           <Input
             label="Password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="At least 8 characters"
+            placeholder="••••••••"
             autoComplete="new-password"
             minLength={8}
+            hint="Must be at least 8 characters."
             error={fieldErrors.password}
             required
             trailing={
@@ -226,61 +188,47 @@ export function AcceptInvitation({ token }: AcceptInvitationProps) {
               </button>
             }
           />
-
           <Input
             label="Confirm password"
             type={showPassword ? 'text' : 'password'}
             value={confirmation}
             onChange={(event) => setConfirmation(event.target.value)}
-            placeholder="Re-enter your password"
+            placeholder="••••••••"
             autoComplete="new-password"
             error={mismatch}
             required
           />
-        </section>
-      ) : (
-        <p className="accept__existing" role="status">
-          This address already has an account, so keep using the password you have — accepting just
-          adds {invitation.community_name} to it.
-        </p>
+        </>
       )}
 
-      <p className="accept__expiry">
-        <IconClock />
-        Invitation expires {new Date(invitation.expires_at).toLocaleDateString()}
-      </p>
-
       {formError && (
-        <p className="accept__error" role="alert">
+        <p className="login-form__error" role="alert">
           {formError}
         </p>
       )}
-
       {reject.isError && (
-        <p className="accept__error" role="alert">
+        <p className="login-form__error" role="alert">
           {reject.error instanceof ApiError
             ? reject.error.message
             : 'Could not decline the invitation. Try again in a moment.'}
         </p>
       )}
 
-      <Button type="submit" variant="primary" disabled={accept.isPending || reject.isPending}>
-        {accept.isPending ? 'Setting up your account…' : 'Accept Invitation & Continue'}
-        <IconArrowRight />
+      <Button type="submit" variant="primary" disabled={busy}>
+        {accept.isPending ? 'Joining…' : 'Accept invitation'}
       </Button>
 
-      <p className="accept__secondary">
+      <p className="auth-panel__footer">
+        Not for you?{' '}
         <button
           type="button"
-          className="accept__decline"
+          className="accept-decline"
           onClick={() => reject.mutate(token as string)}
-          disabled={accept.isPending || reject.isPending}
+          disabled={busy}
         >
-          {reject.isPending ? 'Declining…' : 'Decline this invitation'}
+          {reject.isPending ? 'Declining…' : 'Decline'}
         </button>
       </p>
-
-      <p className="accept__legal">{LEGAL_NOTE}</p>
     </form>
   );
 }

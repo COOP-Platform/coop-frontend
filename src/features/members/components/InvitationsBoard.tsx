@@ -1,4 +1,3 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 
 import {
@@ -18,7 +17,6 @@ import {
   IconRefresh,
   IconSearch,
   IconSend,
-  IconShield,
   IconUser,
   IconUserPlus,
   LoadingState,
@@ -32,15 +30,16 @@ import { downloadCsv } from '@/lib/csv';
 import { formatDate, formatRelative, formatShortDate } from '@/lib/format/date';
 
 import { useMemberDirectory } from '../api/directory';
+import { InviteMemberDialog } from './InviteMemberDialog';
 import type { Invitation, InvitationStatus } from '../api/invitations';
 import {
   effectiveStatus,
+  isStillListed,
   useInvitations,
   useResendInvitation,
   useRevokeInvitation,
   useSendInvitation,
 } from '../api/invitations';
-import { INVITATION_VALID_DAYS } from '../constants';
 import type { InvitationsSearch, InvitationStatusFilter } from '../search';
 
 const STATUS: Record<InvitationStatus, { label: string; detail: string; tone: BadgeTone }> = {
@@ -60,13 +59,13 @@ interface InvitationsBoardProps {
 }
 
 export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardProps) {
-  const navigate = useNavigate();
   const filterId = useId();
   const { membership, communityId, can } = useWorkspace();
   const canInvite = can('member.invite');
   const invitations = useInvitations(communityId, canInvite);
 
-  const all = invitations.data ?? [];
+  // Accepted ones drop off after a day; the person is on Members by then.
+  const all = (invitations.data ?? []).filter((i) => isStillListed(i));
   const status: InvitationStatusFilter = search.status ?? 'all';
   const query = (search.q ?? '').trim().toLowerCase();
   const count = (s: InvitationStatus) => all.filter((i) => effectiveStatus(i) === s).length;
@@ -117,7 +116,7 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
       <PageHeader
         title="Invitations"
         badge={<Badge tone="info">{all.length} Sent</Badge>}
-        subtitle="Track and manage invitations sent to prospective cooperative members."
+        subtitle="Track and manage invitations sent to prospective cooperative members. Accepted invitations stay here for 24 hours; after that the person is on Members."
         actions={
           <>
             <Button variant="tint" inline icon={<IconDownload />} onClick={exportCsv}>
@@ -126,7 +125,7 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
             <Button
               inline
               icon={<IconUserPlus />}
-              onClick={() => void navigate({ to: '/community/invitations/new' })}
+              onClick={() => onSearchChange({ ...search, invite: true })}
             >
               Invite Member
             </Button>
@@ -217,17 +216,12 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
         )}
       </section>
 
-      <aside className="notice notice--info">
-        <IconShield aria-hidden="true" />
-        <div>
-          <p className="notice__title">Tontine &amp; Cooperative Bylaws Governance</p>
-          <p className="notice__text">
-            Pending invitations automatically expire after {INVITATION_VALID_DAYS} calendar days to
-            ensure creditworthiness calculations and rotating payout slots stay aligned with active
-            verified contributors. Resending issues a fresh link and cancels the old one.
-          </p>
-        </div>
-      </aside>
+      <InviteMemberDialog
+        key={search.invite ? 'open' : 'closed'}
+        open={search.invite === true}
+        onClose={() => onSearchChange({ ...search, invite: undefined })}
+        onSent={(created) => onSearchChange({ ...search, invite: undefined, selected: created.id })}
+      />
 
       <Drawer
         open={selected !== undefined}

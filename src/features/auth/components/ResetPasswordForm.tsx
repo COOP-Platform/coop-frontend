@@ -25,7 +25,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   if (token === undefined) {
     return (
       <div className="login-form">
-        <h2 className="login-form__title">This reset link is incomplete</h2>
+        <h1 className="login-form__title">This reset link is incomplete</h1>
         <p className="login-form__subtitle">
           Open the link straight from your email — it carries a token this page needs. Copying only
           part of the address drops it.
@@ -40,7 +40,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   if (confirm.isSuccess) {
     return (
       <div className="login-form">
-        <h2 className="login-form__title">Password updated</h2>
+        <h1 className="login-form__title">Password updated</h1>
         <p className="login-form__subtitle">{confirm.data.detail}</p>
         <Link to="/login" className="btn btn--primary">
           Sign in
@@ -80,7 +80,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   return (
     <form className="login-form" onSubmit={handleSubmit}>
-      <h2 className="login-form__title">Set a new password</h2>
+      <h1 className="login-form__title">Set a new password</h1>
       <p className="login-form__subtitle">
         Choose a password you have not used here before. You will sign in with it straight after.
       </p>

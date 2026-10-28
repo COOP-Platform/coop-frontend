@@ -1,7 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { InviteMember } from '@/features/members';
-
+// Inviting is a popup on the Invitations page now; old links open it there.
 export const Route = createFileRoute('/community/invitations/new')({
-  component: InviteMember,
+  beforeLoad: () => {
+    throw redirect({ to: '/community/invitations', search: { invite: true } });
+  },
 });

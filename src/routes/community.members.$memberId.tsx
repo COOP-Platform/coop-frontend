@@ -1,12 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { MemberProfile } from '@/features/members';
-
+// Member details open in a side panel over the Members list. Old links to
+// a member's own page land there instead.
 export const Route = createFileRoute('/community/members/$memberId')({
-  component: MemberPage,
+  beforeLoad: ({ params }) => {
+    throw redirect({ to: '/community/members', search: { selected: params.memberId } });
+  },
 });
-
-function MemberPage() {
-  const { memberId } = Route.useParams();
-  return <MemberProfile memberId={memberId} />;
-}

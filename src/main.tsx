@@ -7,6 +7,8 @@ import './styles/global.css';
 // After global.css on purpose: the shell and Sprint 2 screens refine a few base
 // rules (.card, .btn) and must win on source order.
 import './styles/app.css';
+// Account and community setup screens; builds on the shell rules in app.css.
+import './styles/setup.css';
 
 const router = createRouter({
   routeTree,

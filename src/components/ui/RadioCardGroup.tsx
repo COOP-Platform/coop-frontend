@@ -1,14 +1,23 @@
+import type { ReactNode } from 'react';
 import { useId } from 'react';
+
+import { IconCheckCircle } from './icons';
 
 export interface RadioCardOption {
   value: string;
   title: string;
   /** Second line inside the card — the plain-language gloss on `title`. */
   description: string;
+  /** Icon tile above the title. Any option having one switches to the left-aligned layout. */
+  icon?: ReactNode;
 }
 
 interface RadioCardGroupProps {
   legend: string;
+  /** Guidance under the legend. */
+  hint?: string;
+  /** Right-aligned on the legend row — e.g. "1 type selected". */
+  aside?: ReactNode;
   name: string;
   options: readonly RadioCardOption[];
   value: string;
@@ -31,6 +40,8 @@ interface RadioCardGroupProps {
  */
 export function RadioCardGroup({
   legend,
+  hint,
+  aside,
   name,
   options,
   value,
@@ -40,14 +51,17 @@ export function RadioCardGroup({
 }: RadioCardGroupProps) {
   const groupId = useId();
   const messageId = `${groupId}-message`;
+  const hintId = `${groupId}-hint`;
+  const rich = options.some((option) => option.icon !== undefined);
+  const describedBy = [hint ? hintId : null, error ? messageId : null].filter(Boolean).join(' ');
 
   return (
     <fieldset
-      className="radio-cards"
+      className={rich ? 'radio-cards radio-cards--rich' : 'radio-cards'}
       aria-invalid={error ? true : undefined}
-      aria-describedby={error ? messageId : undefined}
+      aria-describedby={describedBy || undefined}
     >
-      <legend className="field__label">
+      <legend className="field__label radio-cards__legend">
         {legend}
         {required && (
           <span className="field__required" aria-hidden="true">
@@ -55,6 +69,17 @@ export function RadioCardGroup({
           </span>
         )}
       </legend>
+
+      {(hint || aside) && (
+        <div className="radio-cards__meta">
+          {hint && (
+            <p id={hintId} className="field__hint">
+              {hint}
+            </p>
+          )}
+          {aside && <span className="radio-cards__aside">{aside}</span>}
+        </div>
+      )}
 
       <div className="radio-cards__grid">
         {options.map((option) => (
@@ -68,6 +93,16 @@ export function RadioCardGroup({
               onChange={() => onChange(option.value)}
             />
             <span className="radio-card__body">
+              {option.icon && (
+                <span className="radio-card__icon" aria-hidden="true">
+                  {option.icon}
+                </span>
+              )}
+              {rich && (
+                <span className="radio-card__check" aria-hidden="true">
+                  <IconCheckCircle />
+                </span>
+              )}
               <span className="radio-card__title">{option.title}</span>
               <span className="radio-card__description">{option.description}</span>
             </span>

@@ -23,6 +23,8 @@ interface NeedsAttentionProps {
   membersWithoutPosition: readonly DirectoryMember[];
   canInvite: boolean;
   canAssign: boolean;
+  /** "Not needed" on the vacant seats — the community decided it has no committee. */
+  onDismissVacant?: () => void;
 }
 
 interface AttentionItem {
@@ -31,6 +33,7 @@ interface AttentionItem {
   title: string;
   detail: string;
   action?: { label: string; onClick: () => void };
+  secondary?: { label: string; onClick: () => void };
 }
 
 function plural(count: number, one: string, many: string): string {
@@ -43,6 +46,7 @@ export function NeedsAttention({
   membersWithoutPosition,
   canInvite,
   canAssign,
+  onDismissVacant,
 }: NeedsAttentionProps) {
   const navigate = useNavigate();
   const toInvitations = () =>
@@ -99,6 +103,7 @@ export function NeedsAttention({
       action: canAssign
         ? { label: 'Assign Position', onClick: () => void navigate({ to: '/community/positions' }) }
         : undefined,
+      secondary: onDismissVacant ? { label: 'Not needed', onClick: onDismissVacant } : undefined,
     });
   }
 
@@ -122,10 +127,19 @@ export function NeedsAttention({
               <p className="attention__item-title">{item.title}</p>
               <p className="attention__item-detail">{item.detail}</p>
             </div>
-            {item.action && (
-              <Button variant="warning" size="sm" inline onClick={item.action.onClick}>
-                {item.action.label}
-              </Button>
+            {(item.action || item.secondary) && (
+              <div className="attention__actions">
+                {item.secondary && (
+                  <Button variant="secondary" size="sm" inline onClick={item.secondary.onClick}>
+                    {item.secondary.label}
+                  </Button>
+                )}
+                {item.action && (
+                  <Button variant="warning" size="sm" inline onClick={item.action.onClick}>
+                    {item.action.label}
+                  </Button>
+                )}
+              </div>
             )}
           </li>
         ))}

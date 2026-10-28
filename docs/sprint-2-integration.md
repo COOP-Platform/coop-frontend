@@ -149,11 +149,20 @@ Render sleeps idle services, so the first request after a pause can take a while
   - the Invitations badge shows the number sent.
 - **Other apps in the app switcher** (Contributions, Meetings, Events, Voting): listed as "Soon".
 
+### 3.10 Community logos and covers
+
+- **Backend:** `POST /communities/{id}/logo/` and `/cover/`, merged into backend `develop`. They need `community.update`.
+- **Frontend:**
+  - the community is created first, then each image is uploaded;
+  - an image that fails never undoes the create;
+  - the success screen lists what was not saved.
+- **Still needed:** the `SUPABASE_*` storage keys on Render. Without them the endpoints answer 503 and the summary says "Image uploads are not available on this server yet."
+
 ## 4. How this was verified
 
 - **Automated checks:** `npm run typecheck` and `npm run lint` pass.
 - **End to end:** run against a **throwaway local copy** of the backend on its own SQLite database, with console email. Nothing was created on the live API or its database. The flows were driven in a real browser:
-  1. The founder registers, founds a savings group, and signs in through the login form.
+  1. The founder registers, founds a savings group, and signs in through the login form. (Superseded by §5: registration and founding are now separate steps.)
   2. They invite three people; one accepts via the emailed token and is made Treasurer.
   3. Dashboard, Members, Positions and Invitations all load with no failed requests.
   4. Sending an invitation from the form opens it in the details panel.
@@ -161,3 +170,45 @@ Render sleeps idle services, so the first request after a pause can take a while
   6. The only admin trying to leave is refused. The backend's `last_admin` error shows as "This would leave nobody able to manage the community…".
   7. Creating a position with a custom permission set works.
 - **Not yet checked against live:** the same flows with a real account. Sign in with an account that owns a community on live and click through §2.
+
+## 5. Account first, community second
+
+Registration no longer creates a community. The flow is:
+
+1. **`/register`:**
+   - creates the account (`POST /auth/register/`, which answers 202 with no token);
+   - signs straight in with the same password;
+   - goes to `/onboarding`;
+   - if that sign-in is refused, the address already had an account, so the form points to sign-in and password reset.
+2. **`/onboarding`:**
+   - the welcome page for a signed-in user with no community;
+   - someone with a community who lands here is sent to `/community`.
+3. **`/onboarding/create`:**
+   - a three-step wizard, then a summary of what the server saved;
+   - progress is kept as a draft in `localStorage`, per user, so "Save & Exit" and reloads lose nothing;
+   - the draft is only on that device.
+4. **`/community` guard:**
+   - a signed-in user with no community is redirected to `/onboarding`;
+   - this is also what happens on login with no community.
+
+The guards await `/auth/me` with `fetchQuery`, not `ensureQueryData`. After a create, the cached `/me` is invalidated, and `ensureQueryData` would return the stale copy with no memberships, which would send the new owner back to onboarding.
+
+## 6. Lean data, committee choice, position details
+
+- **Sign-up:** a taken email or phone is a 400 on that field. The form shows it with sign-in and reset links. Success is 201.
+- **Committee:**
+  - step 1 of the wizard asks whether to set up a committee (`with_committee` on `POST /communities/`);
+  - "No" seeds only the founder's admin position and the baseline Member;
+  - on the dashboard, "Not needed" on the vacant-positions alert deletes those seats, one `DELETE` per position; the admin seat is never offered.
+- **Invitations:**
+  - the backend deletes invitations that lapsed unanswered more than 30 days after their 14-day expiry, lazily on list/create, and with `manage.py purge_lapsed_invitations`;
+  - the invitations page shows accepted invitations for 24 hours; after that the person is only on Members.
+- **Leaving / removal:**
+  - deletes the membership, its positions, the invitation that brought the person in, and the dead invitations they sent; their open invitations pass to a remaining admin;
+  - their account and other communities stay;
+  - a member the ledger points at (contributions, expenses, meetings, announcements) is kept as `removed`, because deleting them would rewrite financial history;
+  - responses carry `deleted: bool`.
+- **Positions:**
+  - "View details" opens `/community/positions/$positionId`: holders, permissions, and assign / reassign / remove holder / edit / delete;
+  - vacant positions get the same page;
+  - reassign assigns the new holder first and then revokes the old one, so a failure in between never leaves the seat empty.

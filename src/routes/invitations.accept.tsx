@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import { AcceptInvitation, OnboardingLayout } from '@/features/onboarding';
+import { AuthLayout } from '@/features/auth';
+import { AcceptInvitation } from '@/features/onboarding';
 import { readTokenFromHash } from '@/lib/url/hash-token';
 
 /*
@@ -9,6 +10,8 @@ import { readTokenFromHash } from '@/lib/url/hash-token';
  * `{FRONTEND_URL}/invitations/accept#token=…` (see communities/notifiers.py).
  * The token is in the fragment so it never reaches a server log, which is
  * also why it cannot be a validated search param.
+ *
+ * Same split screen as sign in and sign up.
  */
 export const Route = createFileRoute('/invitations/accept')({
   component: AcceptInvitationPage,
@@ -20,8 +23,8 @@ function AcceptInvitationPage() {
   const [token] = useState(readTokenFromHash);
 
   return (
-    <OnboardingLayout>
+    <AuthLayout>
       <AcceptInvitation token={token} />
-    </OnboardingLayout>
+    </AuthLayout>
   );
 }

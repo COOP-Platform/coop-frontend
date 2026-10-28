@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 
 import {
   Button,
@@ -14,12 +15,14 @@ import {
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { effectiveStatus, useInvitations, useMemberDirectory } from '@/features/members';
-import { usePositions } from '@/features/positions';
+import { useCommittee, usePositions } from '@/features/positions';
+import type { Position } from '@/features/positions';
 import { errorMessage } from '@/lib/api/errors';
 import { isPlainMemberPosition } from '@/lib/position-tone';
 
 import { buildActivity } from '../activity';
 import { NeedsAttention } from './NeedsAttention';
+import { RemoveVacantDialog } from './RemoveVacantDialog';
 import { RecentActivity } from './RecentActivity';
 
 function typeLabel(type: string): string {
@@ -34,7 +37,10 @@ export function CommunityDashboard() {
 
   const directory = useMemberDirectory();
   const positions = usePositions(communityId, canViewPositions);
-  const invitations = useInvitations(communityId);
+  // Invitations are for those who send them; a member is not shown them.
+  const invitations = useInvitations(communityId, canInvite);
+  const committee = useCommittee(communityId, !canViewPositions);
+  const [removingVacant, setRemovingVacant] = useState<readonly Position[] | null>(null);
 
   if (directory.isPending) return <LoadingState />;
   if (directory.error) {
@@ -44,6 +50,10 @@ export function CommunityDashboard() {
   const members = directory.members;
   const seats = (positions.data ?? []).filter((p) => !isPlainMemberPosition(p.name));
   const filledSeats = seats.filter((p) => p.holder_count > 0);
+  const vacantSeats = canViewPositions ? seats.filter((p) => p.holder_count === 0) : [];
+  // The admin seat is never offered: deleting the community's only way to be
+  // administered is refused by the API anyway.
+  const dismissable = vacantSeats.filter((p) => !p.is_admin);
   const pending = (invitations.data ?? []).filter((i) => effectiveStatus(i) === 'pending');
 
   return (
@@ -64,7 +74,9 @@ export function CommunityDashboard() {
                 variant="tint"
                 inline
                 icon={<IconUserPlus />}
-                onClick={() => void navigate({ to: '/community/invitations/new' })}
+                onClick={() =>
+                  void navigate({ to: '/community/invitations', search: { invite: true } })
+                }
               >
                 Invite Member
               </Button>
@@ -92,23 +104,29 @@ export function CommunityDashboard() {
         />
         <StatCard
           label="Active Positions"
-          value={canViewPositions ? filledSeats.length : '—'}
-          caption={canViewPositions ? 'Assigned leadership roles' : 'Needs position.view'}
+          value={
+            canViewPositions
+              ? filledSeats.length
+              : (committee.data ?? []).filter((seat) => seat.holders.length > 0).length
+          }
+          caption={canViewPositions ? 'Assigned leadership roles' : 'Committee seats filled'}
           icon={<IconIdBadge />}
           tone="info"
         />
-        <StatCard
-          label="Pending Invitations"
-          value={pending.length}
-          caption="Awaiting response"
-          icon={<IconMail />}
-          tone="warning"
-        />
+        {canInvite && (
+          <StatCard
+            label="Pending Invitations"
+            value={pending.length}
+            caption="Awaiting response"
+            icon={<IconMail />}
+            tone="warning"
+          />
+        )}
       </div>
 
       <NeedsAttention
         pendingInvitations={pending}
-        vacantSeats={canViewPositions ? seats.filter((p) => p.holder_count === 0) : []}
+        vacantSeats={vacantSeats}
         membersWithoutPosition={
           canViewPositions && !directory.positionsPending
             ? members.filter(
@@ -118,9 +136,22 @@ export function CommunityDashboard() {
         }
         canInvite={canInvite}
         canAssign={can('position.assign')}
+        onDismissVacant={
+          can('position.delete') && dismissable.length > 0
+            ? () => setRemovingVacant(dismissable)
+            : undefined
+        }
       />
 
-      <RecentActivity entries={buildActivity(members, invitations.data ?? []).slice(0, 5)} />
+      <RemoveVacantDialog
+        key={removingVacant === null ? 'closed' : 'open'}
+        positions={removingVacant}
+        onClose={() => setRemovingVacant(null)}
+      />
+
+      <RecentActivity
+        entries={buildActivity(members, invitations.data ?? [], canInvite).slice(0, 5)}
+      />
     </div>
   );
 }

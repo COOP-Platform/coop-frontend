@@ -8,7 +8,7 @@
 import { useSyncExternalStore } from 'react';
 
 import type { CurrentUser, MembershipSummary } from './auth';
-import { useMe } from './auth';
+import { useMe, usableMemberships } from './auth';
 
 const STORAGE_KEY = 'coop.community';
 const listeners = new Set<() => void>();
@@ -33,11 +33,6 @@ export function selectCommunity(communityId: string): void {
     // Not remembered across reloads; the in-memory switch below still works.
   }
   listeners.forEach((listener) => listener());
-}
-
-/** Memberships that give access to a community's screens (not removed). */
-function usableMemberships(me: CurrentUser | undefined): MembershipSummary[] {
-  return (me?.memberships ?? []).filter((m) => m.status !== 'removed');
 }
 
 export interface Workspace {

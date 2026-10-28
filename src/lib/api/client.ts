@@ -81,14 +81,18 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   // override it — the sign-in request itself must go out unauthenticated.
   const token = getAccessToken();
 
+  // A file upload goes out as-is: the browser writes the multipart
+  // Content-Type itself, boundary included, so it must not be set here.
+  const multipart = body instanceof FormData;
+
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
     ...rest,
     headers: {
-      'Content-Type': 'application/json',
+      ...(multipart ? {} : { 'Content-Type': 'application/json' }),
       ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
       ...headers,
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : multipart ? body : JSON.stringify(body),
   });
 
   const payload = response.status === 204 ? null : await response.json().catch(() => null);

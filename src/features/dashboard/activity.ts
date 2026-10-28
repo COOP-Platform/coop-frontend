@@ -2,9 +2,10 @@
  * A recent-activity feed, derived from timestamps the API already returns.
  *
  * The backend writes an audit log (`audit` app) but exposes no endpoint to
- * read it, so this is rebuilt from invitations (sent, accepted, revoked) and
- * memberships (suspended). Position assignments do not appear: nothing
- * readable records when one happened. See docs/sprint-2-integration.md.
+ * read it, so this is rebuilt from memberships (joined, suspended) and — for
+ * those who send them — invitations (sent, cancelled, declined). A member
+ * who does not invite sees only who joined. Position assignments do not
+ * appear: nothing readable records when one happened.
  */
 import type { DirectoryMember, Invitation } from '@/features/members';
 
@@ -21,8 +22,29 @@ export interface Activity {
 export function buildActivity(
   members: readonly DirectoryMember[],
   invitations: readonly Invitation[],
+  /** Admin view: invitations and suspensions too. Otherwise joins only. */
+  full: boolean,
 ): Activity[] {
   const entries: Activity[] = [];
+
+  // Joins come from the members themselves, so everyone can see them —
+  // including people who joined without an invitation, like the founder.
+  for (const member of members) {
+    const joinedAt = member.activatedAt ?? member.joinDate;
+    if (joinedAt && member.status !== 'invited') {
+      entries.push({
+        id: `${member.membershipId}-joined`,
+        kind: 'joined',
+        subject: member.fullName,
+        description: 'Joined the community',
+        at: joinedAt,
+      });
+    }
+  }
+
+  if (!full) {
+    return entries.sort((a, b) => b.at.localeCompare(a.at));
+  }
 
   for (const invitation of invitations) {
     entries.push({
@@ -32,15 +54,6 @@ export function buildActivity(
       description: 'Invitation sent',
       at: invitation.created_at,
     });
-    if (invitation.accepted_at) {
-      entries.push({
-        id: `${invitation.id}-accepted`,
-        kind: 'joined',
-        subject: invitation.full_name,
-        description: 'Joined the community',
-        at: invitation.accepted_at,
-      });
-    }
     if (invitation.revoked_at) {
       entries.push({
         id: `${invitation.id}-revoked`,

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useId } from 'react';
 
 import {
@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Dropdown,
+  Drawer,
   EmptyState,
   ErrorState,
   IconAward,
@@ -24,7 +25,7 @@ import {
   StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
-import { usePositions } from '@/features/positions';
+import { useCommittee, usePositions } from '@/features/positions';
 import { errorMessage } from '@/lib/api/errors';
 import { downloadCsv } from '@/lib/csv';
 import { isPlainMemberPosition, positionTone } from '@/lib/position-tone';
@@ -32,6 +33,7 @@ import { PositionIcon } from '@/lib/positions';
 
 import type { DirectoryMember } from '../api/directory';
 import { useMemberDirectory } from '../api/directory';
+import { MemberPanel } from './MemberProfile';
 import type { MembersSearch, MemberStatusFilter } from '../search';
 
 const PAGE_SIZE = 8;
@@ -53,7 +55,23 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
   const navigate = useNavigate();
   const searchId = useId();
   const { membership, communityId, can } = useWorkspace();
+  // For now only admins open member profiles from here. Everyone else gets
+  // a three-column list -- name, position, status -- and reaches their own
+  // profile from the account menu.
+  const isAdmin = membership?.is_admin === true;
   const directory = useMemberDirectory();
+  // Without position.view the directory cannot say who holds what; the
+  // committee endpoint (open to every member) can, for the officer seats.
+  const committee = useCommittee(communityId, !can('position.view'));
+  const seatsByMember = new Map<string, string[]>();
+  for (const seat of committee.data ?? []) {
+    for (const holder of seat.holders) {
+      seatsByMember.set(holder.membership_id, [
+        ...(seatsByMember.get(holder.membership_id) ?? []),
+        seat.name,
+      ]);
+    }
+  }
   const positions = usePositions(communityId, can('position.view'));
 
   const members = directory.members;
@@ -114,7 +132,9 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
             <Button
               inline
               icon={<IconUserPlus />}
-              onClick={() => void navigate({ to: '/community/invitations/new' })}
+              onClick={() =>
+                void navigate({ to: '/community/invitations', search: { invite: true } })
+              }
             >
               Invite Member
             </Button>
@@ -212,15 +232,18 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
             </Dropdown>
           )}
 
-          <button
-            type="button"
-            className="toolbar__button toolbar__button--icon"
-            aria-label="Export members as CSV"
-            title="Export CSV"
-            onClick={exportCsv}
-          >
-            <IconDownload width={18} height={18} />
-          </button>
+          {/* Exporting the roster is an admin task; members only read the list. */}
+          {isAdmin && (
+            <button
+              type="button"
+              className="toolbar__button toolbar__button--icon"
+              aria-label="Export members as CSV"
+              title="Export CSV"
+              onClick={exportCsv}
+            >
+              <IconDownload width={18} height={18} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -242,20 +265,41 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
           />
         ) : (
           <div className="table-scroll">
-            <table className="table">
+            <table className={isAdmin ? 'table' : 'table table--roster'}>
+              {!isAdmin && (
+                <colgroup>
+                  <col className="table--roster__member" />
+                  <col className="table--roster__position" />
+                  <col className="table--roster__status" />
+                </colgroup>
+              )}
               <thead>
                 <tr>
                   <th scope="col">Member</th>
                   <th scope="col">Position</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" className="table__action-col">
-                    Action
+                  <th scope="col" className={isAdmin ? undefined : 'table__status-col'}>
+                    Status
                   </th>
+                  {isAdmin && (
+                    <th scope="col" className="table__action-col">
+                      Action
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {visible.map((member) => (
-                  <MemberRow key={member.membershipId} member={member} />
+                  <MemberRow
+                    onOpen={() => onSearchChange({ ...search, selected: member.membershipId })}
+                    key={member.membershipId}
+                    member={member}
+                    showActions={isAdmin}
+                    committeeSeats={
+                      member.positionsKnown
+                        ? undefined
+                        : (seatsByMember.get(member.membershipId) ?? [])
+                    }
+                  />
                 ))}
               </tbody>
             </table>
@@ -302,12 +346,34 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
           )}
         </footer>
       </section>
+
+      <Drawer
+        open={search.selected !== undefined}
+        onClose={() => onSearchChange({ ...search, selected: undefined })}
+        label="Member details"
+      >
+        {search.selected && <MemberPanel memberId={search.selected} />}
+      </Drawer>
     </div>
   );
 }
 
-function MemberRow({ member }: { member: DirectoryMember }) {
-  const badges = member.positions.filter((p) => !isPlainMemberPosition(p.name));
+function MemberRow({
+  onOpen,
+  member,
+  showActions,
+  committeeSeats,
+}: {
+  onOpen: () => void;
+  member: DirectoryMember;
+  showActions: boolean;
+  /** Seat names from the committee, when the member's own positions are not readable. */
+  committeeSeats?: readonly string[];
+}) {
+  const badges =
+    committeeSeats !== undefined
+      ? committeeSeats.map((name) => ({ id: name, name }))
+      : member.positions.filter((p) => !isPlainMemberPosition(p.name));
   const plain = member.positions.find((p) => isPlainMemberPosition(p.name));
 
   return (
@@ -325,7 +391,7 @@ function MemberRow({ member }: { member: DirectoryMember }) {
         </span>
       </td>
       <td>
-        {!member.positionsKnown ? (
+        {!member.positionsKnown && committeeSeats === undefined ? (
           <span className="table__muted">—</span>
         ) : badges.length > 0 ? (
           <span className="badge-row">
@@ -340,10 +406,12 @@ function MemberRow({ member }: { member: DirectoryMember }) {
             ))}
           </span>
         ) : (
-          <span className="table__muted">{plain?.name ?? 'No position'}</span>
+          <span className="table__muted">
+            {committeeSeats !== undefined ? 'Member' : (plain?.name ?? 'No position')}
+          </span>
         )}
       </td>
-      <td>
+      <td className={showActions ? undefined : 'table__status-col'}>
         {member.status === 'active' ? (
           <Badge tone="success" dot>
             Active
@@ -358,16 +426,19 @@ function MemberRow({ member }: { member: DirectoryMember }) {
           </Badge>
         )}
       </td>
-      <td className="table__action-col">
-        <Link
-          to="/community/members/$memberId"
-          params={{ memberId: member.membershipId }}
-          className="link-button"
-          aria-label={`View details for ${member.fullName}`}
-        >
-          View Details
-        </Link>
-      </td>
+      {showActions && (
+        <td className="table__action-col">
+          <button
+            type="button"
+            className="link-button"
+            aria-label={`View details for ${member.fullName}`}
+            onClick={onOpen}
+          >
+            View details
+            <IconChevronRight width={16} height={16} aria-hidden="true" />
+          </button>
+        </td>
+      )}
     </tr>
   );
 }

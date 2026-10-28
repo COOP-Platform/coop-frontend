@@ -78,6 +78,26 @@ export function useMembersPositions(
   };
 }
 
+/** `rbac.serializers.CommitteePositionSerializer` — a seat as a member sees it. */
+export interface CommitteeSeat {
+  id: string;
+  name: string;
+  description: string | null;
+  holders: { membership_id: string; full_name: string }[];
+}
+
+/**
+ * Who is on the committee — readable by every active member, no permission
+ * needed. Officer positions only (not the baseline Member), holders by name.
+ */
+export function useCommittee(communityId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: [...queryKeys.positions.all(communityId ?? ''), 'committee'] as const,
+    queryFn: () => apiFetch<CommitteeSeat[]>(`${base(communityId ?? '')}/committee/`),
+    enabled: enabled && communityId !== undefined,
+  });
+}
+
 function useInvalidatePositions(communityId: string) {
   const queryClient = useQueryClient();
   return () => {

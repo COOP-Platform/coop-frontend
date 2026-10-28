@@ -27,6 +27,8 @@ export interface AppNavItem {
   to: LinkProps['to'];
   /** Only match the exact path (the app's index page). */
   exact?: boolean;
+  /** Hidden from members who do not hold this permission. */
+  permission?: string;
 }
 
 export interface AppDefinition {
@@ -49,7 +51,12 @@ export const COMMUNITY_APP: AppDefinition = {
     { label: 'Dashboard', icon: <IconGrid />, to: '/community', exact: true },
     { label: 'Members', icon: <IconUsers />, to: '/community/members' },
     { label: 'Positions', icon: <IconIdBadge />, to: '/community/positions' },
-    { label: 'Invitations', icon: <IconMail />, to: '/community/invitations' },
+    {
+      label: 'Invitations',
+      icon: <IconMail />,
+      to: '/community/invitations',
+      permission: 'member.invite',
+    },
     { label: 'Reports', icon: <IconFile />, to: '/community/reports' },
   ],
 };

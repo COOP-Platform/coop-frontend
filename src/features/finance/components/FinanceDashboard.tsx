@@ -3,6 +3,8 @@ import { useNavigate } from '@tanstack/react-router';
 import {
   Badge,
   Button,
+  ErrorState,
+  LoadingState,
   IconClipboardClock,
   IconFile,
   IconInstitution,
@@ -13,6 +15,7 @@ import {
   StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
+import { errorMessage } from '@/lib/api/errors';
 
 import { useFinanceSummary } from '../api/summary';
 import { Money } from './Money';
@@ -28,7 +31,7 @@ import type { QuickAction } from './TreasuryPanels';
 export function FinanceDashboard() {
   const navigate = useNavigate();
   const { membership, communityId, can } = useWorkspace();
-  const { summary, isSample } = useFinanceSummary(communityId);
+  const { summary, isSample, isPending, error } = useFinanceSummary(communityId);
 
   // Every member may record their own payment; spending the community's money
   // is the Treasurer's. The backend refuses it for anyone else regardless.
@@ -38,6 +41,9 @@ export function FinanceDashboard() {
   // Who paid what, and where the money sits, is for those who manage it —
   // other members see the totals only (Sprint 3-5 brief).
   const canViewLedger = canViewContributions || can('finance.expense.view');
+
+  if (isPending) return <LoadingState />;
+  if (summary === undefined) return <ErrorState message={errorMessage(error)} />;
 
   const actions: QuickAction[] = [];
   if (canRecordContribution) {

@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query-keys';
 
 import { SAMPLE_SUMMARY } from '../data/sample-summary';
+import { isMissingEndpoint } from './sample';
 
 /** Money in or out of the community's books. */
 export type ActivityDirection = 'IN' | 'OUT';
@@ -51,7 +52,10 @@ export interface FinanceSummary {
 }
 
 export interface FinanceSummaryResult {
-  summary: FinanceSummary;
+  /** Undefined while loading, or when the request failed for a real reason. */
+  summary: FinanceSummary | undefined;
+  isPending: boolean;
+  error: unknown;
   /** True while the figures on screen are the design's placeholders, not the API's. */
   isSample: boolean;
 }
@@ -60,7 +64,7 @@ export interface FinanceSummaryResult {
  * The dashboard's figures.
  *
  * The endpoint is not on the live backend yet (checked against its OpenAPI
- * schema), so until it answers this returns the design's sample numbers and
+ * schema), so while it answers 404 this returns the design's sample numbers and
  * says so with `isSample`. The moment the API responds, its figures replace
  * them with no change on the screen's side.
  */
@@ -75,7 +79,11 @@ export function useFinanceSummary(communityId: string | undefined): FinanceSumma
     retry: false,
   });
 
-  return query.data
-    ? { summary: query.data, isSample: false }
-    : { summary: SAMPLE_SUMMARY, isSample: true };
+  if (query.data) {
+    return { summary: query.data, isPending: false, error: null, isSample: false };
+  }
+  if (isMissingEndpoint(query.error)) {
+    return { summary: SAMPLE_SUMMARY, isPending: false, error: null, isSample: true };
+  }
+  return { summary: undefined, isPending: query.isPending, error: query.error, isSample: false };
 }

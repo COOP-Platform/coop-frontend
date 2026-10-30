@@ -7,7 +7,8 @@ First pass: the Finance shell and dashboard. Source of truth for the endpoints i
 | Route | State |
 | --- | --- |
 | `/finance` | Dashboard, built from the Figma |
-| `/finance/my-contributions`, `/contributions`, `/expenses`, `/statements`, `/reports` | "Coming soon" placeholders so the sidebar works |
+| `/finance/my-contributions` | Built from the Figma (§5) |
+| `/finance/contributions`, `/expenses`, `/statements`, `/reports` | "Coming soon" placeholders so the sidebar works |
 
 `/finance/*` uses the same guard as `/community/*` (signed in, belongs to a community). Finance replaces the "Contributions" placeholder in the app switcher.
 
@@ -40,3 +41,19 @@ The sidebar hides links the user cannot use; a page opened by URL shows "You don
 - **"Audited Under Article 14 of By-Laws"** note and the "Live Audit" / "Audited Entries" chips are left out: the brief lists by-law audit badges as not in this sprint.
 - **Top-bar search** is not part of the shell yet.
 - **Record Contribution / Record Expense** open the placeholder pages until the forms are built.
+
+## 5. My Contributions
+
+`GET /me/contributions?year=` feeds the three stat cards and the table; `GET /contributions/{id}` feeds the details drawer. Neither is on the live backend yet, so the page shows the Figma's sample rows with a "Sample figures" badge until they answer ([sample-my-contributions.ts](../src/features/finance/data/sample-my-contributions.ts) — delete then).
+
+**Deliberate differences from the Figma**
+
+- The table has four columns (Date, Amount, Payment type, Status) and a **View details** button. The rest — purpose, reference, who confirmed it, status history, receipt — is in a side drawer, the same `Drawer` the Members and Invitations pages use. It slides in from the right, like those.
+- Left out: "End-to-End Cryptographically Logged" (ledger cryptography is out of scope in the brief), and "member ID #JC-8821" (no such field).
+- "Message <treasurer>" is a plain line naming the Treasurer from the committee list; there is no messaging feature.
+
+**Asks for the backend**
+
+- **Remaining amount per payment.** A contribution carries only what was paid. Nothing says what was due, or which month a payment covers, so "remaining" per row cannot be computed honestly in the browser. Either send `amount_due` / `remaining` on each contribution, or send due-vs-paid per month and link payments to the month. The page already shows the member-level `summary.outstanding`; the drawer and a column can show the per-payment figure once it exists. `default_contribution_minor` on member categories could be the expected amount.
+- **Receipt number.** The design shows `#REC-2024-051`. The brief's `reference` is the member's own transaction reference (`TXN-123`). The table shows `reference`; a separate receipt number would need its own field.
+- **PDFs.** `/contributions/{id}/receipt.pdf` and `/me/statement.pdf?year=` are Should items. The buttons are disabled on sample data and show the server's error otherwise.

@@ -123,3 +123,37 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   return payload as T;
 }
+
+/**
+ * Fetch a file the API serves behind sign-in (a PDF) and hand it to the
+ * browser as a download. A plain link cannot do this: it would not carry the
+ * Bearer token.
+ */
+export async function apiDownload(path: string, fallbackName: string): Promise<void> {
+  const token = getAccessToken();
+  const response = await fetch(`${env.apiBaseUrl}${path}`, {
+    headers: token === null ? {} : { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null);
+    const { message, fieldErrors } = parseErrorPayload(payload);
+    throw new ApiError(
+      message ?? `Request failed: ${response.status} ${response.statusText}`,
+      response.status,
+      payload,
+      fieldErrors,
+    );
+  }
+
+  // The server names the file in Content-Disposition; fall back to ours.
+  const named = /filename="?([^";]+)"?/.exec(response.headers.get('Content-Disposition') ?? '');
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = named?.[1] ?? fallbackName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}

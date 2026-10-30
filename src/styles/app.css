@@ -2823,3 +2823,109 @@
 .finance-members__detail {
   color: var(--color-text-muted);
 }
+
+/* ---------- My contributions ---------- */
+
+.stat-grid--three {
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.table-card__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-6) var(--space-8);
+}
+
+.table-card__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface-tint);
+  padding: var(--space-4) var(--space-8);
+  color: var(--color-text-muted);
+}
+
+.table .table__amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table__amount .money__unit {
+  font-size: 0.8em;
+}
+
+.channel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.channel-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--color-text-subtle);
+}
+
+.channel-dot--warning {
+  background-color: var(--color-warning-fill);
+}
+
+.channel-dot--danger {
+  background-color: var(--color-danger);
+}
+
+.channel-dot--info {
+  background-color: var(--color-info);
+}
+
+.link-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  padding: var(--space-1) var(--space-2);
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-brand-text);
+}
+
+.link-action:hover {
+  background-color: var(--color-brand-soft);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.details__subhead {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+}
+
+.history__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}

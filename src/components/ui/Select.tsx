@@ -6,6 +6,8 @@ import { IconChevronDown } from './icons';
 export interface SelectOption {
   value: string;
   label: string;
+  /** Listed but not selectable. */
+  disabled?: boolean;
 }
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -71,7 +73,7 @@ export function Select({
             </option>
           )}
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} disabled={option.disabled}>
               {option.label}
             </option>
           ))}

@@ -1,0 +1,718 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sprint 3–5 Brief</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a;
+    --line: #e3e2dd; --accent: #1f6f4a; --accent-soft: #e6f2ec;
+    --be: #8a4b14; --be-soft: #f8ecdf; --fe: #1f4f8a; --fe-soft: #e4edf8;
+    --warn: #8a5a00; --warn-soft: #fbf1dc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --surface: #1d1d1b; --text: #ecebe6; --muted: #a3a29b;
+      --line: #33332f; --accent: #5cc493; --accent-soft: #1b3328;
+      --be: #e0a46c; --be-soft: #3a2a1b; --fe: #7fb0ec; --fe-soft: #1c2a3d;
+      --warn: #e8c06a; --warn-soft: #3a3020;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 40px 0 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 15px; margin: 20px 0 8px; }
+  p { margin: 0 0 12px; }
+  .meta { color: var(--muted); margin-bottom: 20px; }
+  .lead { font-size: 17px; background: var(--accent-soft); border-left: 4px solid var(--accent);
+    padding: 14px 16px; border-radius: 6px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .card h3 { margin-top: 0; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
+  .be { background: var(--be-soft); color: var(--be); }
+  .fe { background: var(--fe-soft); color: var(--fe); }
+  .must { background: var(--accent-soft); color: var(--accent); }
+  .should { background: var(--warn-soft); color: var(--warn); }
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  code { font: 13px/1.4 ui-monospace, "Cascadia Code", Consolas, monospace;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  pre { margin: 0; padding: 12px 14px; overflow-x: auto; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+  ul { margin: 0 0 12px; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  .note { color: var(--muted); font-size: 13px; }
+  .timeline { display: grid; grid-template-columns: 110px 1fr; gap: 6px 14px; }
+  .timeline b { font-variant-numeric: tabular-nums; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; }
+  details[open] { padding-bottom: 10px; }
+  summary { cursor: pointer; padding: 10px 14px; font: 13.5px/1.4 ui-monospace, "Cascadia Code", Consolas, monospace; overflow-wrap: anywhere; }
+  summary em { font: italic 12.5px system-ui, sans-serif; color: var(--muted); margin-left: 6px; }
+  details pre { margin: 0 12px; border: none; background: var(--bg); }
+  details .note { margin: 8px 14px 0; }
+  .m { display: inline-block; min-width: 50px; text-align: center; font-weight: 700; font-size: 11.5px; padding: 1px 6px; border-radius: 4px; margin-right: 6px; }
+  .get { background: var(--fe-soft); color: var(--fe); }
+  .post { background: var(--accent-soft); color: var(--accent); }
+  .patch, .put { background: var(--warn-soft); color: var(--warn); }
+  h3.mod { margin-top: 28px; }
+  :root[data-theme="dark"] {
+      --bg: #141413; --surface: #1d1d1b; --text: #ecebe6; --muted: #a3a29b;
+      --line: #33332f; --accent: #5cc493; --accent-soft: #1b3328;
+      --be: #e0a46c; --be-soft: #3a2a1b; --fe: #7fb0ec; --fe-soft: #1c2a3d;
+      --warn: #e8c06a; --warn-soft: #3a3020;
+    }
+</style>
+<main>
+
+<h1>Sprint 3–5 Brief</h1>
+<div class="meta">COOP Platform · Combined sprint · Thu 29 Oct – Wed 11 Nov 2026 · Prepared 26 Oct 2026 by the Product Owner</div>
+
+<p class="lead">Goal: by the end of this sprint, Les Cousins runs its <b>meetings and its money</b> on the platform instead of WhatsApp. A contribution goes from a member's proof upload to Treasurer confirmation to the dashboard. A meeting goes from scheduling to attendance to final minutes.</p>
+
+<h2>Sprint goals</h2>
+<div class="grid">
+  <div class="card"><h3>1. Meetings replace WhatsApp</h3><p>Schedule a meeting with an agenda, take attendance with a live quorum check, write minutes with decisions and action items. Final minutes can't change.</p><span class="tag must">Must</span></div>
+  <div class="card"><h3>2. Contributions end-to-end</h3><p>Member records a payment with proof, the Treasurer confirms or rejects it, and totals update on their own. Members see their own history and statement.</p><span class="tag must">Must</span></div>
+  <div class="card"><h3>3. Money is visible</h3><p>Expenses with receipts, one dashboard with balance and outstanding, a full ledger, and monthly reports.</p><span class="tag must">Must</span> <span class="tag should">Ledger + reports: Should</span></div>
+  <div class="card"><h3>4. Community informed</h3><p>Announcements, events with RSVP, meeting and attendance reports. Built only if the Must work closes early.</p><span class="tag should">Stretch</span></div>
+</div>
+
+<h2>Key dates</h2>
+<div class="timeline">
+  <b>Thu 29 Oct</b><span>Sprint starts. Backend publishes the OpenAPI draft for the Must endpoints.</span>
+  <b>Mon 02 Nov</b><span>Business rules confirmed with Les Cousins. Design gaps shared.</span>
+  <b>Thu 05 Nov</b><span>Mid-sprint check: decide whether Should stories go in.</span>
+  <b>Wed 11 Nov</b><span>Demo to Les Cousins on staging, then retrospective.</span>
+  <b>16 Dec</b><span>MVP v1 release target.</span>
+</div>
+<p class="note">Open decision: the Must scope (75 points) is larger than two weeks of capacity (about 45). Recommended: extend to 25 Nov and move Document Management and Fundraising after MVP, if Les Cousins agrees.</p>
+
+<h2>Who owns what</h2>
+<div class="table-wrap"><table>
+  <tr><th>Role</th><th>Owns this sprint</th><th>GitHub board</th></tr>
+  <tr><td><span class="tag be">Backend developer</span></td><td>Data model and all APIs for both apps (S3-01 to S3-14)</td><td>COOP-backend · coop-backend #23–#37</td></tr>
+  <tr><td><span class="tag fe">Frontend developer</span></td><td>Navigation and the Finance app (S3-15 to S3-22)</td><td>COOP-frontend · coop-frontend #25–#32</td></tr>
+  <tr><td><span class="tag fe">UI designer + frontend</span></td><td>Meetings &amp; Events app and design gaps (S3-23 to S3-31)</td><td>COOP-frontend · coop-frontend #33–#41</td></tr>
+  <tr><td>Product Owner</td><td>Business rules with Les Cousins, ERD, QA, demo (S3-32, S3-33)</td><td>coop-backend #37 · coop-frontend #42</td></tr>
+</table></div>
+
+<h2>Frontend ↔ backend contract</h2>
+<p>This is the agreement both sides build against so the frontend doesn't wait on the backend. It is a <b>proposal to confirm at sprint planning</b>; the OpenAPI spec published by the backend is the final source of truth.</p>
+
+<h3>How we work with the contract</h3>
+<ul>
+  <li>Backend publishes the OpenAPI spec for Must endpoints on day 1–2, before the implementation is finished.</li>
+  <li>Frontend generates a typed client and mocks from that spec, and builds pages against the mocks.</li>
+  <li>Any change to a request or response shape goes through a pull request that both a backend and a frontend developer approve.</li>
+  <li>Backend merges and deploys endpoint by endpoint to staging, not in one drop at the end.</li>
+</ul>
+
+<h3>Shared rules</h3>
+<div class="table-wrap"><table>
+  <tr><th>Topic</th><th>Rule</th></tr>
+  <tr><td>Base URL</td><td><code>/api/v1</code>, JSON everywhere except file uploads (<code>multipart/form-data</code>) and PDF downloads</td></tr>
+  <tr><td>Auth</td><td><code>Authorization: Bearer &lt;JWT&gt;</code> from Sprint 1–2. Role checks are enforced <b>on the server</b>; the UI only hides buttons.</td></tr>
+  <tr><td>Money</td><td>Integers in RWF, no decimals, never floats. Example: <code>"amount": 50000</code></td></tr>
+  <tr><td>Dates</td><td>ISO 8601 in UTC from the API (<code>2026-11-11T08:00:00Z</code>). The frontend displays Africa/Kigali time.</td></tr>
+  <tr><td>Lists</td><td><code>?page=1&amp;page_size=20</code> → <code>{ "items": [...], "total": 42, "page": 1, "page_size": 20 }</code></td></tr>
+  <tr><td>Errors</td><td>HTTP status + <code>{ "error": { "code": "QUORUM_NOT_REACHED", "message": "...", "details": {} } }</code></td></tr>
+  <tr><td>Corrections</td><td>Money records are never deleted. Mistakes are fixed with a reversal that requires a <code>reason</code>.</td></tr>
+  <tr><td>Files</td><td>Proof of payment, receipts and minutes are private. The API returns short-lived signed URLs, never public links.</td></tr>
+</table></div>
+
+<h3>Status values (shared enums)</h3>
+<pre>Contribution : PENDING | PAID | REJECTED | REVERSED
+Expense      : RECORDED | REVERSED
+Meeting      : UPCOMING | COMPLETED | CANCELLED
+Attendance   : PRESENT | ABSENT | EXCUSED
+Minutes      : DRAFT | FINAL
+Payment method: MTN_MOMO | AIRTEL_MONEY | BANK_TRANSFER | CASH</pre>
+
+<h3>Roles and permissions</h3>
+<div class="table-wrap"><table>
+  <tr><th>Action</th><th>Member</th><th>Treasurer</th><th>Secretary</th></tr>
+  <tr><td>Record own contribution with proof</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+  <tr><td>Confirm, reject or reverse a contribution</td><td>No</td><td>Yes</td><td>No</td></tr>
+  <tr><td>Record or reverse an expense</td><td>No</td><td>Yes</td><td>No</td></tr>
+  <tr><td>See all contributions, ledger and reports</td><td>Totals only</td><td>Yes</td><td>Yes</td></tr>
+  <tr><td>Schedule meetings, take attendance, write and finalise minutes</td><td>No</td><td>No</td><td>Yes</td></tr>
+  <tr><td>Read meetings and final minutes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+</table></div>
+<p class="note">Whether members see totals only or the full contribution list is a rule to confirm with Les Cousins on 02 Nov.</p>
+
+<h3>Endpoint reference</h3>
+<p>Every endpoint below shows the request and the response the frontend can rely on. All paths start with <code>/api/v1</code>. Lists use the shared pagination shape; only the first item is shown. Click an endpoint to expand it.</p>
+
+<h3 class="mod">Meetings <span class="tag be">S3-02</span> <span class="tag fe">S3-23, S3-24</span> <span class="tag must">Must</span></h3>
+
+<details><summary><span class="m get">GET</span> /meetings?status=UPCOMING&amp;page=1&amp;page_size=20 <em>All roles</em></summary>
+<pre>GET /api/v1/meetings?status=UPCOMING&amp;page=1&amp;page_size=20
+
+200 OK
+{
+  "items": [
+    {
+      "id": "mt_31",
+      "title": "Quarterly General Assembly",
+      "type": "GENERAL_ASSEMBLY",
+      "starts_at": "2026-11-07T13:00:00Z",
+      "ends_at": "2026-11-07T15:30:00Z",
+      "venue": "Community Hall, Kigali",
+      "online_link": null,
+      "status": "UPCOMING",
+      "agenda_count": 4,
+      "expected_attendees": 42
+    }
+  ],
+  "total": 3, "page": 1, "page_size": 20
+}</pre></details>
+
+<details><summary><span class="m post">POST</span> /meetings <em>Secretary</em></summary>
+<pre>POST /api/v1/meetings          (application/json)
+{
+  "title": "Quarterly General Assembly",
+  "type": "GENERAL_ASSEMBLY",
+  "starts_at": "2026-11-07T13:00:00Z",
+  "ends_at": "2026-11-07T15:30:00Z",
+  "venue": "Community Hall, Kigali",
+  "online_link": null,
+  "agenda": [
+    { "title": "Review of Q3 financial statement", "presenter_id": "m_4", "minutes": 20 },
+    { "title": "Election of committee delegates", "presenter_id": null, "minutes": 30 }
+  ]
+}
+
+201 Created
+{
+  "id": "mt_31",
+  "title": "Quarterly General Assembly",
+  "type": "GENERAL_ASSEMBLY",
+  "starts_at": "2026-11-07T13:00:00Z",
+  "ends_at": "2026-11-07T15:30:00Z",
+  "venue": "Community Hall, Kigali",
+  "online_link": null,
+  "status": "UPCOMING",
+  "agenda": [
+    { "id": "ag_1", "order": 1, "title": "Review of Q3 financial statement", "presenter": { "id": "m_4", "name": "..." }, "minutes": 20 },
+    { "id": "ag_2", "order": 2, "title": "Election of committee delegates", "presenter": null, "minutes": 30 }
+  ],
+  "created_by": { "id": "m_7", "name": "..." },
+  "created_at": "2026-10-29T09:00:00Z"
+}
+
+422 Unprocessable  { "error": { "code": "VALIDATION_ERROR", "message": "ends_at must be after starts_at", "details": { "field": "ends_at" } } }</pre></details>
+
+<details><summary><span class="m get">GET</span> /meetings/{id} <em>All roles</em></summary>
+<pre>GET /api/v1/meetings/mt_31
+
+200 OK
+{
+  "id": "mt_31",
+  "title": "Quarterly General Assembly",
+  "type": "GENERAL_ASSEMBLY",
+  "starts_at": "2026-11-07T13:00:00Z",
+  "ends_at": "2026-11-07T15:30:00Z",
+  "venue": "Community Hall, Kigali",
+  "status": "UPCOMING",
+  "agenda": [ { "id": "ag_1", "order": 1, "title": "...", "presenter": { "id": "m_4", "name": "..." }, "minutes": 20 } ],
+  "quorum": { "present": 0, "expected": 42, "percent": 0, "threshold": 65, "reached": false },
+  "attendance_recorded": false,
+  "minutes_id": null
+}
+
+404 Not Found  { "error": { "code": "NOT_FOUND", "message": "Meeting not found", "details": {} } }</pre></details>
+
+<details><summary><span class="m patch">PATCH</span> /meetings/{id} <em>Secretary</em></summary>
+<pre>PATCH /api/v1/meetings/mt_31          (send only the fields that change)
+{
+  "venue": "Kigali Cultural Centre",
+  "agenda": [
+    { "id": "ag_1", "title": "Review of Q3 financial statement", "minutes": 25 },
+    { "title": "Any other business", "minutes": 10 }
+  ]
+}
+
+200 OK
+{ ...full meeting object, same shape as GET /meetings/{id}... }
+
+409 Conflict  { "error": { "code": "MEETING_NOT_EDITABLE", "message": "Completed or cancelled meetings cannot be edited", "details": {} } }</pre></details>
+
+<details><summary><span class="m post">POST</span> /meetings/{id}/cancel <em>Secretary</em></summary>
+<pre>POST /api/v1/meetings/mt_31/cancel
+{ "reason": "Venue unavailable, will reschedule" }
+
+200 OK
+{ "id": "mt_31", "status": "CANCELLED", "cancel_reason": "Venue unavailable, will reschedule", "cancelled_at": "2026-11-02T10:00:00Z" }</pre></details>
+
+<h3 class="mod">Attendance <span class="tag be">S3-03</span> <span class="tag fe">S3-25</span> <span class="tag must">Must</span></h3>
+
+<details><summary><span class="m get">GET</span> /meetings/{id}/attendance <em>All roles</em></summary>
+<pre>GET /api/v1/meetings/mt_31/attendance
+
+200 OK
+{
+  "meeting_id": "mt_31",
+  "locked": false,
+  "records": [
+    { "member": { "id": "m_4", "name": "...", "position": "TREASURER" }, "status": "PRESENT", "channel": "IN_PERSON", "note": null },
+    { "member": { "id": "m_19", "name": "...", "position": "MEMBER" }, "status": null, "channel": null, "note": null }
+  ],
+  "quorum": { "present": 1, "expected": 42, "percent": 2.4, "threshold": 65, "reached": false }
+}</pre></details>
+
+<details><summary><span class="m put">PUT</span> /meetings/{id}/attendance <em>Secretary</em></summary>
+<pre>PUT /api/v1/meetings/mt_31/attendance          (saves the whole roll-call at once)
+{
+  "records": [
+    { "member_id": "m_4",  "status": "PRESENT", "channel": "IN_PERSON" },
+    { "member_id": "m_19", "status": "EXCUSED", "channel": null, "note": "Travelling" },
+    { "member_id": "m_22", "status": "PRESENT", "channel": "VIRTUAL" }
+  ],
+  "lock": true
+}
+
+200 OK
+{
+  "meeting_id": "mt_31",
+  "locked": true,
+  "summary": { "expected": 42, "present": 36, "absent": 4, "excused": 2 },
+  "quorum": { "present": 36, "expected": 42, "percent": 85.7, "threshold": 65, "reached": true },
+  "saved_at": "2026-11-07T13:20:00Z"
+}
+
+409 Conflict  { "error": { "code": "ATTENDANCE_LOCKED", "message": "Attendance was already saved and locked", "details": {} } }</pre>
+<p class="note">Channel values: <code>IN_PERSON | VIRTUAL | PROXY</code>. Quorum threshold comes from the rule agreed with Les Cousins.</p></details>
+
+<h3 class="mod">Minutes <span class="tag be">S3-04</span> <span class="tag fe">S3-26, S3-27</span> <span class="tag must">Must</span></h3>
+
+<details><summary><span class="m get">GET</span> /minutes?status=DRAFT <em>All roles (members see FINAL only)</em></summary>
+<pre>GET /api/v1/minutes?status=DRAFT&amp;page=1&amp;page_size=20
+
+200 OK
+{
+  "items": [
+    {
+      "id": "mn_14",
+      "meeting": { "id": "mt_31", "title": "Quarterly General Assembly", "starts_at": "2026-11-07T13:00:00Z" },
+      "status": "DRAFT",
+      "updated_by": { "id": "m_7", "name": "..." },
+      "updated_at": "2026-11-08T08:10:00Z"
+    }
+  ],
+  "total": 2, "page": 1, "page_size": 20,
+  "counts": { "total": 14, "draft": 2, "final": 12 }
+}</pre></details>
+
+<details><summary><span class="m post">POST</span> /minutes <em>Secretary</em></summary>
+<pre>POST /api/v1/minutes
+{
+  "meeting_id": "mt_31",
+  "discussion": "The Treasurer presented the Q3 statement...",
+  "decisions": [
+    { "title": "Approve Q3 financial statement", "detail": "...", "votes_for": 34, "votes_against": 0, "abstain": 2 }
+  ],
+  "action_items": [
+    { "title": "Share signed statement with all members", "assignee_id": "m_4", "due_date": "2026-11-14" }
+  ]
+}
+
+201 Created
+{
+  "id": "mn_14",
+  "meeting": { "id": "mt_31", "title": "Quarterly General Assembly" },
+  "status": "DRAFT",
+  "discussion": "The Treasurer presented the Q3 statement...",
+  "decisions": [ { "id": "dc_1", "title": "Approve Q3 financial statement", "detail": "...", "votes_for": 34, "votes_against": 0, "abstain": 2, "result": "ADOPTED" } ],
+  "action_items": [ { "id": "ai_1", "title": "Share signed statement with all members", "assignee": { "id": "m_4", "name": "..." }, "due_date": "2026-11-14", "done": false } ],
+  "created_at": "2026-11-07T16:00:00Z"
+}
+
+409 Conflict  { "error": { "code": "MINUTES_EXIST", "message": "This meeting already has minutes", "details": { "minutes_id": "mn_14" } } }</pre></details>
+
+<details><summary><span class="m get">GET</span> /minutes/{id} <em>All roles</em></summary>
+<pre>GET /api/v1/minutes/mn_14
+
+200 OK
+{
+  "id": "mn_14",
+  "meeting": { "id": "mt_31", "title": "Quarterly General Assembly", "starts_at": "2026-11-07T13:00:00Z", "venue": "Community Hall, Kigali" },
+  "status": "FINAL",
+  "agenda": [ { "order": 1, "title": "Review of Q3 financial statement" } ],
+  "quorum": { "present": 36, "expected": 42, "percent": 85.7, "threshold": 65, "reached": true },
+  "discussion": "...",
+  "decisions": [ { "id": "dc_1", "title": "...", "votes_for": 34, "votes_against": 0, "abstain": 2, "result": "ADOPTED" } ],
+  "action_items": [ { "id": "ai_1", "title": "...", "assignee": { "id": "m_4", "name": "..." }, "due_date": "2026-11-14", "done": false } ],
+  "finalized_by": { "id": "m_7", "name": "..." },
+  "finalized_at": "2026-11-09T09:00:00Z"
+}</pre></details>
+
+<details><summary><span class="m patch">PATCH</span> /minutes/{id} <em>Secretary, DRAFT only</em></summary>
+<pre>PATCH /api/v1/minutes/mn_14
+{ "discussion": "Updated notes...", "action_items": [ { "id": "ai_1", "due_date": "2026-11-20" } ] }
+
+200 OK
+{ ...full minutes object, same shape as GET /minutes/{id}... }
+
+409 Conflict  { "error": { "code": "MINUTES_FINAL", "message": "Final minutes cannot be edited", "details": {} } }</pre></details>
+
+<details><summary><span class="m post">POST</span> /minutes/{id}/finalize <em>Secretary</em></summary>
+<pre>POST /api/v1/minutes/mn_14/finalize
+{}
+
+200 OK
+{ "id": "mn_14", "status": "FINAL", "finalized_by": { "id": "m_7", "name": "..." }, "finalized_at": "2026-11-09T09:00:00Z" }
+
+422 Unprocessable  { "error": { "code": "ATTENDANCE_MISSING", "message": "Record attendance before finalising minutes", "details": {} } }</pre></details>
+
+<details><summary><span class="m get">GET</span> /minutes/{id}/pdf <em>All roles, FINAL only</em></summary>
+<pre>GET /api/v1/minutes/mn_14/pdf
+
+200 OK
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="minutes-2026-11-07-general-assembly.pdf"
+&lt;binary&gt;</pre></details>
+
+<h3 class="mod">Contributions <span class="tag be">S3-05, S3-06</span> <span class="tag fe">S3-17, S3-18, S3-19</span> <span class="tag must">Must</span></h3>
+
+<details><summary><span class="m get">GET</span> /contributions?status=PENDING&amp;month=2026-11&amp;q= <em>Treasurer, Secretary</em></summary>
+<pre>GET /api/v1/contributions?status=PENDING&amp;month=2026-11&amp;q=&amp;page=1&amp;page_size=20
+
+200 OK
+{
+  "items": [
+    {
+      "id": "c_8f2a",
+      "member": { "id": "m_12", "name": "...", "position": "MEMBER" },
+      "amount": 50000,
+      "method": "MTN_MOMO",
+      "purpose": "MONTHLY",
+      "reference": "TXN-123",
+      "status": "PENDING",
+      "paid_on": "2026-10-30",
+      "created_at": "2026-10-30T07:15:00Z"
+    }
+  ],
+  "total": 13, "page": 1, "page_size": 20,
+  "summary": { "expected": 2100000, "received": 1450000, "pending": 650000, "collection_rate": 69.0, "paid_count": 29, "member_count": 42 }
+}</pre>
+<p class="note">Purpose values: <code>MONTHLY | WELFARE | SPECIAL_LEVY</code> (to confirm with Les Cousins).</p></details>
+
+<details><summary><span class="m post">POST</span> /contributions <em>Any member (own payment)</em></summary>
+<pre>POST /api/v1/contributions          (multipart/form-data)
+  amount=50000  method=MTN_MOMO  purpose=MONTHLY  reference=TXN-123  paid_on=2026-10-30  proof=&lt;file&gt;
+
+201 Created
+{
+  "id": "c_8f2a",
+  "member": { "id": "m_12", "name": "..." },
+  "amount": 50000,
+  "method": "MTN_MOMO",
+  "purpose": "MONTHLY",
+  "reference": "TXN-123",
+  "paid_on": "2026-10-30",
+  "status": "PENDING",
+  "proof_url": "https://...signed, expires in 10 min",
+  "created_at": "2026-10-30T07:15:00Z"
+}
+
+413 Payload Too Large  { "error": { "code": "FILE_TOO_LARGE", "message": "Proof must be 5 MB or less", "details": {} } }
+422 Unprocessable      { "error": { "code": "VALIDATION_ERROR", "message": "amount must be a positive whole number", "details": { "field": "amount" } } }</pre>
+<p class="note">Proof file: JPG, PNG or PDF, max 5 MB.</p></details>
+
+<details><summary><span class="m get">GET</span> /contributions/{id} <em>Owner of the payment, Treasurer</em></summary>
+<pre>GET /api/v1/contributions/c_8f2a
+
+200 OK
+{
+  "id": "c_8f2a",
+  "member": { "id": "m_12", "name": "..." },
+  "amount": 50000,
+  "method": "MTN_MOMO",
+  "purpose": "MONTHLY",
+  "reference": "TXN-123",
+  "paid_on": "2026-10-30",
+  "status": "PAID",
+  "proof_url": "https://...signed, expires in 10 min",
+  "reviewed_by": { "id": "m_4", "name": "..." },
+  "reviewed_at": "2026-10-30T12:00:00Z",
+  "reject_reason": null,
+  "reversal": null,
+  "history": [
+    { "status": "PENDING", "by": { "id": "m_12", "name": "..." }, "at": "2026-10-30T07:15:00Z" },
+    { "status": "PAID",    "by": { "id": "m_4",  "name": "..." }, "at": "2026-10-30T12:00:00Z" }
+  ]
+}</pre></details>
+
+<details><summary><span class="m get">GET</span> /me/contributions?year=2026 <em>Any member (own data only)</em></summary>
+<pre>GET /api/v1/me/contributions?year=2026&amp;page=1&amp;page_size=20
+
+200 OK
+{
+  "summary": { "total_contributed": 250000, "count": 5, "outstanding": 0, "on_time_rate": 100.0 },
+  "items": [
+    { "id": "c_8f2a", "amount": 50000, "purpose": "MONTHLY", "method": "MTN_MOMO", "status": "PAID", "paid_on": "2026-10-30", "reference": "TXN-123" }
+  ],
+  "total": 5, "page": 1, "page_size": 20
+}</pre></details>
+
+<details><summary><span class="m post">POST</span> /contributions/{id}/confirm <em>Treasurer</em></summary>
+<pre>POST /api/v1/contributions/c_8f2a/confirm
+{}
+
+200 OK
+{ "id": "c_8f2a", "status": "PAID", "reviewed_by": { "id": "m_4", "name": "..." }, "reviewed_at": "2026-10-30T12:00:00Z" }
+
+403 Forbidden  { "error": { "code": "FORBIDDEN", "message": "Only the Treasurer can confirm payments", "details": {} } }
+409 Conflict   { "error": { "code": "INVALID_STATUS", "message": "Only PENDING contributions can be confirmed", "details": { "status": "PAID" } } }</pre>
+<p class="note">On confirm, the member gets a notification and the totals in <code>/finance/summary</code> update.</p></details>
+
+<details><summary><span class="m post">POST</span> /contributions/{id}/reject <em>Treasurer</em></summary>
+<pre>POST /api/v1/contributions/c_8f2a/reject
+{ "reason": "Amount on the proof does not match 50,000 RWF" }
+
+200 OK
+{ "id": "c_8f2a", "status": "REJECTED", "reject_reason": "Amount on the proof does not match 50,000 RWF", "reviewed_by": { "id": "m_4", "name": "..." }, "reviewed_at": "2026-10-30T12:05:00Z" }
+
+422 Unprocessable  { "error": { "code": "REASON_REQUIRED", "message": "A reason is required to reject", "details": {} } }</pre></details>
+
+<details><summary><span class="m post">POST</span> /contributions/remind <em>Treasurer</em></summary>
+<pre>POST /api/v1/contributions/remind
+{ "month": "2026-11", "member_ids": ["m_19", "m_22"] }          (omit member_ids to remind everyone who hasn't paid)
+
+202 Accepted
+{ "reminded": 2, "channel": "EMAIL_AND_IN_APP" }</pre></details>
+
+<h3 class="mod">Expenses <span class="tag be">S3-08</span> <span class="tag fe">S3-20</span> <span class="tag must">Must</span></h3>
+
+<details><summary><span class="m get">GET</span> /expenses?category=VENUE&amp;month=2026-11 <em>Treasurer, Secretary</em></summary>
+<pre>GET /api/v1/expenses?category=VENUE&amp;month=2026-11&amp;q=&amp;page=1&amp;page_size=20
+
+200 OK
+{
+  "items": [
+    {
+      "id": "e_18",
+      "title": "Hall reservation, General Assembly",
+      "category": "VENUE",
+      "amount": 120000,
+      "payee": "Kigali Cultural Centre",
+      "method": "BANK_TRANSFER",
+      "spent_on": "2026-11-02",
+      "status": "RECORDED",
+      "recorded_by": { "id": "m_4", "name": "..." }
+    }
+  ],
+  "total": 8, "page": 1, "page_size": 20,
+  "summary": { "total_expenses": 1240000, "count": 8 }
+}</pre>
+<p class="note">Category values: <code>VENUE | WELFARE | ADMIN | REFRESHMENTS | BANK_FEES | OTHER</code> (to confirm).</p></details>
+
+<details><summary><span class="m post">POST</span> /expenses <em>Treasurer</em></summary>
+<pre>POST /api/v1/expenses          (multipart/form-data)
+  title=Hall reservation, General Assembly  category=VENUE  amount=120000  payee=Kigali Cultural Centre
+  method=BANK_TRANSFER  reference=CHQ-0421  spent_on=2026-11-02  memo=Deposit approved at meeting mt_31  receipt=&lt;file&gt;
+
+201 Created
+{
+  "id": "e_18",
+  "title": "Hall reservation, General Assembly",
+  "category": "VENUE",
+  "amount": 120000,
+  "payee": "Kigali Cultural Centre",
+  "method": "BANK_TRANSFER",
+  "reference": "CHQ-0421",
+  "spent_on": "2026-11-02",
+  "memo": "Deposit approved at meeting mt_31",
+  "status": "RECORDED",
+  "receipt_url": "https://...signed, expires in 10 min",
+  "recorded_by": { "id": "m_4", "name": "..." },
+  "created_at": "2026-11-02T14:30:00Z"
+}</pre></details>
+
+<details><summary><span class="m patch">PATCH</span> /expenses/{id} <em>Treasurer</em></summary>
+<pre>PATCH /api/v1/expenses/e_18          (non-money fields only)
+{ "memo": "Deposit for Q4 assembly", "category": "VENUE" }
+
+200 OK
+{ ...full expense object, same shape as POST response... }
+
+422 Unprocessable  { "error": { "code": "AMOUNT_LOCKED", "message": "Amount cannot be edited. Reverse the expense and record a new one.", "details": {} } }</pre></details>
+
+<details><summary><span class="m post">POST</span> /expenses/{id}/reverse <em>Treasurer</em></summary>
+<pre>POST /api/v1/expenses/e_18/reverse
+{ "reason": "Recorded twice" }
+
+200 OK
+{
+  "id": "e_18",
+  "status": "REVERSED",
+  "reversal": { "id": "e_18r", "amount": -120000, "reason": "Recorded twice", "by": { "id": "m_4", "name": "..." }, "at": "2026-11-03T08:00:00Z" }
+}</pre></details>
+
+<h3 class="mod">Finance dashboard <span class="tag be">S3-10</span> <span class="tag fe">S3-16</span> <span class="tag must">Must</span></h3>
+
+<details><summary><span class="m get">GET</span> /finance/summary?year=2026 <em>All roles (members see totals only)</em></summary>
+<pre>GET /api/v1/finance/summary?year=2026
+
+200 OK
+{
+  "period": { "from": "2026-01-01", "to": "2026-12-31" },
+  "total_contributions": 4820000,
+  "total_expenses": 1240000,
+  "outstanding": 650000,
+  "outstanding_count": 13,
+  "current_balance": 3580000,
+  "members": { "active": 42, "up_to_date": 29, "compliance_rate": 69.0 },
+  "recent_activity": [
+    { "type": "CONTRIBUTION", "id": "c_8f2a", "title": "Monthly contribution", "member": { "id": "m_12", "name": "..." }, "amount": 50000, "direction": "IN", "at": "2026-10-30T12:00:00Z" },
+    { "type": "EXPENSE", "id": "e_18", "title": "Hall reservation", "amount": 120000, "direction": "OUT", "at": "2026-11-02T14:30:00Z" }
+  ],
+  "accounts": [
+    { "name": "Bank of Kigali", "balance": 2850000, "entered_manually": true },
+    { "name": "MTN MoMo float", "balance": 730000, "entered_manually": true }
+  ]
+}</pre>
+<p class="note">Totals count PAID contributions and RECORDED expenses only. Account balances are entered by the Treasurer, not pulled live from the bank.</p></details>
+
+<h3 class="mod">Should <span class="tag should">Should</span></h3>
+
+<details><summary><span class="m post">POST</span> /contributions/{id}/reverse <em>Treasurer</em> <span class="tag be">S3-07</span></summary>
+<pre>POST /api/v1/contributions/c_8f2a/reverse
+{ "reason": "Payment bounced at MTN" }
+
+200 OK
+{
+  "id": "c_8f2a",
+  "status": "REVERSED",
+  "reversal": { "id": "c_8f2ar", "amount": -50000, "reason": "Payment bounced at MTN", "by": { "id": "m_4", "name": "..." }, "at": "2026-11-01T09:00:00Z" }
+}
+
+409 Conflict  { "error": { "code": "INVALID_STATUS", "message": "Only PAID contributions can be reversed", "details": {} } }</pre></details>
+
+<details><summary><span class="m get">GET</span> /contributions/{id}/receipt.pdf · /me/statement.pdf?year=2026 <span class="tag be">S3-07</span></summary>
+<pre>GET /api/v1/contributions/c_8f2a/receipt.pdf
+GET /api/v1/me/statement.pdf?year=2026
+
+200 OK
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="receipt-c_8f2a.pdf"
+&lt;binary&gt;
+
+409 Conflict  { "error": { "code": "INVALID_STATUS", "message": "Receipts are only available for PAID contributions", "details": {} } }</pre></details>
+
+<details><summary><span class="m get">GET</span> /ledger?from=2026-11-01&amp;to=2026-11-30&amp;direction=ALL <em>Treasurer, Secretary</em> <span class="tag be">S3-09</span> <span class="tag fe">S3-21</span></summary>
+<pre>GET /api/v1/ledger?from=2026-11-01&amp;to=2026-11-30&amp;direction=ALL&amp;q=&amp;page=1&amp;page_size=20
+                                         (direction: ALL | IN | OUT)
+200 OK
+{
+  "summary": { "inflow": 1450000, "inflow_count": 29, "outflow": 305000, "outflow_count": 8, "net": 1145000 },
+  "items": [
+    {
+      "id": "tx_89",
+      "date": "2026-11-02T14:30:00Z",
+      "direction": "OUT",
+      "amount": 120000,
+      "narrative": "Hall reservation, General Assembly",
+      "source": { "type": "EXPENSE", "id": "e_18" },
+      "party": "Kigali Cultural Centre",
+      "method": "BANK_TRANSFER",
+      "reference": "CHQ-0421",
+      "recorded_by": { "id": "m_4", "name": "..." }
+    }
+  ],
+  "total": 37, "page": 1, "page_size": 20
+}
+
+GET /api/v1/ledger/export?from=2026-11-01&amp;to=2026-11-30&amp;format=csv   →  200 OK, text/csv</pre></details>
+
+<details><summary><span class="m get">GET</span> /finance/reports?type=SUMMARY&amp;from=2026-01&amp;to=2026-11 <em>Treasurer, Secretary</em> <span class="tag be">S3-11</span> <span class="tag fe">S3-22</span></summary>
+<pre>GET /api/v1/finance/reports?type=SUMMARY&amp;from=2026-01&amp;to=2026-11
+                                 (type: SUMMARY | CONTRIBUTIONS | EXPENSES)
+200 OK   (type=SUMMARY)
+{
+  "type": "SUMMARY",
+  "period": { "from": "2026-01", "to": "2026-11" },
+  "totals": { "contributions": 4820000, "expenses": 1240000, "net": 3580000 },
+  "monthly": [
+    { "month": "2026-01", "contributions": 950000, "expenses": 180000, "net": 770000, "running_balance": 770000 },
+    { "month": "2026-02", "contributions": 1020000, "expenses": 240000, "net": 780000, "running_balance": 1550000 }
+  ]
+}
+
+200 OK   (type=CONTRIBUTIONS)
+{ "type": "CONTRIBUTIONS", "by_purpose": [ { "purpose": "MONTHLY", "amount": 4200000, "share": 87.1 }, { "purpose": "WELFARE", "amount": 420000, "share": 8.7 } ] }
+
+200 OK   (type=EXPENSES)
+{ "type": "EXPENSES", "by_category": [ { "category": "VENUE", "amount": 450000, "share": 36.3 }, { "category": "WELFARE", "amount": 380000, "share": 30.6 } ] }
+
+GET /api/v1/finance/reports/export?type=SUMMARY&amp;from=2026-01&amp;to=2026-11&amp;format=pdf   →  200 OK, application/pdf</pre></details>
+
+<h3 class="mod">Stretch <span class="tag should">Stretch</span></h3>
+
+<details><summary><span class="m get">GET</span> /events · <span class="m post">POST</span> /events <span class="tag be">S3-12</span> <span class="tag fe">S3-28</span></summary>
+<pre>POST /api/v1/events          (Committee)
+{ "title": "Annual Cousins Celebration", "type": "CELEBRATION", "starts_at": "2026-12-19T11:00:00Z", "ends_at": "2026-12-19T18:00:00Z", "venue": "Community Hall, Kigali", "description": "...", "guests_allowed": true }
+
+201 Created
+{ "id": "ev_5", "title": "Annual Cousins Celebration", "type": "CELEBRATION", "starts_at": "2026-12-19T11:00:00Z", "ends_at": "2026-12-19T18:00:00Z", "venue": "Community Hall, Kigali", "status": "UPCOMING", "rsvp": { "confirmed": 0, "apologies": 0, "pending": 42 } }
+
+GET /api/v1/events?status=UPCOMING   →  200 OK  { "items": [ { ...event object... } ], "total": 1, "page": 1, "page_size": 20 }</pre></details>
+
+<details><summary><span class="m post">POST</span> /events/{id}/rsvp <em>Any member</em> <span class="tag be">S3-12</span></summary>
+<pre>POST /api/v1/events/ev_5/rsvp
+{ "response": "CONFIRMED", "guests": 2 }          (response: CONFIRMED | APOLOGY)
+
+200 OK
+{ "event_id": "ev_5", "response": "CONFIRMED", "guests": 2, "rsvp": { "confirmed": 33, "apologies": 4, "pending": 5 } }</pre></details>
+
+<details><summary><span class="m get">GET</span> /announcements · <span class="m post">POST</span> /announcements <span class="tag be">S3-13</span> <span class="tag fe">S3-30</span></summary>
+<pre>POST /api/v1/announcements          (Committee)
+{ "title": "November contributions due on the 25th", "body": "...", "pinned": false }
+
+201 Created
+{ "id": "an_9", "title": "November contributions due on the 25th", "body": "...", "pinned": false, "author": { "id": "m_7", "name": "..." }, "published_at": "2026-11-01T08:00:00Z" }
+
+GET /api/v1/announcements?page=1&amp;page_size=20   →  200 OK  { "items": [ { ...announcement, newest first... } ], "total": 6, "page": 1, "page_size": 20 }</pre></details>
+
+<details><summary><span class="m get">GET</span> /meetings/reports?type=ATTENDANCE&amp;year=2026 <span class="tag be">S3-14</span> <span class="tag fe">S3-29</span></summary>
+<pre>GET /api/v1/meetings/reports?type=ATTENDANCE&amp;year=2026
+                                 (type: MEETINGS | ATTENDANCE | EVENTS | MINUTES)
+200 OK
+{
+  "type": "ATTENDANCE",
+  "year": 2026,
+  "summary": { "meetings": 14, "average_attendance": 91.4, "quorum_met": 13 },
+  "rows": [
+    { "meeting": { "id": "mt_31", "title": "Quarterly General Assembly", "date": "2026-11-07" }, "expected": 42, "present": 36, "percent": 85.7, "quorum_reached": true }
+  ]
+}
+
+GET /api/v1/meetings/reports/register.pdf?year=2026   →  200 OK, application/pdf</pre></details>
+
+<h3>Common error responses</h3>
+<pre>401 Unauthorized  { "error": { "code": "UNAUTHENTICATED", "message": "Login required", "details": {} } }
+403 Forbidden     { "error": { "code": "FORBIDDEN", "message": "Your role cannot do this", "details": { "required_role": "TREASURER" } } }
+404 Not Found     { "error": { "code": "NOT_FOUND", "message": "...", "details": {} } }
+409 Conflict      { "error": { "code": "INVALID_STATUS", "message": "...", "details": { "status": "..." } } }
+422 Unprocessable { "error": { "code": "VALIDATION_ERROR", "message": "...", "details": { "field": "..." } } }</pre>
+
+
+<h2>Done means</h2>
+<ul>
+  <li>A real contribution goes from upload → Treasurer confirmation → dashboard total, on staging.</li>
+  <li>A real meeting goes from scheduling → attendance → final minutes, on staging.</li>
+  <li>Dashboard totals match a hand-checked sample of Les Cousins figures.</li>
+  <li>Every Must endpoint is in the OpenAPI spec and matches what the frontend calls.</li>
+  <li>All Must issues are closed on both GitHub boards.</li>
+</ul>
+
+<h2>Not in this sprint</h2>
+<p>Ledger cryptography and hashes, 2FA approval for large amounts, live bank and MoMo balances, venue maps, and by-law audit badges. The reference designs show some of these; leave them out or stub them.</p>
+
+</main>
+
+</body></html>

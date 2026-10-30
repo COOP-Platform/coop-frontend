@@ -83,7 +83,7 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
           <IconMenu />
         </button>
 
-        <Link to="/community" className="topbar__brand">
+        <Link to={app.to ?? '/community'} className="topbar__brand">
           <span className="topbar__logo" aria-hidden="true">
             <IconInstitution width={22} height={22} />
           </span>
@@ -114,7 +114,7 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
                     onClick={() => {
                       selectCommunity(m.community.id);
                       close();
-                      void navigate({ to: '/community' });
+                      void navigate({ to: app.to ?? '/community' });
                     }}
                   >
                     <span className="menu__item-body">

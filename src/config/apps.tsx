@@ -8,6 +8,7 @@ import type { LinkProps } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
 import {
+  IconBanknote,
   IconBarChart,
   IconCalendar,
   IconChat,
@@ -17,6 +18,7 @@ import {
   IconGrid,
   IconIdBadge,
   IconMail,
+  IconSend,
   IconUsers,
   IconWallet,
 } from '@/components/ui';
@@ -61,15 +63,44 @@ export const COMMUNITY_APP: AppDefinition = {
   ],
 };
 
+/*
+ * Money in and out of the community. Pages a member has no use for carry the
+ * permission that unlocks them; the sidebar leaves them out otherwise. The
+ * backend still enforces every one of these.
+ */
+export const FINANCE_APP: AppDefinition = {
+  id: 'finance',
+  name: 'Finance',
+  description: 'Contributions, expenses and reports',
+  icon: <IconWallet />,
+  to: '/finance',
+  nav: [
+    { label: 'Dashboard', icon: <IconGrid />, to: '/finance', exact: true },
+    { label: 'My Contributions', icon: <IconWallet />, to: '/finance/my-contributions' },
+    {
+      label: 'Contributions',
+      icon: <IconBanknote />,
+      to: '/finance/contributions',
+      permission: 'finance.contribution.view',
+    },
+    {
+      label: 'Expenses',
+      icon: <IconSend />,
+      to: '/finance/expenses',
+      permission: 'finance.expense.view',
+    },
+    { label: 'Statements', icon: <IconFile />, to: '/finance/statements' },
+    {
+      label: 'Reports',
+      icon: <IconBarChart />,
+      to: '/finance/reports',
+      permission: 'finance.report.view',
+    },
+  ],
+};
+
 /** Shown in the switcher as "coming soon" so the direction is visible. */
 const PLANNED_APPS: readonly AppDefinition[] = [
-  {
-    id: 'contributions',
-    name: 'Contributions',
-    description: 'Cycles, payments and payouts',
-    icon: <IconWallet />,
-    nav: [],
-  },
   {
     id: 'meetings',
     name: 'Meetings',
@@ -100,4 +131,4 @@ const PLANNED_APPS: readonly AppDefinition[] = [
   },
 ];
 
-export const APPS: readonly AppDefinition[] = [COMMUNITY_APP, ...PLANNED_APPS];
+export const APPS: readonly AppDefinition[] = [COMMUNITY_APP, FINANCE_APP, ...PLANNED_APPS];

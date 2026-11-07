@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root';
 import { Route as IndexRouteImport } from './routes/index';
 import { Route as CommunityRouteImport } from './routes/community';
+import { Route as FinanceRouteImport } from './routes/finance';
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as RegisterRouteImport } from './routes/register';
@@ -19,6 +20,12 @@ import { Route as StatusRouteImport } from './routes/status';
 import { Route as CommunityIndexRouteImport } from './routes/community.index';
 import { Route as CommunityReportsRouteImport } from './routes/community.reports';
 import { Route as CommunitySettingsRouteImport } from './routes/community.settings';
+import { Route as FinanceIndexRouteImport } from './routes/finance.index';
+import { Route as FinanceContributionsRouteImport } from './routes/finance.contributions';
+import { Route as FinanceExpensesRouteImport } from './routes/finance.expenses';
+import { Route as FinanceMyContributionsRouteImport } from './routes/finance.my-contributions';
+import { Route as FinanceReportsRouteImport } from './routes/finance.reports';
+import { Route as FinanceStatementsRouteImport } from './routes/finance.statements';
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations.accept';
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index';
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create';
@@ -37,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
 const CommunityRoute = CommunityRouteImport.update({
   id: '/community',
   path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const FinanceRoute = FinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
   getParentRoute: () => rootRouteImport,
 } as any);
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -78,6 +90,36 @@ const CommunitySettingsRoute = CommunitySettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => CommunityRoute,
+} as any);
+const FinanceIndexRoute = FinanceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FinanceRoute,
+} as any);
+const FinanceContributionsRoute = FinanceContributionsRouteImport.update({
+  id: '/contributions',
+  path: '/contributions',
+  getParentRoute: () => FinanceRoute,
+} as any);
+const FinanceExpensesRoute = FinanceExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => FinanceRoute,
+} as any);
+const FinanceMyContributionsRoute = FinanceMyContributionsRouteImport.update({
+  id: '/my-contributions',
+  path: '/my-contributions',
+  getParentRoute: () => FinanceRoute,
+} as any);
+const FinanceReportsRoute = FinanceReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => FinanceRoute,
+} as any);
+const FinanceStatementsRoute = FinanceStatementsRouteImport.update({
+  id: '/statements',
+  path: '/statements',
+  getParentRoute: () => FinanceRoute,
 } as any);
 const InvitationsAcceptRoute = InvitationsAcceptRouteImport.update({
   id: '/invitations/accept',
@@ -131,6 +173,7 @@ const CommunityPositionsPositionIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
   '/community': typeof CommunityRouteWithChildren;
+  '/finance': typeof FinanceRouteWithChildren;
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
@@ -138,9 +181,15 @@ export interface FileRoutesByFullPath {
   '/status': typeof StatusRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
+  '/finance/contributions': typeof FinanceContributionsRoute;
+  '/finance/expenses': typeof FinanceExpensesRoute;
+  '/finance/my-contributions': typeof FinanceMyContributionsRoute;
+  '/finance/reports': typeof FinanceReportsRoute;
+  '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
   '/community/': typeof CommunityIndexRoute;
+  '/finance/': typeof FinanceIndexRoute;
   '/onboarding/': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
@@ -158,9 +207,15 @@ export interface FileRoutesByTo {
   '/status': typeof StatusRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
+  '/finance/contributions': typeof FinanceContributionsRoute;
+  '/finance/expenses': typeof FinanceExpensesRoute;
+  '/finance/my-contributions': typeof FinanceMyContributionsRoute;
+  '/finance/reports': typeof FinanceReportsRoute;
+  '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
   '/community': typeof CommunityIndexRoute;
+  '/finance': typeof FinanceIndexRoute;
   '/onboarding': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
@@ -173,6 +228,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   '/': typeof IndexRoute;
   '/community': typeof CommunityRouteWithChildren;
+  '/finance': typeof FinanceRouteWithChildren;
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/register': typeof RegisterRoute;
@@ -180,9 +236,15 @@ export interface FileRoutesById {
   '/status': typeof StatusRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
+  '/finance/contributions': typeof FinanceContributionsRoute;
+  '/finance/expenses': typeof FinanceExpensesRoute;
+  '/finance/my-contributions': typeof FinanceMyContributionsRoute;
+  '/finance/reports': typeof FinanceReportsRoute;
+  '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
   '/community/': typeof CommunityIndexRoute;
+  '/finance/': typeof FinanceIndexRoute;
   '/onboarding/': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
@@ -196,6 +258,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/community'
+    | '/finance'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -203,9 +266,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/community/reports'
     | '/community/settings'
+    | '/finance/contributions'
+    | '/finance/expenses'
+    | '/finance/my-contributions'
+    | '/finance/reports'
+    | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
     | '/community/'
+    | '/finance/'
     | '/onboarding/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
@@ -223,9 +292,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/community/reports'
     | '/community/settings'
+    | '/finance/contributions'
+    | '/finance/expenses'
+    | '/finance/my-contributions'
+    | '/finance/reports'
+    | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
     | '/community'
+    | '/finance'
     | '/onboarding'
     | '/community/invitations/new'
     | '/community/members/$memberId'
@@ -237,6 +312,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/community'
+    | '/finance'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -244,9 +320,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/community/reports'
     | '/community/settings'
+    | '/finance/contributions'
+    | '/finance/expenses'
+    | '/finance/my-contributions'
+    | '/finance/reports'
+    | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
     | '/community/'
+    | '/finance/'
     | '/onboarding/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
@@ -259,6 +341,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   CommunityRoute: typeof CommunityRouteWithChildren;
+  FinanceRoute: typeof FinanceRouteWithChildren;
   ForgotPasswordRoute: typeof ForgotPasswordRoute;
   LoginRoute: typeof LoginRoute;
   RegisterRoute: typeof RegisterRoute;
@@ -283,6 +366,13 @@ declare module '@tanstack/react-router' {
       path: '/community';
       fullPath: '/community';
       preLoaderRoute: typeof CommunityRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/finance': {
+      id: '/finance';
+      path: '/finance';
+      fullPath: '/finance';
+      preLoaderRoute: typeof FinanceRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/forgot-password': {
@@ -340,6 +430,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/community/settings';
       preLoaderRoute: typeof CommunitySettingsRouteImport;
       parentRoute: typeof CommunityRoute;
+    };
+    '/finance/': {
+      id: '/finance/';
+      path: '/';
+      fullPath: '/finance/';
+      preLoaderRoute: typeof FinanceIndexRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
+    '/finance/contributions': {
+      id: '/finance/contributions';
+      path: '/contributions';
+      fullPath: '/finance/contributions';
+      preLoaderRoute: typeof FinanceContributionsRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
+    '/finance/expenses': {
+      id: '/finance/expenses';
+      path: '/expenses';
+      fullPath: '/finance/expenses';
+      preLoaderRoute: typeof FinanceExpensesRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
+    '/finance/my-contributions': {
+      id: '/finance/my-contributions';
+      path: '/my-contributions';
+      fullPath: '/finance/my-contributions';
+      preLoaderRoute: typeof FinanceMyContributionsRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
+    '/finance/reports': {
+      id: '/finance/reports';
+      path: '/reports';
+      fullPath: '/finance/reports';
+      preLoaderRoute: typeof FinanceReportsRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
+    '/finance/statements': {
+      id: '/finance/statements';
+      path: '/statements';
+      fullPath: '/finance/statements';
+      preLoaderRoute: typeof FinanceStatementsRouteImport;
+      parentRoute: typeof FinanceRoute;
     };
     '/invitations/accept': {
       id: '/invitations/accept';
@@ -435,9 +567,31 @@ const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
   CommunityRouteChildren,
 );
 
+interface FinanceRouteChildren {
+  FinanceContributionsRoute: typeof FinanceContributionsRoute;
+  FinanceExpensesRoute: typeof FinanceExpensesRoute;
+  FinanceMyContributionsRoute: typeof FinanceMyContributionsRoute;
+  FinanceReportsRoute: typeof FinanceReportsRoute;
+  FinanceStatementsRoute: typeof FinanceStatementsRoute;
+  FinanceIndexRoute: typeof FinanceIndexRoute;
+}
+
+const FinanceRouteChildren: FinanceRouteChildren = {
+  FinanceContributionsRoute: FinanceContributionsRoute,
+  FinanceExpensesRoute: FinanceExpensesRoute,
+  FinanceMyContributionsRoute: FinanceMyContributionsRoute,
+  FinanceReportsRoute: FinanceReportsRoute,
+  FinanceStatementsRoute: FinanceStatementsRoute,
+  FinanceIndexRoute: FinanceIndexRoute,
+};
+
+const FinanceRouteWithChildren =
+  FinanceRoute._addFileChildren(FinanceRouteChildren);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CommunityRoute: CommunityRouteWithChildren,
+  FinanceRoute: FinanceRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,

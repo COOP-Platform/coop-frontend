@@ -36,6 +36,14 @@ export const queryKeys = {
     member: (communityId: string, membershipId: string) =>
       ['positions', communityId, 'member', membershipId] as const,
   },
+  finance: {
+    summary: (communityId: string, year: number) =>
+      ['finance', communityId, 'summary', year] as const,
+    myContributions: (communityId: string, year: number) =>
+      ['finance', communityId, 'my-contributions', year] as const,
+    contribution: (communityId: string, id: string) =>
+      ['finance', communityId, 'contribution', id] as const,
+  },
   users: {
     all: ['users'] as const,
     list: () => ['users', 'list'] as const,

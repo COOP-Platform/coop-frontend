@@ -651,7 +651,9 @@ body:has(.auth-shell),
 }
 
 .field__control--select {
-  padding-right: var(--space-2);
+  position: relative;
+  /* The <select> fills the whole box, so a click anywhere on it opens the list. */
+  padding: 0;
 }
 
 .field__select {
@@ -660,7 +662,8 @@ body:has(.auth-shell),
   appearance: none;
   border: none;
   background: transparent;
-  padding: var(--space-3) 0;
+  padding: var(--space-3) var(--space-8) var(--space-3) var(--space-3);
+  cursor: pointer;
   font: inherit;
   font-size: var(--text-sm);
   color: var(--color-text);
@@ -671,8 +674,11 @@ body:has(.auth-shell),
 }
 
 .field__chevron {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
   display: inline-flex;
-  flex-shrink: 0;
+  transform: translateY(-50%);
   color: var(--color-text-subtle);
   pointer-events: none;
 }

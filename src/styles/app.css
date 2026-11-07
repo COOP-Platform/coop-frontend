@@ -2960,3 +2960,16 @@
   justify-content: space-between;
   gap: var(--space-3);
 }
+
+/* ---------- Finance: review a payment from the emailed link ---------- */
+
+.review-payment {
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.review-payment__switch {
+  align-self: center;
+}

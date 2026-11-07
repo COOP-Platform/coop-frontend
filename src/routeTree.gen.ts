@@ -29,6 +29,7 @@ import { Route as FinanceStatementsRouteImport } from './routes/finance.statemen
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations.accept';
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index';
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create';
+import { Route as ReviewPaymentRouteImport } from './routes/review.payment';
 import { Route as CommunityInvitationsIndexRouteImport } from './routes/community.invitations.index';
 import { Route as CommunityInvitationsNewRouteImport } from './routes/community.invitations.new';
 import { Route as CommunityMembersIndexRouteImport } from './routes/community.members.index';
@@ -136,6 +137,11 @@ const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
   path: '/onboarding/create',
   getParentRoute: () => rootRouteImport,
 } as any);
+const ReviewPaymentRoute = ReviewPaymentRouteImport.update({
+  id: '/review/payment',
+  path: '/review/payment',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const CommunityInvitationsIndexRoute =
   CommunityInvitationsIndexRouteImport.update({
     id: '/invitations/',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
+  '/review/payment': typeof ReviewPaymentRoute;
   '/community/': typeof CommunityIndexRoute;
   '/finance/': typeof FinanceIndexRoute;
   '/onboarding/': typeof OnboardingIndexRoute;
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
+  '/review/payment': typeof ReviewPaymentRoute;
   '/community': typeof CommunityIndexRoute;
   '/finance': typeof FinanceIndexRoute;
   '/onboarding': typeof OnboardingIndexRoute;
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
+  '/review/payment': typeof ReviewPaymentRoute;
   '/community/': typeof CommunityIndexRoute;
   '/finance/': typeof FinanceIndexRoute;
   '/onboarding/': typeof OnboardingIndexRoute;
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
+    | '/review/payment'
     | '/community/'
     | '/finance/'
     | '/onboarding/'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
+    | '/review/payment'
     | '/community'
     | '/finance'
     | '/onboarding'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
+    | '/review/payment'
     | '/community/'
     | '/finance/'
     | '/onboarding/'
@@ -349,6 +361,7 @@ export interface RootRouteChildren {
   StatusRoute: typeof StatusRoute;
   InvitationsAcceptRoute: typeof InvitationsAcceptRoute;
   OnboardingCreateRoute: typeof OnboardingCreateRoute;
+  ReviewPaymentRoute: typeof ReviewPaymentRoute;
   OnboardingIndexRoute: typeof OnboardingIndexRoute;
 }
 
@@ -494,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingCreateRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/review/payment': {
+      id: '/review/payment';
+      path: '/review/payment';
+      fullPath: '/review/payment';
+      preLoaderRoute: typeof ReviewPaymentRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/community/invitations/': {
       id: '/community/invitations/';
       path: '/invitations';
@@ -599,6 +619,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatusRoute: StatusRoute,
   InvitationsAcceptRoute: InvitationsAcceptRoute,
   OnboardingCreateRoute: OnboardingCreateRoute,
+  ReviewPaymentRoute: ReviewPaymentRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
 };
 export const routeTree = rootRouteImport

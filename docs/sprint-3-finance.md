@@ -12,7 +12,8 @@ walkthrough is `coop-backend/docs/sprint-3-5-backend-guide.html`.
 | `/finance` | Dashboard, live | `GET /communities/{id}/finance/summary/?year=` |
 | `/finance/my-contributions` | Live, with statement PDF | `GET /communities/{id}/contributions/me/?year=` · `GET .../contributions/me/statement/?year=` |
 | Details drawer | Live, with receipt PDF and proof links | `GET /communities/{id}/contributions/{cid}/` · `GET .../contributions/{cid}/receipt/` |
-| `/finance/contributions`, `/expenses`, `/statements`, `/reports` | "Coming soon" placeholders | see §4 |
+| `/finance/contributions` | Live: month summary, Treasurer review queue (approve / reject), full list, reverse, reminders | `GET .../contributions/?month=` · `/confirm/` · `/reject/` · `/reverse/` · `POST .../contributions/reminders/` |
+| `/finance/expenses`, `/statements`, `/reports` | "Coming soon" placeholders | see §4 |
 
 `/finance/*` uses the same guard as `/community/*` (signed in, belongs to a community).
 
@@ -47,7 +48,6 @@ of other members' payments stay private (the API sends `proofs: null`).
 | Screen | Endpoints |
 | --- | --- |
 | Record a contribution (form + proof upload) | `POST .../contributions/` (multipart) · `POST .../contributions/{cid}/proofs/` |
-| Community contributions + Treasurer review | `GET .../contributions/?month=YYYY-MM` · `POST .../{cid}/confirm/` · `/reject/` · `/reverse/` · `POST .../contributions/reminders/` |
 | Shares (Treasurer) | `GET/POST .../share-categories/` · `PATCH .../members/{mid}/shares/` |
 | Expenses | `GET/POST .../expenses/` · `/approve/` · `/reject/` · `/reverse/` · `/export/` |
 | Income | `GET/POST .../income/` · `/reverse/` |

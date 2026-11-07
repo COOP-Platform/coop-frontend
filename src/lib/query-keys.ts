@@ -42,6 +42,14 @@ export const queryKeys = {
     openCampaigns: (communityId: string) => ['finance', communityId, 'campaigns', 'open'] as const,
     contributions: (communityId: string, filters: Record<string, unknown>) =>
       ['finance', communityId, 'contributions', filters] as const,
+    expenses: (communityId: string, filters: Record<string, unknown>) =>
+      ['finance', communityId, 'expenses', filters] as const,
+    expense: (communityId: string, id: string) => ['finance', communityId, 'expense', id] as const,
+    activeBudgets: (communityId: string) => ['finance', communityId, 'budgets', 'active'] as const,
+    income: (communityId: string, filters: Record<string, unknown>) =>
+      ['finance', communityId, 'income', filters] as const,
+    incomeDetail: (communityId: string, id: string) =>
+      ['finance', communityId, 'income-detail', id] as const,
     summary: (communityId: string, year: number) =>
       ['finance', communityId, 'summary', year] as const,
     myContributions: (communityId: string, year: number) =>

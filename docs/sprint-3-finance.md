@@ -51,8 +51,6 @@ of other members' payments stay private (the API sends `proofs: null`).
 | --- | --- |
 | Record a contribution (form + proof upload) | `POST .../contributions/` (multipart) · `POST .../contributions/{cid}/proofs/` |
 | Shares (Treasurer) | `GET/POST .../share-categories/` · `PATCH .../members/{mid}/shares/` |
-| Expenses | `GET/POST .../expenses/` · `/approve/` · `/reject/` · `/reverse/` · `/export/` |
-| Income | `GET/POST .../income/` · `/reverse/` |
 | Cash flow (Statements page) | `GET .../cash-flow/` · `/items/` · `/export/` |
 | Budgets + dedicated contributions | `.../budgets/` · `/close/` · `.../campaigns/` · `/close/` |
 | Accounts (Treasurer enters bank/MoMo balances) | `.../finance/accounts/` · `/balances/` · `/retire/` |

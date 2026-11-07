@@ -342,7 +342,7 @@ function ProofPicker({
     <div className="image-drop">
       <div className="field__label-row">
         <label htmlFor={inputId} className="field__label">
-          Proof of payment <span className="field__optional">(optional)</span>
+          Proof of payment <span className="field__optional">(Optional)</span>
         </label>
         <span className="image-drop__ratio">JPG, PNG or PDF · 5 MB</span>
       </div>

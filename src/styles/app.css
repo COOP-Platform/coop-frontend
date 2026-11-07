@@ -2955,3 +2955,8 @@
   white-space: nowrap;
   font-weight: 600;
 }
+
+.dialog__form .image-drop .field__label-row {
+  justify-content: space-between;
+  gap: var(--space-3);
+}

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query-keys';
@@ -123,3 +123,76 @@ export const receiptPath = (communityId: string, contributionId: string) =>
 
 export const statementPath = (communityId: string, year: number) =>
   `/communities/${communityId}/contributions/me/statement/?year=${year}`;
+
+/** An open dedicated contribution (campaign) a member can pay into. */
+export interface OpenCampaign {
+  id: string;
+  title: string;
+  budget: { id: string; title: string } | null;
+  charge: 'per_share' | 'fixed';
+  /** Per share when per_share, per member when fixed. */
+  amount_minor: number;
+  currency: string;
+  required: boolean;
+  due_date: string | null;
+  my_share: {
+    /** What you are asked to pay; null when voluntary. */
+    owed_minor: number | null;
+    paid_minor: number;
+    pending_minor: number;
+    outstanding_minor: number | null;
+  };
+}
+
+/** Open dedicated contributions, for the "what is this payment for" choice. */
+export function useOpenCampaigns(communityId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.finance.openCampaigns(communityId ?? ''),
+    queryFn: () =>
+      apiFetch<{ items: OpenCampaign[] }>(
+        `/communities/${communityId ?? ''}/campaigns/?status=open&page_size=100`,
+      ),
+    enabled: enabled && communityId !== undefined,
+  });
+}
+
+export interface RecordContributionInput {
+  communityId: string;
+  amount_minor: number;
+  contribution_type: ContributionType;
+  campaign_id?: string;
+  /** ISO date, not in the future. */
+  paid_at: string;
+  period_year?: number;
+  period_month?: number;
+  payment_method: PaymentMethod;
+  payment_reference?: string;
+  /** JPG, PNG or PDF, 5 MB or smaller. */
+  proof?: File;
+}
+
+/**
+ * `POST /communities/{id}/contributions/`: the caller's own payment, sent as
+ * multipart so the proof travels with it. It always starts `pending` until
+ * the Treasurer confirms or rejects it.
+ */
+export function useRecordContribution() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ communityId, proof, ...fields }: RecordContributionInput) => {
+      const body = new FormData();
+      for (const [key, value] of Object.entries(fields)) {
+        if (value !== undefined && value !== '') body.append(key, String(value));
+      }
+      if (proof) body.append('proof', proof);
+      return apiFetch<ContributionDetail>(`/communities/${communityId}/contributions/`, {
+        method: 'POST',
+        body,
+      });
+    },
+    onSuccess: (_created, { communityId }) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.finance.all(communityId) });
+    },
+  });
+}

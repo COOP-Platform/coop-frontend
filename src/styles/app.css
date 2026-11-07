@@ -2929,3 +2929,29 @@
   align-items: center;
   gap: var(--space-2) var(--space-3);
 }
+
+/* ---------- Finance: record contribution ---------- */
+
+/* The proof drop zone is a short strip, not the logo-sized square. */
+.dialog__form .image-drop__zone {
+  min-height: 0;
+  padding: var(--space-5);
+}
+
+.proof-file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.proof-file__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}

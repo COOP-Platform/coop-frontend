@@ -11,6 +11,7 @@ import {
   IconDownload,
   IconEye,
   IconInfoCircle,
+  IconPlusCircle,
   IconWallet,
   LoadingState,
   PageHeader,
@@ -29,6 +30,7 @@ import { formatAmount } from '../format';
 import { METHOD_LABEL, NO_METHOD, STATUS_LABEL } from '../labels';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
+import { RecordContributionDialog } from './RecordContributionDialog';
 
 const THIS_YEAR = new Date().getFullYear();
 /** Past years to pick from, newest first. The backend refuses years before 2020. */
@@ -41,8 +43,16 @@ const YEAR_OPTIONS = Array.from({ length: PAST_YEARS + 1 }, (_, i) => {
   };
 });
 
-export function MyContributions() {
-  const { communityId } = useWorkspace();
+interface MyContributionsProps {
+  /** Open the Record Contribution form on arrival (from the dashboard's button). */
+  startRecording?: boolean;
+}
+
+export function MyContributions({ startRecording = false }: MyContributionsProps) {
+  const { communityId, can } = useWorkspace();
+  const canRecord = can('finance.contribution.record');
+  const [recording, setRecording] = useState(startRecording && canRecord);
+  const [justRecorded, setJustRecorded] = useState<Contribution | null>(null);
   const [year, setYear] = useState(THIS_YEAR);
   const [selected, setSelected] = useState<Contribution | null>(null);
   const [statementError, setStatementError] = useState<string | null>(null);
@@ -94,15 +104,36 @@ export function MyContributions() {
             />
             <Button
               inline
+              variant="secondary"
               icon={<IconDownload />}
               disabled={preparing}
               onClick={() => void downloadStatement()}
             >
               {preparing ? 'Preparing…' : 'Download Statement (PDF)'}
             </Button>
+            {canRecord && (
+              <Button inline icon={<IconPlusCircle />} onClick={() => setRecording(true)}>
+                Record Contribution
+              </Button>
+            )}
           </>
         }
       />
+
+      {justRecorded && (
+        <div className="notice notice--success" role="status">
+          <IconCheckCircle width={20} height={20} aria-hidden="true" />
+          <div>
+            <p className="notice__title">Contribution sent for review</p>
+            <p className="notice__text">
+              {formatAmount(justRecorded.amount_minor)} {justRecorded.currency} paid on{' '}
+              {formatDate(justRecorded.paid_at)} is pending. The Treasurer will confirm it
+              {justRecorded.proof_count > 0 ? ' using the proof you attached' : ''}, and your
+              receipt is ready after that.
+            </p>
+          </div>
+        </div>
+      )}
 
       {statementError && (
         <p className="table__warn" role="alert">
@@ -254,6 +285,17 @@ export function MyContributions() {
       >
         {selected && <ContributionDrawerContent contribution={selected} />}
       </Drawer>
+
+      <RecordContributionDialog
+        open={recording}
+        onClose={() => setRecording(false)}
+        shares={shares}
+        onRecorded={(contribution) => {
+          setRecording(false);
+          setJustRecorded(contribution);
+          setYear(contribution.period_year);
+        }}
+      />
     </div>
   );
 }

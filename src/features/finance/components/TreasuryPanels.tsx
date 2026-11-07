@@ -23,6 +23,7 @@ import { Money } from './Money';
 export interface QuickAction {
   label: string;
   to: LinkProps['to'];
+  search?: LinkProps['search'];
   icon: ReactNode;
   tone: 'brand' | 'warning' | 'info';
 }
@@ -41,7 +42,7 @@ export function QuickTreasuryActions({ actions }: { actions: readonly QuickActio
       <ul className="finance-actions" role="list">
         {actions.map((action) => (
           <li key={action.label}>
-            <Link to={action.to} className="finance-actions__item">
+            <Link to={action.to} search={action.search} className="finance-actions__item">
               <span className={`finance-actions__icon finance-actions__icon--${action.tone}`}>
                 {action.icon}
               </span>

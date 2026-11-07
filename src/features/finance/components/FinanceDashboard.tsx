@@ -50,6 +50,7 @@ export function FinanceDashboard() {
     actions.push({
       label: 'Record New Contribution',
       to: '/finance/my-contributions',
+      search: { record: true },
       icon: ACTION_ICONS.contribution,
       tone: 'brand',
     });
@@ -103,7 +104,9 @@ export function FinanceDashboard() {
               <Button
                 inline
                 icon={<IconPlusCircle />}
-                onClick={() => void navigate({ to: '/finance/my-contributions' })}
+                onClick={() =>
+                  void navigate({ to: '/finance/my-contributions', search: { record: true } })
+                }
               >
                 Record Contribution
               </Button>

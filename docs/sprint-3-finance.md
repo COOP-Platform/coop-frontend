@@ -49,7 +49,6 @@ of other members' payments stay private (the API sends `proofs: null`).
 
 | Screen | Endpoints |
 | --- | --- |
-| Record a contribution (form + proof upload) | `POST .../contributions/` (multipart) · `POST .../contributions/{cid}/proofs/` |
 | Shares (Treasurer) | `GET/POST .../share-categories/` · `PATCH .../members/{mid}/shares/` |
 | Cash flow (Statements page) | `GET .../cash-flow/` · `/items/` · `/export/` |
 | Budgets + dedicated contributions | `.../budgets/` · `/close/` · `.../campaigns/` · `/close/` |

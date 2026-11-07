@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { Badge, Button, IconDownload, IconInfoCircle } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -13,10 +14,18 @@ import { Money } from './Money';
 
 interface ContributionDrawerContentProps {
   contribution: Contribution;
+  /** On the community list: say whose payment it is. */
+  showMember?: boolean;
+  /** The Treasurer's buttons, given the freshest copy of the payment. */
+  actions?: (row: Contribution) => ReactNode;
 }
 
 /** Everything about one payment: the list row at once, the review trail once it loads. */
-export function ContributionDrawerContent({ contribution }: ContributionDrawerContentProps) {
+export function ContributionDrawerContent({
+  contribution,
+  showMember = false,
+  actions,
+}: ContributionDrawerContentProps) {
   const { communityId } = useWorkspace();
   const detail = useContributionDetail(communityId, contribution.id);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -61,6 +70,13 @@ export function ContributionDrawerContent({ contribution }: ContributionDrawerCo
       </header>
 
       <div className="details__person">
+        {showMember && (
+          <div className="table__stack">
+            <span className="table__muted">Member</span>
+            <span className="details__name">{row.member.full_name}</span>
+            <span className="table__muted">{row.member_category.name}</span>
+          </div>
+        )}
         <div className="table__stack">
           <span className="table__muted">Amount</span>
           <span className="details__name">
@@ -173,6 +189,8 @@ export function ContributionDrawerContent({ contribution }: ContributionDrawerCo
           {errorMessage(detail.error)}
         </p>
       )}
+
+      {actions?.(row)}
 
       <div className="details__actions">
         {row.status === 'confirmed' ? (

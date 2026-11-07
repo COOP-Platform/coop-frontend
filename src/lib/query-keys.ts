@@ -40,6 +40,8 @@ export const queryKeys = {
     /** Everything finance for one community: invalidated after any money write. */
     all: (communityId: string) => ['finance', communityId] as const,
     openCampaigns: (communityId: string) => ['finance', communityId, 'campaigns', 'open'] as const,
+    contributions: (communityId: string, filters: Record<string, unknown>) =>
+      ['finance', communityId, 'contributions', filters] as const,
     summary: (communityId: string, year: number) =>
       ['finance', communityId, 'summary', year] as const,
     myContributions: (communityId: string, year: number) =>

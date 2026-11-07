@@ -2973,3 +2973,17 @@
 .review-payment__switch {
   align-self: center;
 }
+
+/* ---------- Finance: the Treasurer's review buttons ---------- */
+
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.review-actions--compact {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}

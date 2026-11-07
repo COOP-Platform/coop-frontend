@@ -59,6 +59,7 @@ export function FinanceDashboard() {
     actions.push({
       label: 'Record Community Expense',
       to: '/finance/expenses',
+      search: { record: true },
       icon: ACTION_ICONS.expense,
       tone: 'warning',
     });
@@ -95,7 +96,7 @@ export function FinanceDashboard() {
                 variant="secondary"
                 inline
                 icon={<IconSend />}
-                onClick={() => void navigate({ to: '/finance/expenses' })}
+                onClick={() => void navigate({ to: '/finance/expenses', search: { record: true } })}
               >
                 Record Expense
               </Button>

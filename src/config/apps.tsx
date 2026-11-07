@@ -18,6 +18,7 @@ import {
   IconGrid,
   IconIdBadge,
   IconMail,
+  IconPiggyBank,
   IconSend,
   IconUsers,
   IconWallet,
@@ -71,7 +72,7 @@ export const COMMUNITY_APP: AppDefinition = {
 export const FINANCE_APP: AppDefinition = {
   id: 'finance',
   name: 'Finance',
-  description: 'Contributions, expenses and reports',
+  description: 'Contributions, expenses, income and reports',
   icon: <IconWallet />,
   to: '/finance',
   nav: [
@@ -88,6 +89,12 @@ export const FINANCE_APP: AppDefinition = {
       icon: <IconSend />,
       to: '/finance/expenses',
       permission: 'finance.expense.view',
+    },
+    {
+      label: 'Income',
+      icon: <IconPiggyBank />,
+      to: '/finance/income',
+      permission: 'finance.income.view',
     },
     { label: 'Statements', icon: <IconFile />, to: '/finance/statements' },
     {

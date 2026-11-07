@@ -13,7 +13,9 @@ walkthrough is `coop-backend/docs/sprint-3-5-backend-guide.html`.
 | `/finance/my-contributions` | Live, with statement PDF | `GET /communities/{id}/contributions/me/?year=` · `GET .../contributions/me/statement/?year=` |
 | Details drawer | Live, with receipt PDF and proof links | `GET /communities/{id}/contributions/{cid}/` · `GET .../contributions/{cid}/receipt/` |
 | `/finance/contributions` | Live: month summary, Treasurer review queue (approve / reject), full list, reverse, reminders | `GET .../contributions/?month=` · `/confirm/` · `/reject/` · `/reverse/` · `POST .../contributions/reminders/` |
-| `/finance/expenses`, `/statements`, `/reports` | "Coming soon" placeholders | see §4 |
+| `/finance/expenses` | Live: spent / awaiting approval, approval queue (approve / reject), list, details, reverse, CSV export, record with receipt and budget | `.../expenses/` · `/approve/` · `/reject/` · `/reverse/` · `/export/` |
+| `/finance/income` | Live: totals, list by source, details, reverse, record with receipt | `.../income/` · `/reverse/` |
+| `/finance/statements`, `/reports` | "Coming soon" placeholders | see §4 |
 
 `/finance/*` uses the same guard as `/community/*` (signed in, belongs to a community).
 

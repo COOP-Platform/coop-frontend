@@ -1,5 +1,7 @@
 import type { BadgeTone } from '@/components/ui';
 
+import type { ExpenseStatus } from './api/expenses';
+import type { IncomeSource, IncomeStatus } from './api/income';
 import type { ContributionStatus, ContributionType, PaymentMethod } from './api/types';
 
 export const STATUS_LABEL: Record<ContributionStatus, { label: string; tone: BadgeTone }> = {
@@ -57,3 +59,22 @@ export function humanize(value: string): string {
   const text = value.replace(/_/g, ' ');
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+export const EXPENSE_STATUS: Record<ExpenseStatus, { label: string; tone: BadgeTone }> = {
+  pending: { label: 'Awaiting approval', tone: 'warning' },
+  approved: { label: 'Approved', tone: 'success' },
+  rejected: { label: 'Rejected', tone: 'danger' },
+  reversed: { label: 'Reversed', tone: 'neutral' },
+};
+
+export const INCOME_STATUS: Record<IncomeStatus, { label: string; tone: BadgeTone }> = {
+  recorded: { label: 'Recorded', tone: 'success' },
+  reversed: { label: 'Reversed', tone: 'neutral' },
+};
+
+export const INCOME_SOURCE: Record<IncomeSource, string> = {
+  donation: 'Donation',
+  event_revenue: 'Event revenue',
+  interest: 'Interest',
+  other: 'Other',
+};

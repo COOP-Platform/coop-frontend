@@ -1,23 +1,24 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ComingSoon, PageHeader } from '@/components/ui';
-import { FinanceAccessGate } from '@/features/finance';
+import { ExpensesPage, FinanceAccessGate } from '@/features/finance';
+
+interface RecordSearch {
+  /** `?record=true` opens the Record form (from the dashboard). */
+  record?: boolean;
+}
 
 export const Route = createFileRoute('/finance/expenses')({
-  component: ExpensesPage,
+  validateSearch: (raw: Record<string, unknown>): RecordSearch => ({
+    record: raw.record === true || raw.record === 'true' ? true : undefined,
+  }),
+  component: ExpensesRoute,
 });
 
-// Not built yet — the sidebar entry lands on an honest "coming soon".
-function ExpensesPage() {
+function ExpensesRoute() {
+  const { record } = Route.useSearch();
   return (
-    <div className="page">
-      <PageHeader title="Expenses" subtitle="What the community has spent, with receipts." />
-      <FinanceAccessGate permission="finance.expense.view">
-        <ComingSoon
-          title="Expenses are on the way"
-          message="Recording and reviewing expenses is coming in the next step."
-        />
-      </FinanceAccessGate>
-    </div>
+    <FinanceAccessGate permission="finance.expense.view">
+      <ExpensesPage startRecording={record === true} />
+    </FinanceAccessGate>
   );
 }

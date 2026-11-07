@@ -6,45 +6,46 @@ import { apiDownload } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatLongDate } from '@/lib/format/date';
 
-import { useContributionDetail } from '../api/my-contributions';
-import type { MyContribution } from '../api/my-contributions';
-import { METHOD_LABEL, PURPOSE_LABEL, STATUS_LABEL } from '../labels';
+import { receiptPath, useContributionDetail } from '../api/my-contributions';
+import type { Contribution } from '../api/my-contributions';
+import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL, periodLabel } from '../labels';
 import { Money } from './Money';
 
 interface ContributionDrawerContentProps {
-  contribution: MyContribution;
-  /** Sample rows have no server record to load or download. */
-  isSample: boolean;
+  contribution: Contribution;
 }
 
 /** Everything about one payment: the list row at once, the review trail once it loads. */
-export function ContributionDrawerContent({
-  contribution,
-  isSample,
-}: ContributionDrawerContentProps) {
+export function ContributionDrawerContent({ contribution }: ContributionDrawerContentProps) {
   const { communityId } = useWorkspace();
-  const detail = useContributionDetail(communityId, contribution.id, !isSample);
+  const detail = useContributionDetail(communityId, contribution.id);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
 
-  const status = STATUS_LABEL[contribution.status];
-  const method = METHOD_LABEL[contribution.method];
-  const full = detail.data;
+  // The detail answer is fresher than the list row; use it once it is in.
+  const row = detail.data ?? contribution;
+  const status = STATUS_LABEL[row.status];
+  const method = row.payment_method ? METHOD_LABEL[row.payment_method] : NO_METHOD;
+  const history = detail.data?.history ?? [];
+  const proofs = detail.data?.proofs;
 
   async function downloadReceipt() {
+    if (communityId === undefined) return;
     setDownloadError(null);
     setDownloading(true);
     try {
-      await apiDownload(
-        `/contributions/${contribution.id}/receipt.pdf`,
-        `receipt-${contribution.id}.pdf`,
-      );
+      await apiDownload(receiptPath(communityId, row.id), `receipt-${row.id}.pdf`);
     } catch (error) {
       setDownloadError(errorMessage(error));
     } finally {
       setDownloading(false);
     }
   }
+
+  const purpose =
+    row.contribution_type === 'dedicated' && row.campaign
+      ? `${TYPE_LABEL.dedicated}: ${row.campaign.title}`
+      : TYPE_LABEL[row.contribution_type];
 
   return (
     <section className="details" aria-labelledby="contribution-details-title">
@@ -54,7 +55,7 @@ export function ContributionDrawerContent({
           <h2 id="contribution-details-title" className="section-head__title">
             Contribution Details
           </h2>
-          <p className="section-head__subtitle">{formatLongDate(contribution.paid_on)}</p>
+          <p className="section-head__subtitle">{formatLongDate(row.paid_at)}</p>
         </div>
         <Badge tone={status.tone}>{status.label}</Badge>
       </header>
@@ -63,7 +64,7 @@ export function ContributionDrawerContent({
         <div className="table__stack">
           <span className="table__muted">Amount</span>
           <span className="details__name">
-            <Money value={contribution.amount} />
+            <Money minor={row.amount_minor} currency={row.currency} />
           </span>
         </div>
       </div>
@@ -71,7 +72,11 @@ export function ContributionDrawerContent({
       <dl className="details__list">
         <div>
           <dt>Purpose</dt>
-          <dd>{PURPOSE_LABEL[contribution.purpose]}</dd>
+          <dd>{purpose}</dd>
+        </div>
+        <div>
+          <dt>Covers</dt>
+          <dd>{periodLabel(row.period_year, row.period_month)}</dd>
         </div>
         <div>
           <dt>Payment channel</dt>
@@ -80,46 +85,77 @@ export function ContributionDrawerContent({
             {method.label}
           </dd>
         </div>
-        <div>
-          <dt>Reference</dt>
-          <dd className="mono">{contribution.reference}</dd>
-        </div>
-        <div>
-          <dt>Paid on</dt>
-          <dd>{formatDate(contribution.paid_on)}</dd>
-        </div>
-        {full?.reviewed_by && full.reviewed_at && (
+        {row.payment_reference && (
           <div>
-            <dt>{full.status === 'REJECTED' ? 'Rejected by' : 'Confirmed by'}</dt>
+            <dt>Reference</dt>
+            <dd className="mono">{row.payment_reference}</dd>
+          </div>
+        )}
+        <div>
+          <dt>Recorded by</dt>
+          <dd>
+            {row.recorded_by.full_name} · {formatDate(row.created_at)}
+          </dd>
+        </div>
+        {row.confirmed_by && row.confirmed_at && (
+          <div>
+            <dt>Confirmed by</dt>
             <dd>
-              {full.reviewed_by.name} · {formatDate(full.reviewed_at)}
+              {row.confirmed_by.full_name} · {formatDate(row.confirmed_at)}
+            </dd>
+          </div>
+        )}
+        {row.rejected_by && row.rejected_at && (
+          <div>
+            <dt>Rejected by</dt>
+            <dd>
+              {row.rejected_by.full_name} · {formatDate(row.rejected_at)}
+            </dd>
+          </div>
+        )}
+        {row.proof_count > 0 && (
+          <div>
+            <dt>Proof</dt>
+            <dd>
+              {proofs
+                ? proofs.map((proof) =>
+                    proof.url ? (
+                      <a key={proof.id} href={proof.url} target="_blank" rel="noreferrer">
+                        {proof.file_name}
+                      </a>
+                    ) : (
+                      <span key={proof.id}>{proof.file_name}</span>
+                    ),
+                  )
+                : `${row.proof_count} file${row.proof_count === 1 ? '' : 's'}`}
             </dd>
           </div>
         )}
       </dl>
 
-      {full?.reject_reason && (
+      {row.rejection_reason && (
         <p className="details__note" role="note">
-          <strong>Reason:</strong> {full.reject_reason}
+          <strong>Reason:</strong> {row.rejection_reason}
         </p>
       )}
-      {full?.reversal && (
+      {row.reversal && (
         <p className="details__note" role="note">
-          <strong>Reversed:</strong> {full.reversal.reason}
+          <strong>Reversed:</strong> {row.reversal.reason}
         </p>
       )}
 
-      {full && full.history.length > 0 && (
+      {history.length > 0 && (
         <div>
           <h3 className="details__subhead">Status history</h3>
           <ol className="history" role="list">
-            {full.history.map((entry) => (
+            {history.map((entry) => (
               <li key={`${entry.status}-${entry.at}`} className="history__item">
                 <Badge tone={STATUS_LABEL[entry.status].tone}>
                   {STATUS_LABEL[entry.status].label}
                 </Badge>
                 <span className="table__muted">
-                  {entry.by.name} · {formatDate(entry.at)}
+                  {entry.by ? `${entry.by.full_name} · ` : ''}
+                  {formatDate(entry.at)}
                 </span>
               </li>
             ))}
@@ -127,24 +163,23 @@ export function ContributionDrawerContent({
         </div>
       )}
 
-      {detail.isPending && !isSample && (
+      {detail.isPending && (
         <p className="table__muted" role="status">
           Loading the review trail…
         </p>
       )}
-      {detail.error && !isSample && (
+      {detail.error && (
         <p className="table__warn" role="alert">
           {errorMessage(detail.error)}
         </p>
       )}
 
       <div className="details__actions">
-        {contribution.status === 'PAID' ? (
+        {row.status === 'confirmed' ? (
           <Button
             inline
             icon={<IconDownload />}
-            disabled={isSample || downloading}
-            title={isSample ? 'Receipts arrive with the finance API' : undefined}
+            disabled={downloading}
             onClick={() => void downloadReceipt()}
           >
             {downloading ? 'Preparing…' : 'Download receipt'}

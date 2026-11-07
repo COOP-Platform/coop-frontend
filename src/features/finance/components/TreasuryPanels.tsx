@@ -14,8 +14,9 @@ import {
   IconTile,
   IconWallet,
 } from '@/components/ui';
+import { formatDate } from '@/lib/format/date';
 
-import type { FinanceAccount, FinanceSummary } from '../api/summary';
+import type { DashboardAccount, FinanceSummary } from '../api/summary';
 import { formatAmount } from '../format';
 import { Money } from './Money';
 
@@ -54,12 +55,32 @@ export function QuickTreasuryActions({ actions }: { actions: readonly QuickActio
   );
 }
 
-/** Mobile-money accounts get a phone, everything else the bank building. */
-const isMobileMoney = (name: string) => /mtn|airtel|momo|mobile/i.test(name);
+const KIND_LABEL: Record<DashboardAccount['kind'], string> = {
+  bank: 'Bank account',
+  mobile_money: 'Mobile money',
+  cash: 'Cash box',
+  other: 'Other',
+};
 
-export function AccountBalances({ accounts }: { accounts: readonly FinanceAccount[] }) {
-  const total = accounts.reduce((sum, account) => sum + account.balance, 0);
+interface AccountBalancesProps {
+  accounts: readonly DashboardAccount[];
+  /** Sum of the entered balances; null when none has a balance yet. */
+  totalMinor: number | null;
+  /** Entered total minus the wallet: shows when the books and the accounts disagree. */
+  differenceMinor: number | null;
+  currency: string;
+}
 
+/**
+ * The Treasurer's accounts with the balance last typed in for each (S3-10b).
+ * They sit next to the wallet and never feed it.
+ */
+export function AccountBalances({
+  accounts,
+  totalMinor,
+  differenceMinor,
+  currency,
+}: AccountBalancesProps) {
   return (
     <section className="card finance-panel" aria-labelledby="accounts-title">
       <header className="section-head">
@@ -67,38 +88,52 @@ export function AccountBalances({ accounts }: { accounts: readonly FinanceAccoun
           <h2 id="accounts-title" className="section-head__title">
             Account Balances
           </h2>
-          <p className="section-head__subtitle">Practical asset breakdown</p>
+          <p className="section-head__subtitle">Entered by the Treasurer</p>
         </div>
         <IconWallet width={22} height={22} aria-hidden="true" />
       </header>
 
       <ul className="finance-accounts" role="list">
-        {accounts.map((account) => (
-          <li key={account.name} className="finance-accounts__item">
-            <IconTile tone={isMobileMoney(account.name) ? 'warning' : 'info'}>
-              {isMobileMoney(account.name) ? <IconPhone /> : <IconInstitution />}
-            </IconTile>
-            <div className="finance-accounts__body">
-              <p className="finance-accounts__name">{account.name}</p>
-              {account.detail && <p className="finance-accounts__detail">{account.detail}</p>}
-            </div>
-            <p className="finance-accounts__balance">
-              {formatAmount(account.balance)}
-              <span className="money__unit"> RWF</span>
-            </p>
-          </li>
-        ))}
+        {accounts.map((account) => {
+          const mobile = account.kind === 'mobile_money';
+          return (
+            <li key={account.id} className="finance-accounts__item">
+              <IconTile tone={mobile ? 'warning' : 'info'}>
+                {mobile ? <IconPhone /> : <IconInstitution />}
+              </IconTile>
+              <div className="finance-accounts__body">
+                <p className="finance-accounts__name">{account.name}</p>
+                <p className="finance-accounts__detail">
+                  {KIND_LABEL[account.kind]}
+                  {account.as_of ? ` · as of ${formatDate(account.as_of)}` : ''}
+                </p>
+              </div>
+              <p className="finance-accounts__balance">
+                {account.balance_minor === null ? '—' : formatAmount(account.balance_minor)}
+                <span className="money__unit"> {currency}</span>
+              </p>
+            </li>
+          );
+        })}
       </ul>
 
-      <div className="finance-accounts__total">
-        <div>
-          <p className="finance-accounts__total-label">Total verified liquid</p>
-          <p className="finance-accounts__total-note">Fully accessible</p>
+      {totalMinor !== null && (
+        <div className="finance-accounts__total">
+          <div>
+            <p className="finance-accounts__total-label">Total in accounts</p>
+            <p className="finance-accounts__total-note">
+              {differenceMinor === null || differenceMinor === 0
+                ? 'Matches the wallet'
+                : `${differenceMinor > 0 ? 'More' : 'Less'} than the wallet by ${formatAmount(
+                    Math.abs(differenceMinor),
+                  )} ${currency}`}
+            </p>
+          </div>
+          <p className="finance-accounts__total-figure">
+            <Money minor={totalMinor} currency={currency} />
+          </p>
         </div>
-        <p className="finance-accounts__total-figure">
-          <Money value={total} />
-        </p>
-      </div>
+      )}
     </section>
   );
 }
@@ -111,9 +146,13 @@ export function MembersActiveCard({ members }: { members: FinanceSummary['member
       </IconTile>
       <div className="finance-members__body">
         <p className="finance-members__title">{members.active} Members Active</p>
-        <p className="finance-members__detail">{members.up_to_date} up-to-date this month</p>
+        <p className="finance-members__detail">{members.up_to_date} up to date this year</p>
       </div>
-      <Badge tone="success">{Math.round(members.compliance_rate)}% Compliant</Badge>
+      {members.compliance_rate !== null && (
+        <Badge tone={members.compliance_rate >= 100 ? 'success' : 'warning'}>
+          {Math.round(members.compliance_rate)}% Compliant
+        </Badge>
+      )}
     </section>
   );
 }

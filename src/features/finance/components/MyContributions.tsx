@@ -23,34 +23,32 @@ import { apiDownload } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
 
-import { useMyContributions } from '../api/my-contributions';
-import type { MyContribution } from '../api/my-contributions';
-import { METHOD_LABEL, STATUS_LABEL } from '../labels';
+import { statementPath, useMyContributions } from '../api/my-contributions';
+import type { Contribution } from '../api/my-contributions';
+import { formatAmount } from '../format';
+import { METHOD_LABEL, NO_METHOD, STATUS_LABEL } from '../labels';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
 
 const THIS_YEAR = new Date().getFullYear();
-/** Past years to pick from, newest first. */
-const PAST_YEARS = 4;
-/** Years ahead are listed too, but cannot be chosen — nothing exists there yet. */
-const FUTURE_YEARS = 2;
-const YEAR_OPTIONS = Array.from({ length: PAST_YEARS + FUTURE_YEARS + 1 }, (_, i) => {
-  const value = THIS_YEAR + FUTURE_YEARS - i;
+/** Past years to pick from, newest first. The backend refuses years before 2020. */
+const PAST_YEARS = Math.min(4, THIS_YEAR - 2020);
+const YEAR_OPTIONS = Array.from({ length: PAST_YEARS + 1 }, (_, i) => {
+  const value = THIS_YEAR - i;
   return {
     value: String(value),
     label: value === THIS_YEAR ? `This Year (${value})` : String(value),
-    disabled: value > THIS_YEAR,
   };
 });
 
 export function MyContributions() {
   const { communityId } = useWorkspace();
   const [year, setYear] = useState(THIS_YEAR);
-  const [selected, setSelected] = useState<MyContribution | null>(null);
+  const [selected, setSelected] = useState<Contribution | null>(null);
   const [statementError, setStatementError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
 
-  const { data, isSample, isPending, error } = useMyContributions(communityId, year);
+  const { data, isPending, error } = useMyContributions(communityId, year);
 
   // "Contact your treasurer" names whoever holds that seat, when there is one.
   const committee = useCommittee(communityId);
@@ -60,10 +58,11 @@ export function MyContributions() {
     .join(', ');
 
   async function downloadStatement() {
+    if (communityId === undefined) return;
     setStatementError(null);
     setPreparing(true);
     try {
-      await apiDownload(`/me/statement.pdf?year=${year}`, `statement-${year}.pdf`);
+      await apiDownload(statementPath(communityId, year), `statement-${year}.pdf`);
     } catch (error) {
       setStatementError(errorMessage(error));
     } finally {
@@ -74,19 +73,17 @@ export function MyContributions() {
   if (data === undefined) {
     return isPending ? <LoadingState /> : <ErrorState message={errorMessage(error)} />;
   }
-  const { summary, items } = data;
+  const { summary, shares, items } = data;
+  const currency = summary.currency;
 
   return (
     <div className="page">
       <PageHeader
-        eyebrow={
-          <span className="eyebrow eyebrow--muted">
-            Personal Portal
-            {isSample && <Badge tone="warning">Sample figures</Badge>}
-          </span>
-        }
+        eyebrow={<span className="eyebrow eyebrow--muted">Personal Portal</span>}
         title="My Contributions"
-        subtitle="View your contribution history."
+        subtitle={`${shares.count} share${shares.count === 1 ? '' : 's'} in ${
+          shares.category.name
+        } · ${formatAmount(shares.owed_per_month_minor)} ${currency} a month`}
         actions={
           <>
             <Select
@@ -98,8 +95,7 @@ export function MyContributions() {
             <Button
               inline
               icon={<IconDownload />}
-              disabled={isSample || preparing}
-              title={isSample ? 'Statements arrive with the finance API' : undefined}
+              disabled={preparing}
               onClick={() => void downloadStatement()}
             >
               {preparing ? 'Preparing…' : 'Download Statement (PDF)'}
@@ -118,8 +114,12 @@ export function MyContributions() {
         <StatCard
           variant="tint"
           label="Total Contributed"
-          value={<Money value={summary.total_contributed} />}
-          caption={`${summary.count} installment${summary.count === 1 ? '' : 's'} paid in ${year}`}
+          value={<Money minor={summary.total_contributed_minor} currency={currency} />}
+          caption={
+            summary.pending_minor > 0
+              ? `${formatAmount(summary.pending_minor)} ${currency} awaiting the Treasurer`
+              : `Confirmed payments in ${year}`
+          }
           icon={<IconWallet />}
           tone="brand"
         />
@@ -127,18 +127,26 @@ export function MyContributions() {
           variant="tint"
           label="Number of Contributions"
           value={summary.count}
-          caption={`${Math.round(summary.on_time_rate)}% on-time settlement`}
+          caption={
+            summary.on_time_rate === null
+              ? 'No monthly payment to measure yet'
+              : `${Math.round(summary.on_time_rate)}% paid on time`
+          }
           icon={<IconBadgeCheck />}
           tone="info"
         />
         <StatCard
           variant="tint"
           label="Outstanding Amount"
-          value={<Money value={summary.outstanding} />}
-          caption={summary.outstanding === 0 ? 'All dues cleared' : 'Still to be paid'}
+          value={<Money minor={summary.outstanding_minor} currency={currency} />}
+          caption={
+            summary.outstanding_minor === 0
+              ? 'All dues cleared'
+              : `Of ${formatAmount(summary.owed_to_date_minor)} ${currency} owed so far`
+          }
           icon={<IconCheckCircle />}
-          tone={summary.outstanding === 0 ? 'brand' : 'warning'}
-          emphasis={summary.outstanding > 0}
+          tone={summary.outstanding_minor === 0 ? 'brand' : 'warning'}
+          emphasis={summary.outstanding_minor > 0}
         />
       </div>
 
@@ -148,7 +156,7 @@ export function MyContributions() {
             Contribution History
           </h2>
           <p className="section-head__subtitle">
-            Verified ledger entries credited to your account.
+            Every payment recorded for you, with its review status.
           </p>
         </header>
 
@@ -175,7 +183,9 @@ export function MyContributions() {
               <tbody>
                 {items.map((item) => {
                   const status = STATUS_LABEL[item.status];
-                  const method = METHOD_LABEL[item.method];
+                  const method = item.payment_method
+                    ? METHOD_LABEL[item.payment_method]
+                    : NO_METHOD;
                   return (
                     <tr
                       key={item.id}
@@ -189,9 +199,9 @@ export function MyContributions() {
                         if (!(event.target as HTMLElement).closest('button')) setSelected(item);
                       }}
                     >
-                      <td>{formatDate(item.paid_on)}</td>
+                      <td>{formatDate(item.paid_at)}</td>
                       <td className="table__amount">
-                        <Money value={item.amount} />
+                        <Money minor={item.amount_minor} currency={item.currency} />
                       </td>
                       <td>
                         <span className="channel">
@@ -238,11 +248,11 @@ export function MyContributions() {
         onClose={() => setSelected(null)}
         label={
           selected
-            ? `Contribution details, ${formatDate(selected.paid_on)}`
+            ? `Contribution details, ${formatDate(selected.paid_at)}`
             : 'Contribution details'
         }
       >
-        {selected && <ContributionDrawerContent contribution={selected} isSample={isSample} />}
+        {selected && <ContributionDrawerContent contribution={selected} />}
       </Drawer>
     </div>
   );

@@ -107,9 +107,28 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
     description: 'Record attendance for a meeting',
   },
   {
+    code: 'meeting.minutes.write',
+    module: 'meeting',
+    description: 'Write and edit draft minutes, decisions and action items',
+  },
+  {
     code: 'meeting.minutes.publish',
     module: 'meeting',
     description: 'Publish meeting minutes to members',
+  },
+  { code: 'event.view', module: 'event', description: 'View events the member is not hidden from' },
+  { code: 'event.create', module: 'event', description: 'Create an event' },
+  { code: 'event.update', module: 'event', description: 'Edit event details' },
+  { code: 'event.cancel', module: 'event', description: 'Cancel an event' },
+  {
+    code: 'event.visibility.manage',
+    module: 'event',
+    description: 'Hide an event from chosen members, or show it again',
+  },
+  {
+    code: 'event.rsvp',
+    module: 'event',
+    description: 'Answer an event invitation (confirm or send apologies)',
   },
   {
     code: 'announcement.view',
@@ -148,12 +167,72 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
     module: 'finance',
     description: 'Reject a recorded contribution with a reason',
   },
+  {
+    code: 'finance.contribution.reverse',
+    module: 'finance',
+    description: 'Reverse a confirmed contribution with a reason',
+  },
+  {
+    code: 'finance.shares.manage',
+    module: 'finance',
+    description: "Set share prices and members' shares",
+  },
   { code: 'finance.expense.view', module: 'finance', description: 'View community expenses' },
   { code: 'finance.expense.record', module: 'finance', description: 'Record an expense' },
   {
     code: 'finance.expense.approve',
     module: 'finance',
     description: 'Approve or reject an expense',
+  },
+  {
+    code: 'finance.expense.reverse',
+    module: 'finance',
+    description: 'Reverse an approved expense with a reason',
+  },
+  {
+    code: 'finance.income.view',
+    module: 'finance',
+    description: 'View income that is not a member contribution',
+  },
+  {
+    code: 'finance.income.record',
+    module: 'finance',
+    description: 'Record income (donations, event revenue, interest)',
+  },
+  {
+    code: 'finance.income.reverse',
+    module: 'finance',
+    description: 'Reverse recorded income with a reason',
+  },
+  {
+    code: 'finance.cashflow.view',
+    module: 'finance',
+    description: 'View the cash flow and the wallet balance',
+  },
+  {
+    code: 'finance.budget.view',
+    module: 'finance',
+    description: 'View budgets and their progress',
+  },
+  {
+    code: 'finance.budget.manage',
+    module: 'finance',
+    description: 'Create, edit and close budgets',
+  },
+  {
+    code: 'finance.campaign.view',
+    module: 'finance',
+    description: 'View dedicated contributions (campaigns)',
+  },
+  {
+    code: 'finance.campaign.manage',
+    module: 'finance',
+    description: 'Open, edit and close dedicated contributions',
+  },
+  {
+    code: 'finance.account.manage',
+    module: 'finance',
+    description: 'Keep bank and mobile money accounts and enter their balances',
   },
   {
     code: 'finance.report.view',
@@ -173,7 +252,15 @@ export const MEMBER_BASELINE: readonly string[] = [
   'community.view',
   'member.view',
   'meeting.view',
+  'event.view',
+  'event.rsvp',
   'announcement.view',
+  'finance.contribution.view',
   'finance.contribution.record',
+  'finance.expense.view',
+  'finance.income.view',
+  'finance.cashflow.view',
+  'finance.budget.view',
+  'finance.campaign.view',
   'finance.report.view',
 ];

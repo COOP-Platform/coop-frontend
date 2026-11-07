@@ -3,14 +3,21 @@ import { Link } from '@tanstack/react-router';
 import { Badge, EmptyState, IconArrowRight, IconHistory, IconTile } from '@/components/ui';
 import { formatLongDate } from '@/lib/format/date';
 
-import type { FinanceActivity } from '../api/summary';
+import type { CashFlowItem } from '../api/summary';
+import { humanize } from '../labels';
 import { Money } from './Money';
 
 interface RecentFinancialActivityProps {
-  entries: readonly FinanceActivity[];
+  entries: readonly CashFlowItem[];
   /** The full list lives on the Contributions page; only linked for those who can open it. */
   showAllLink: boolean;
 }
+
+const SOURCE_LABEL: Record<CashFlowItem['source']['type'], string> = {
+  contribution: 'Contribution',
+  income: 'Income',
+  expense: 'Expense',
+};
 
 export function RecentFinancialActivity({ entries, showAllLink }: RecentFinancialActivityProps) {
   return (
@@ -28,15 +35,19 @@ export function RecentFinancialActivity({ entries, showAllLink }: RecentFinancia
         <EmptyState
           icon={<IconHistory />}
           title="No transactions yet"
-          message="Confirmed contributions and recorded expenses will show here."
+          message="Confirmed contributions, income and approved expenses will show here."
         />
       )}
 
       <ul className="finance-activity__list" role="list">
         {entries.map((entry) => {
-          const incoming = entry.direction === 'IN';
+          const incoming = entry.direction === 'in';
+          // The member or payee leads; the narrative ("Monthly contribution", the
+          // expense title) is the fallback when the party is hidden.
+          const title = entry.party ?? entry.narrative;
+          const detail = entry.party ? entry.narrative : entry.category && humanize(entry.category);
           return (
-            <li key={entry.id} className="finance-activity__item">
+            <li key={`${entry.source.type}-${entry.source.id}`} className="finance-activity__item">
               <IconTile tone={incoming ? 'brand' : 'warning'} round size="md">
                 <IconArrowRight
                   className={incoming ? 'finance-arrow finance-arrow--in' : 'finance-arrow'}
@@ -45,13 +56,13 @@ export function RecentFinancialActivity({ entries, showAllLink }: RecentFinancia
 
               <div className="finance-activity__body">
                 <p className="finance-activity__title">
-                  {entry.title}
+                  {title}
                   <Badge tone={incoming ? 'success' : 'warning'}>
-                    {entry.type === 'CONTRIBUTION' ? 'Contribution' : 'Expense'}
+                    {SOURCE_LABEL[entry.source.type]}
                   </Badge>
                 </p>
                 <p className="finance-activity__meta">
-                  {[entry.detail, incoming ? 'Paid' : 'Disbursed', formatLongDate(entry.at)]
+                  {[detail, incoming ? 'Received' : 'Disbursed', formatLongDate(entry.date)]
                     .filter(Boolean)
                     .join(' • ')}
                 </p>
@@ -65,9 +76,15 @@ export function RecentFinancialActivity({ entries, showAllLink }: RecentFinancia
                       : 'finance-activity__figure'
                   }
                 >
-                  <Money value={entry.amount} sign={incoming ? '+' : '-'} />
+                  <Money
+                    minor={entry.amount_minor}
+                    currency={entry.currency}
+                    sign={incoming ? '+' : '-'}
+                  />
                 </p>
-                {entry.method && <p className="finance-activity__method">{entry.method}</p>}
+                {entry.payment_method && (
+                  <p className="finance-activity__method">{humanize(entry.payment_method)}</p>
+                )}
               </div>
             </li>
           );

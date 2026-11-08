@@ -19,7 +19,6 @@ import {
   IconTrash,
   Input,
   LoadingState,
-  PageHeader,
   SegmentedControl,
   Select,
   Textarea,
@@ -43,6 +42,7 @@ import {
 import type { Budget, BudgetDetail, Campaign } from '../api/budgets';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { SuccessNotice } from './SuccessNotice';
+import { SectionHeader } from './SectionHeader';
 
 type Section = 'budgets' | 'campaigns';
 
@@ -64,27 +64,40 @@ const toRwf = (minor: number) => String(minor / MINOR_PER_MAJOR);
 export function BudgetsPage({
   section,
   onSectionChange,
+  embedded = false,
 }: {
   section: Section;
   onSectionChange: (s: Section) => void;
+  embedded?: boolean;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
   return (
     <div className="page">
-      <PageHeader
+      <SectionHeader
+        embedded={embedded}
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title="Budgets"
-        subtitle="Plan spending for events and projects, and collect dedicated contributions for them."
+        title={
+          embedded ? (section === 'budgets' ? 'Budgets' : 'Dedicated contributions') : 'Budgets'
+        }
+        subtitle={
+          embedded
+            ? section === 'budgets'
+              ? 'Plan what an event or project will cost, line by line.'
+              : 'Collect money from members for one purpose.'
+            : 'Plan spending for events and projects, and collect dedicated contributions for them.'
+        }
       />
-      <SegmentedControl
-        label="Section"
-        options={SECTIONS}
-        value={section}
-        onChange={(value) => {
-          setNotice(null);
-          onSectionChange(value);
-        }}
-      />
+      {!embedded && (
+        <SegmentedControl
+          label="Section"
+          options={SECTIONS}
+          value={section}
+          onChange={(value) => {
+            setNotice(null);
+            onSectionChange(value);
+          }}
+        />
+      )}
       {notice && <SuccessNotice text={notice} />}
       {section === 'budgets' ? (
         <BudgetsSection onDone={setNotice} />

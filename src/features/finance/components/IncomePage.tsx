@@ -13,7 +13,6 @@ import {
   IconWallet,
   IconFile,
   LoadingState,
-  PageHeader,
   SegmentedControl,
   StatCard,
 } from '@/components/ui';
@@ -32,6 +31,7 @@ import { MonthPicker } from './MonthPicker';
 import { Pager, ReasonPrompt } from './ReasonPrompt';
 import { RecordIncomeDialog } from './RecordIncomeDialog';
 import { SuccessNotice } from './SuccessNotice';
+import { SectionHeader } from './SectionHeader';
 
 const PAGE_SIZE = 20;
 
@@ -49,7 +49,13 @@ const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
  * wallet as soon as it is recorded; every member reads it; a mistake is
  * reversed with a reason, never edited or deleted.
  */
-export function IncomePage({ startRecording = false }: { startRecording?: boolean }) {
+export function IncomePage({
+  startRecording = false,
+  embedded = false,
+}: {
+  startRecording?: boolean;
+  embedded?: boolean;
+}) {
   const searchId = useId();
   const { communityId, can } = useWorkspace();
   const canRecord = can('finance.income.record');
@@ -78,7 +84,8 @@ export function IncomePage({ startRecording = false }: { startRecording?: boolea
 
   return (
     <div className="page">
-      <PageHeader
+      <SectionHeader
+        embedded={embedded}
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Income"
         subtitle="Donations, event revenue and interest: money in that is not a member's contribution."

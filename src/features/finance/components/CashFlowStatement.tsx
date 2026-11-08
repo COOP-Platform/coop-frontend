@@ -16,7 +16,6 @@ import {
   IconSearch,
   Input,
   LoadingState,
-  PageHeader,
   SegmentedControl,
   Select,
 } from '@/components/ui';
@@ -42,6 +41,7 @@ import {
 import type { Period, PeriodPreset } from '../period';
 import { Pager } from './ReasonPrompt';
 import { CashFlowBars, CategoryBars } from './StatementCharts';
+import { SectionHeader } from './SectionHeader';
 
 const PRESETS: PeriodPreset[] = [
   'this_month',
@@ -61,7 +61,7 @@ const ALL = '';
  * balance. Built from the backend's finance reports and cash flow, so every
  * figure agrees with the dashboard. Every member reads it.
  */
-export function CashFlowStatement() {
+export function CashFlowStatement({ embedded = false }: { embedded?: boolean }) {
   const { communityId } = useWorkspace();
   const [preset, setPreset] = useState<PeriodPreset>('last_6');
   const [custom, setCustom] = useState<Period>(presetPeriod('last_6'));
@@ -93,7 +93,8 @@ export function CashFlowStatement() {
 
   return (
     <div className="page">
-      <PageHeader
+      <SectionHeader
+        embedded={embedded}
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Cash Flow Statement"
         subtitle="Track the community's cash: what it started with, what came in, what went out and what is left."

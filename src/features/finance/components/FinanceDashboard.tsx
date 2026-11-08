@@ -58,7 +58,7 @@ export function FinanceDashboard() {
   if (canRecordExpense) {
     actions.push({
       label: 'Record Community Expense',
-      to: '/finance/expenses',
+      to: '/finance/expenses-income',
       search: { record: true },
       icon: ACTION_ICONS.expense,
       tone: 'warning',
@@ -66,7 +66,7 @@ export function FinanceDashboard() {
   }
   actions.push({
     label: 'Generate Monthly Statement',
-    to: '/finance/statements',
+    to: '/finance/reports',
     icon: ACTION_ICONS.statement,
     tone: 'info',
   });
@@ -96,7 +96,9 @@ export function FinanceDashboard() {
                 variant="secondary"
                 inline
                 icon={<IconSend />}
-                onClick={() => void navigate({ to: '/finance/expenses', search: { record: true } })}
+                onClick={() =>
+                  void navigate({ to: '/finance/expenses-income', search: { record: true } })
+                }
               >
                 Record Expense
               </Button>

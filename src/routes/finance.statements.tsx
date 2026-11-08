@@ -1,16 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { CashFlowStatement, FinanceAccessGate } from '@/features/finance';
-
+/* The cash flow statement is now the first tab of Reports. Old links, bookmarks and emails land there. */
 export const Route = createFileRoute('/finance/statements')({
-  component: StatementsPage,
+  beforeLoad: () => {
+    throw redirect({ to: '/finance/reports', search: {} });
+  },
 });
-
-/* The community's cash flow statement; every member reads it (finance.report.view). */
-function StatementsPage() {
-  return (
-    <FinanceAccessGate permission="finance.report.view">
-      <CashFlowStatement />
-    </FinanceAccessGate>
-  );
-}

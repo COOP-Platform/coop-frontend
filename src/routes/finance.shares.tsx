@@ -1,15 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { SharesPage, FinanceAccessGate } from '@/features/finance';
-
+/* Shares is now a tab of Budgets & Shares. Old links, bookmarks and emails land there. */
 export const Route = createFileRoute('/finance/shares')({
-  component: Page,
+  beforeLoad: () => {
+    throw redirect({ to: '/finance/planning', search: { tab: 'shares' as const } });
+  },
 });
-
-function Page() {
-  return (
-    <FinanceAccessGate permission="finance.report.view">
-      <SharesPage />
-    </FinanceAccessGate>
-  );
-}

@@ -13,3 +13,4 @@ export { SharesPage } from './components/SharesPage';
 export { BudgetsPage } from './components/BudgetsPage';
 export { AccountsPage } from './components/AccountsPage';
 export { ReportsPage } from './components/ReportsPage';
+export { BudgetsSharesPage, ExpensesIncomePage, ReportsHubPage } from './components/FinanceHubs';

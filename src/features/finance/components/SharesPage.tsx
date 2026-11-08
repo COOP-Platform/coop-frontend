@@ -16,7 +16,6 @@ import {
   IconWallet,
   Input,
   LoadingState,
-  PageHeader,
   SegmentedControl,
   Select,
   Textarea,
@@ -38,6 +37,7 @@ import {
 import type { ShareCategory } from '../api/shares';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { SuccessNotice } from './SuccessNotice';
+import { SectionHeader } from './SectionHeader';
 
 type Section = 'categories' | 'members';
 
@@ -51,7 +51,7 @@ const SECTIONS: { value: Section; label: string }[] = [
  * how many shares each member holds. A member owes shares x price each month.
  * Every member reads it; only the Treasurer (finance.shares.manage) changes it.
  */
-export function SharesPage() {
+export function SharesPage({ embedded = false }: { embedded?: boolean }) {
   const { communityId, can } = useWorkspace();
   const canManage = can('finance.shares.manage');
   const [section, setSection] = useState<Section>('categories');
@@ -60,7 +60,8 @@ export function SharesPage() {
 
   return (
     <div className="page">
-      <PageHeader
+      <SectionHeader
+        embedded={embedded}
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Shares"
         subtitle="What one share costs each month, and how many shares each member holds. Members owe shares × price every month."

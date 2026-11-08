@@ -1,25 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { BudgetsPage, FinanceAccessGate } from '@/features/finance';
-
+/* Budgets is now a tab of Budgets & Shares. Old links, bookmarks and emails land there. */
 export const Route = createFileRoute('/finance/budgets')({
-  validateSearch: (raw: Record<string, unknown>): { tab?: 'campaigns' } => ({
-    tab: raw.tab === 'campaigns' ? 'campaigns' : undefined,
-  }),
-  component: Page,
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/finance/planning',
+      search: {
+        tab: (search as { tab?: unknown }).tab === 'campaigns' ? ('campaigns' as const) : undefined,
+      },
+    });
+  },
 });
-
-function Page() {
-  const { tab } = Route.useSearch();
-  const navigate = Route.useNavigate();
-  return (
-    <FinanceAccessGate permission="finance.budget.view">
-      <BudgetsPage
-        section={tab ?? 'budgets'}
-        onSectionChange={(next) =>
-          void navigate({ search: { tab: next === 'campaigns' ? 'campaigns' : undefined } })
-        }
-      />
-    </FinanceAccessGate>
-  );
-}

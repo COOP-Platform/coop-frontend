@@ -139,7 +139,7 @@ export interface RecordExpenseInput {
   receipt?: File;
 }
 
-function useFinanceWrite<TInput extends { communityId: string }, TResult>(
+export function useFinanceWrite<TInput extends { communityId: string }, TResult>(
   request: (input: TInput) => Promise<TResult>,
 ) {
   const queryClient = useQueryClient();
@@ -205,5 +205,30 @@ export function downloadExpensesCsv(communityId: string, filters: ExpenseFilters
   return apiDownload(
     `/communities/${communityId}/expenses/export/?${toQuery({ ...rest, format: 'csv' })}`,
     `expenses-${filters.month ?? 'all'}.csv`,
+  );
+}
+
+export interface UpdateExpenseInput {
+  communityId: string;
+  expenseId: string;
+  description?: string;
+  category?: string | null;
+  payee?: string | null;
+  payment_method?: PaymentMethod | null;
+  payment_reference?: string | null;
+  memo?: string | null;
+  /** Pending expenses only. */
+  spent_at?: string;
+  /** Pending expenses only. */
+  budget_id?: string | null;
+}
+
+/** PATCH: never the amount (a wrong amount is reversed and recorded again). */
+export function useUpdateExpense() {
+  return useFinanceWrite(({ communityId, expenseId, ...body }: UpdateExpenseInput) =>
+    apiFetch<ExpenseDetail>(`/communities/${communityId}/expenses/${expenseId}/`, {
+      method: 'PATCH',
+      body,
+    }),
   );
 }

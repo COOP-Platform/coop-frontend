@@ -196,3 +196,29 @@ export function useRecordContribution() {
     },
   });
 }
+
+/** `POST .../contributions/{id}/proofs/`: a proof for your own pending payment. */
+export function useAttachProof() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      communityId,
+      contributionId,
+      proof,
+    }: {
+      communityId: string;
+      contributionId: string;
+      proof: File;
+    }) => {
+      const body = new FormData();
+      body.append('proof', proof);
+      return apiFetch<ContributionDetail>(
+        `/communities/${communityId}/contributions/${contributionId}/proofs/`,
+        { method: 'POST', body },
+      );
+    },
+    onSuccess: (_r, { communityId }) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.finance.all(communityId) });
+    },
+  });
+}

@@ -3001,3 +3001,148 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Finance: the cash box (Contributions page) ---------- */
+
+.cash-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+
+.cash-box__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.cash-box__balance {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  max-width: 40rem;
+}
+
+.cash-box__eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.cash-box__figure {
+  margin: var(--space-1) 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.cash-box__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cash-box__subhead {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.cash-box__sum {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.cash-box__sum > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cash-box__sum > div:last-child {
+  border-bottom: none;
+}
+
+.cash-box__sum dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.cash-box__total {
+  background-color: var(--color-brand-soft);
+  font-weight: 700;
+}
+
+.cash-box__in {
+  color: var(--color-brand);
+}
+
+.cash-box__out {
+  color: var(--color-warning);
+}
+
+.cash-box__link {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.cash-box__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.cash-box__moves {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cash-box__moves > li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cash-box__move-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.cash-box__move-title {
+  font-weight: 600;
+}
+
+.section-title {
+  margin: var(--space-2) 0 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.cash-box-line .notice__text {
+  margin: 0;
+}
+
+.cash-warning {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.table--compact th,
+.table--compact td {
+  padding: var(--space-2) var(--space-3);
+  white-space: nowrap;
+}

@@ -105,6 +105,11 @@ export function useExpenseDetail(communityId: string | undefined, id: string | u
 export interface BudgetOption {
   id: string;
   title: string;
+  /** Confirmed payments into the dedicated contributions that fund it. */
+  raised_minor: number;
+  /** Approved expenses tagged to it. */
+  spent_minor: number;
+  /** Planned - spent; negative when overspent. */
   left_to_spend_minor: number;
   currency: string;
 }

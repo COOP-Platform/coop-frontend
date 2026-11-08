@@ -33,6 +33,7 @@ import { useCommunityContributions } from '../api/contributions';
 import type { Contribution } from '../api/my-contributions';
 import type { ContributionStatus } from '../api/types';
 import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL, periodLabel } from '../labels';
+import { CashBox } from './CashBox';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
 import { useReviewRights } from '../review-rights';
@@ -114,7 +115,7 @@ export function CommunityContributions() {
       <PageHeader
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Contributions"
-        subtitle="Every payment recorded in the community, and the ones waiting for review."
+        subtitle="The money in the cash box and where it comes from, every payment members made, and the ones waiting for review."
         actions={
           <>
             <Input
@@ -163,6 +164,10 @@ export function CommunityContributions() {
           </div>
         </div>
       )}
+
+      <CashBox />
+
+      <h2 className="section-title">Contributions for {label}</h2>
 
       <div className="stat-grid stat-grid--four">
         <StatCard

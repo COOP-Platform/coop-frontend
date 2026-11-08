@@ -50,6 +50,10 @@ export const queryKeys = {
       ['finance', communityId, 'income', filters] as const,
     incomeDetail: (communityId: string, id: string) =>
       ['finance', communityId, 'income-detail', id] as const,
+    cashFlow: (communityId: string, from: string, to: string) =>
+      ['finance', communityId, 'cash-flow', from, to] as const,
+    cashFlowItems: (communityId: string, filters: Record<string, unknown>) =>
+      ['finance', communityId, 'cash-flow-items', filters] as const,
     summary: (communityId: string, year: number) =>
       ['finance', communityId, 'summary', year] as const,
     myContributions: (communityId: string, year: number) =>

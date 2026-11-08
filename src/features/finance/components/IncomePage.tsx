@@ -26,6 +26,7 @@ import type { Income, IncomeSource } from '../api/income';
 import { formatAmount } from '../format';
 import { INCOME_SOURCE, INCOME_STATUS, METHOD_LABEL, NO_METHOD } from '../labels';
 import { THIS_MONTH, monthName } from '../month';
+import { CashBoxLine } from './CashBox';
 import { Money } from './Money';
 import { MonthPicker } from './MonthPicker';
 import { Pager, ReasonPrompt } from './ReasonPrompt';
@@ -100,6 +101,8 @@ export function IncomePage({ startRecording = false }: { startRecording?: boolea
       />
 
       {notice && <SuccessNotice text={notice} />}
+
+      <CashBoxLine />
 
       <div className="stat-grid stat-grid--three">
         <StatCard

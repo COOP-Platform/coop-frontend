@@ -6,11 +6,13 @@ import { useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 
+import { useCashFlow } from '../api/cashflow';
 import { useActiveBudgets, useRecordExpense } from '../api/expenses';
 import type { ExpenseDetail } from '../api/expenses';
 import type { PaymentMethod } from '../api/types';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { METHOD_LABEL } from '../labels';
+import { THIS_MONTH } from '../month';
 import { FilePicker } from './FilePicker';
 
 /** Suggestions only: the backend takes any category text. */
@@ -82,6 +84,7 @@ function ExpenseForm({
   const { communityId } = useWorkspace();
   const record = useRecordExpense();
   const budgets = useActiveBudgets(communityId, true);
+  const cash = useCashFlow(communityId, THIS_MONTH, THIS_MONTH);
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [payee, setPayee] = useState('');
@@ -94,13 +97,32 @@ function ExpenseForm({
   const [receipt, setReceipt] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});
 
-  const budgetOptions = [
-    { value: '', label: 'Not from a budget' },
-    ...(budgets.data?.items ?? []).map((b) => ({
+  /*
+   * Where the money comes from. Every approved expense leaves the cash box;
+   * one tagged to a budget is first covered by what that budget's dedicated
+   * contribution raised (backend: spent beyond it is "from the wallet").
+   */
+  const cashMinor = cash.data?.wallet_balance_minor;
+  const budgetList = budgets.data?.items ?? [];
+  const fromRaised = (b: (typeof budgetList)[number]) =>
+    Math.max(0, b.raised_minor - b.spent_minor);
+  const sourceOptions = [
+    {
+      value: '',
+      label:
+        cashMinor === undefined
+          ? 'The cash box (general funds)'
+          : `The cash box: ${formatAmount(cashMinor)} RWF available`,
+    },
+    ...budgetList.map((b) => ({
       value: b.id,
-      label: `${b.title} (${formatAmount(b.left_to_spend_minor)} ${b.currency} left)`,
+      label: `Budget "${b.title}": ${formatAmount(fromRaised(b))} ${b.currency} raised, unspent`,
     })),
   ];
+  const chosen = budgetList.find((b) => b.id === budgetId);
+  const amountMinorNow = Math.round(Number(amount) * MINOR_PER_MAJOR) || 0;
+  const available = chosen ? fromRaised(chosen) : cashMinor;
+  const shortBy = available !== undefined ? amountMinorNow - available : 0;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -234,14 +256,24 @@ function ExpenseForm({
           error={errors.payment_reference}
         />
       </div>
-      {budgetOptions.length > 1 && (
-        <Select
-          label="Spent from budget"
-          value={budgetId}
-          onChange={(event) => setBudgetId(event.target.value)}
-          options={budgetOptions}
-          error={errors.budget_id}
-        />
+      <Select
+        label="Paid from"
+        value={budgetId}
+        onChange={(event) => setBudgetId(event.target.value)}
+        options={sourceOptions}
+        hint={
+          chosen
+            ? 'Covered first by what its dedicated contribution raised; anything beyond comes from the cash box.'
+            : 'General community funds: contributions and income, less what was already spent.'
+        }
+        error={errors.budget_id}
+      />
+      {amountMinorNow > 0 && shortBy > 0 && (
+        <p className="notice notice--warning cash-warning" role="status">
+          {chosen
+            ? `This is ${formatAmount(shortBy)} RWF more than "${chosen.title}" has raised; the rest will come from the cash box.`
+            : `This is ${formatAmount(shortBy)} RWF more than the cash box holds. Check the amount before recording.`}
+        </p>
       )}
       <Textarea
         label="Notes"

@@ -37,6 +37,7 @@ import type { Expense, ExpenseStatus } from '../api/expenses';
 import { formatAmount } from '../format';
 import { EXPENSE_STATUS, METHOD_LABEL, NO_METHOD, humanize } from '../labels';
 import { THIS_MONTH, monthName } from '../month';
+import { CashBoxLine } from './CashBox';
 import { Money } from './Money';
 import { MonthPicker } from './MonthPicker';
 import { Pager, ReasonPrompt } from './ReasonPrompt';
@@ -140,6 +141,8 @@ export function ExpensesPage({ startRecording = false }: { startRecording?: bool
       />
 
       {notice && <SuccessNotice text={notice} />}
+
+      <CashBoxLine />
       {exportError && (
         <p className="table__warn" role="alert">
           {exportError}

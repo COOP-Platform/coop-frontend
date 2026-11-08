@@ -8,3 +8,4 @@ export { CommunityMoney } from './components/CommunityMoney';
 export type { MoneyTab } from './components/CommunityMoney';
 export { ExpensesPage } from './components/ExpensesPage';
 export { IncomePage } from './components/IncomePage';
+export { CashFlowStatement } from './components/CashFlowStatement';

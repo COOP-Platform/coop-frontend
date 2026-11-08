@@ -96,7 +96,12 @@ export const FINANCE_APP: AppDefinition = {
       to: '/finance/income',
       permission: 'finance.income.view',
     },
-    { label: 'Statements', icon: <IconFile />, to: '/finance/statements' },
+    {
+      label: 'Cash Flow Statement',
+      icon: <IconFile />,
+      to: '/finance/statements',
+      permission: 'finance.report.view',
+    },
     {
       label: 'Reports',
       icon: <IconBarChart />,

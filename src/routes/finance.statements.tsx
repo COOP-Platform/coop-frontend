@@ -1,23 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ComingSoon, PageHeader } from '@/components/ui';
+import { CashFlowStatement, FinanceAccessGate } from '@/features/finance';
 
 export const Route = createFileRoute('/finance/statements')({
   component: StatementsPage,
 });
 
-// Not built yet — the sidebar entry lands on an honest "coming soon".
+/* The community's cash flow statement; every member reads it (finance.report.view). */
 function StatementsPage() {
   return (
-    <div className="page">
-      <PageHeader
-        title="Statements"
-        subtitle="Monthly and yearly statements of your contributions."
-      />
-      <ComingSoon
-        title="Statements are on the way"
-        message="Statements are coming in a later step."
-      />
-    </div>
+    <FinanceAccessGate permission="finance.report.view">
+      <CashFlowStatement />
+    </FinanceAccessGate>
   );
 }

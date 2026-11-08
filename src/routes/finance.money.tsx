@@ -4,13 +4,18 @@ import { CommunityMoney, FinanceAccessGate } from '@/features/finance';
 import type { MoneyTab } from '@/features/finance';
 
 interface MoneySearch {
-  /** Which section is open; Member contributions when absent. */
-  tab?: MoneyTab;
+  /** Which section is open; This month when absent. */
+  tab?: Exclude<MoneyTab, 'month'>;
 }
+
+const TABS: readonly string[] = ['review', 'payments', 'pocket'];
 
 export const Route = createFileRoute('/finance/money')({
   validateSearch: (raw: Record<string, unknown>): MoneySearch => ({
-    tab: raw.tab === 'pocket' ? 'pocket' : undefined,
+    tab:
+      typeof raw.tab === 'string' && TABS.includes(raw.tab)
+        ? (raw.tab as MoneySearch['tab'])
+        : undefined,
   }),
   component: MoneyPage,
 });
@@ -21,9 +26,9 @@ function MoneyPage() {
   return (
     <FinanceAccessGate permission="finance.contribution.view">
       <CommunityMoney
-        tab={tab ?? 'members'}
+        tab={tab ?? 'month'}
         onTabChange={(next) =>
-          void navigate({ search: { tab: next === 'members' ? undefined : next } })
+          void navigate({ search: { tab: next === 'month' ? undefined : next } })
         }
       />
     </FinanceAccessGate>

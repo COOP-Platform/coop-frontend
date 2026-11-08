@@ -7,12 +7,12 @@ export interface Period {
 }
 
 export type PeriodPreset =
-  'this_month' | 'last_month' | 'this_quarter' | 'this_year' | 'last_year' | 'custom';
+  'this_month' | 'last_3' | 'last_6' | 'this_year' | 'last_year' | 'custom';
 
 export const PRESET_LABEL: Record<PeriodPreset, string> = {
   this_month: 'This month',
-  last_month: 'Last month',
-  this_quarter: 'This quarter',
+  last_3: 'Last 3 months',
+  last_6: 'Last 6 months',
   this_year: 'This year',
   last_year: 'Last year',
   custom: 'Custom',
@@ -38,23 +38,25 @@ export function monthsBetween(from: string, to: string): number {
 }
 
 export function presetPeriod(preset: Exclude<PeriodPreset, 'custom'>): Period {
-  const [year, month] = THIS_MONTH.split('-').map(Number) as [number, number];
+  const year = Number(THIS_MONTH.slice(0, 4));
   switch (preset) {
     case 'this_month':
       return { from: THIS_MONTH, to: THIS_MONTH };
-    case 'last_month': {
-      const last = addMonths(THIS_MONTH, -1);
-      return { from: last, to: last };
-    }
-    case 'this_quarter': {
-      const first = Math.floor((month - 1) / 3) * 3 + 1;
-      return { from: `${year}-${pad(first)}`, to: THIS_MONTH };
-    }
+    case 'last_3':
+      return { from: addMonths(THIS_MONTH, -2), to: THIS_MONTH };
+    case 'last_6':
+      return { from: addMonths(THIS_MONTH, -5), to: THIS_MONTH };
     case 'this_year':
       return { from: `${year}-01`, to: THIS_MONTH };
     case 'last_year':
       return { from: `${year - 1}-01`, to: `${year - 1}-12` };
   }
+}
+
+/** The same number of months, just before `period`: what "vs previous period" compares with. */
+export function previousPeriod(period: Period): Period {
+  const span = monthsBetween(period.from, period.to);
+  return { from: addMonths(period.from, -span), to: addMonths(period.from, -1) };
 }
 
 /** Last day of a `YYYY-MM` month as `YYYY-MM-DD`, capped at today. */

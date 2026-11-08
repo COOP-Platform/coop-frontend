@@ -1,15 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { AccountsPage, FinanceAccessGate } from '@/features/finance';
-
+/* Bank & MoMo accounts are now a tab of Community Money. Old links, bookmarks and emails land there. */
 export const Route = createFileRoute('/finance/accounts')({
-  component: Page,
+  beforeLoad: () => {
+    throw redirect({ to: '/finance/money', search: { tab: 'accounts' as const } });
+  },
 });
-
-function Page() {
-  return (
-    <FinanceAccessGate permission="finance.cashflow.view">
-      <AccountsPage />
-    </FinanceAccessGate>
-  );
-}

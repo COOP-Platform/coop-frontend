@@ -6,10 +6,11 @@ import { useWorkspace } from '@/features/auth';
 
 import { THIS_MONTH } from '../month';
 import { usePendingForMe } from '../review-rights';
+import { AccountsPage } from './AccountsPage';
 import { CashBox } from './CashBox';
 import { AllPayments, MonthOverview, ReviewQueue } from './MemberContributions';
 
-export type MoneyTab = 'month' | 'review' | 'payments' | 'pocket';
+export type MoneyTab = 'month' | 'review' | 'payments' | 'pocket' | 'accounts';
 
 /**
  * Community Money, one message per section:
@@ -43,6 +44,7 @@ export function CommunityMoney({
       : []),
     { value: 'payments', label: 'All payments' },
     { value: 'pocket', label: 'Community pocket' },
+    { value: 'accounts', label: 'Bank & MoMo' },
   ];
   // A non-reviewer who follows a ?tab=review link lands on This month.
   const current = tab === 'review' && !pending.isReviewer ? 'month' : tab;
@@ -74,6 +76,7 @@ export function CommunityMoney({
       {current === 'review' && <ReviewQueue />}
       {current === 'payments' && <AllPayments month={month} onMonthChange={setMonth} />}
       {current === 'pocket' && <CashBox />}
+      {current === 'accounts' && <AccountsPage embedded />}
     </div>
   );
 }

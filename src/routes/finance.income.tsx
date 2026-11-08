@@ -1,24 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { IncomePage, FinanceAccessGate } from '@/features/finance';
-
-interface RecordSearch {
-  /** `?record=true` opens the Record form (from the dashboard). */
-  record?: boolean;
-}
-
+/* Income is now a tab of Expenses & Income. Old links, bookmarks and emails land there. */
 export const Route = createFileRoute('/finance/income')({
-  validateSearch: (raw: Record<string, unknown>): RecordSearch => ({
-    record: raw.record === true || raw.record === 'true' ? true : undefined,
-  }),
-  component: IncomeRoute,
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/finance/expenses-income',
+      search: {
+        tab: 'income' as const,
+        record:
+          (search as { record?: unknown }).record === true ||
+          (search as { record?: unknown }).record === 'true'
+            ? true
+            : undefined,
+      },
+    });
+  },
 });
-
-function IncomeRoute() {
-  const { record } = Route.useSearch();
-  return (
-    <FinanceAccessGate permission="finance.income.view">
-      <IncomePage startRecording={record === true} />
-    </FinanceAccessGate>
-  );
-}

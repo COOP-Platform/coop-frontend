@@ -18,7 +18,6 @@ import {
   IconSearch,
   IconSend,
   LoadingState,
-  PageHeader,
   SegmentedControl,
   StatCard,
 } from '@/components/ui';
@@ -45,6 +44,7 @@ import { Pager, ReasonPrompt } from './ReasonPrompt';
 import { EditExpenseDialog } from './EditExpenseDialog';
 import { RecordExpenseDialog } from './RecordExpenseDialog';
 import { SuccessNotice } from './SuccessNotice';
+import { SectionHeader } from './SectionHeader';
 
 const PAGE_SIZE = 20;
 
@@ -62,7 +62,13 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
  * expense; the Treasurer records them; someone else approves or rejects;
  * an approved one can be reversed with a reason.
  */
-export function ExpensesPage({ startRecording = false }: { startRecording?: boolean }) {
+export function ExpensesPage({
+  startRecording = false,
+  embedded = false,
+}: {
+  startRecording?: boolean;
+  embedded?: boolean;
+}) {
   const searchId = useId();
   const { communityId, can, membership } = useWorkspace();
   const canRecord = can('finance.expense.record');
@@ -106,7 +112,8 @@ export function ExpensesPage({ startRecording = false }: { startRecording?: bool
 
   return (
     <div className="page">
-      <PageHeader
+      <SectionHeader
+        embedded={embedded}
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Expenses"
         subtitle="Money paid out of the community, approved before it counts."

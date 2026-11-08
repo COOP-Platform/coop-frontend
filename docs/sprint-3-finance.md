@@ -21,6 +21,8 @@ walkthrough is `coop-backend/docs/sprint-3-5-backend-guide.html`.
 | `/finance/shares` | Live: share categories (add, edit) and members' shares (change) | `.../share-categories/` · `PATCH .../members/{id}/shares/` |
 | `/finance/accounts` | Live: bank / MoMo / cash accounts, balances, history, against the community pocket | `.../finance/accounts/` · `/balances/` · `/retire/` |
 
+**Sidebar (6 links, tabs inside):** Dashboard · My Contributions · Community Money (`/finance/money`: This month, To review, All payments, Community pocket, Bank & MoMo) · Expenses & Income (`/finance/expenses-income`: Expenses, Income) · Budgets & Shares (`/finance/planning`: Budgets, Dedicated contributions, Shares) · Reports (`/finance/reports`: Cash flow statement, By category). The old addresses (`/finance/expenses`, `/income`, `/budgets`, `/shares`, `/statements`, `/accounts`, `/contributions`) redirect to the right tab.
+
 `/finance/*` uses the same guard as `/community/*` (signed in, belongs to a community).
 
 ## 2. Conventions the API uses

@@ -17,7 +17,6 @@ import {
   IconWallet,
   Input,
   LoadingState,
-  PageHeader,
   Select,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -38,6 +37,7 @@ import { useCashFlow } from '../api/cashflow';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { THIS_MONTH } from '../month';
 import { SuccessNotice } from './SuccessNotice';
+import { SectionHeader } from './SectionHeader';
 
 const KINDS: { value: AccountKind; label: string }[] = [
   { value: 'bank', label: 'Bank account' },
@@ -57,7 +57,7 @@ const today = () => new Date().toLocaleDateString('en-CA');
  * each with the balance the Treasurer last read and typed in. Shown next to
  * the community pocket (the records), never part of it, so a gap is visible.
  */
-export function AccountsPage() {
+export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
   const { communityId, can } = useWorkspace();
   const canManage = can('finance.account.manage');
   const accounts = useAccounts(communityId);
@@ -77,7 +77,8 @@ export function AccountsPage() {
 
   return (
     <div className="page">
-      <PageHeader
+      <SectionHeader
+        embedded={embedded}
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Bank & MoMo Accounts"
         subtitle="Where the community's money actually sits, with the balance the Treasurer last read for each."

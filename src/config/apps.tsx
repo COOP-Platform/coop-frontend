@@ -18,10 +18,7 @@ import {
   IconGrid,
   IconIdBadge,
   IconMail,
-  IconInstitution,
-  IconLayers,
   IconFlag,
-  IconPiggyBank,
   IconSend,
   IconUsers,
   IconWallet,
@@ -75,7 +72,7 @@ export const COMMUNITY_APP: AppDefinition = {
 export const FINANCE_APP: AppDefinition = {
   id: 'finance',
   name: 'Finance',
-  description: 'Contributions, expenses, income and reports',
+  description: 'Contributions, expenses, income, budgets and reports',
   icon: <IconWallet />,
   to: '/finance',
   nav: [
@@ -88,39 +85,15 @@ export const FINANCE_APP: AppDefinition = {
       permission: 'finance.contribution.view',
     },
     {
-      label: 'Expenses',
+      label: 'Expenses & Income',
       icon: <IconSend />,
-      to: '/finance/expenses',
+      to: '/finance/expenses-income',
       permission: 'finance.expense.view',
     },
     {
-      label: 'Income',
-      icon: <IconPiggyBank />,
-      to: '/finance/income',
-      permission: 'finance.income.view',
-    },
-    {
-      label: 'Budgets',
+      label: 'Budgets & Shares',
       icon: <IconFlag />,
-      to: '/finance/budgets',
-      permission: 'finance.budget.view',
-    },
-    {
-      label: 'Shares',
-      icon: <IconLayers />,
-      to: '/finance/shares',
-    },
-    {
-      label: 'Accounts',
-      icon: <IconInstitution />,
-      to: '/finance/accounts',
-      permission: 'finance.cashflow.view',
-    },
-    {
-      label: 'Cash Flow Statement',
-      icon: <IconFile />,
-      to: '/finance/statements',
-      permission: 'finance.report.view',
+      to: '/finance/planning',
     },
     {
       label: 'Reports',

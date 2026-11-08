@@ -87,7 +87,11 @@ export function CashBox() {
       items: income.data.items,
       sign: '+' as const,
       tone: 'in',
-      link: <Link to="/finance/income">See income</Link>,
+      link: (
+        <Link to="/finance/expenses-income" search={{ tab: 'income' }}>
+          See income
+        </Link>
+      ),
     },
     {
       label: 'Expenses paid',
@@ -96,7 +100,7 @@ export function CashBox() {
       items: expenses.data.items,
       sign: '-' as const,
       tone: 'out',
-      link: <Link to="/finance/expenses">See expenses</Link>,
+      link: <Link to="/finance/expenses-income">See expenses</Link>,
     },
   ];
 
@@ -118,8 +122,8 @@ export function CashBox() {
           <div className="cash-box__actions">
             {can('finance.income.record') && (
               <Link
-                to="/finance/income"
-                search={{ record: true }}
+                to="/finance/expenses-income"
+                search={{ tab: 'income', record: true }}
                 className="btn btn--secondary btn--inline btn--sm"
               >
                 <IconPiggyBank width={16} height={16} aria-hidden="true" /> Add income
@@ -127,7 +131,7 @@ export function CashBox() {
             )}
             {can('finance.expense.record') && (
               <Link
-                to="/finance/expenses"
+                to="/finance/expenses-income"
                 search={{ record: true }}
                 className="btn btn--secondary btn--inline btn--sm"
               >

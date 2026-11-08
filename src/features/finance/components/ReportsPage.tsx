@@ -7,7 +7,6 @@ import {
   IconFile,
   Input,
   LoadingState,
-  PageHeader,
   SegmentedControl,
   Select,
 } from '@/components/ui';
@@ -22,6 +21,7 @@ import { THIS_MONTH, monthName } from '../month';
 import { MAX_MONTHS, PRESET_LABEL, monthsBetween, presetPeriod } from '../period';
 import type { Period, PeriodPreset } from '../period';
 import { CategoryBars } from './StatementCharts';
+import { SectionHeader } from './SectionHeader';
 
 type ReportKind = 'contributions' | 'income' | 'expenses';
 
@@ -46,7 +46,7 @@ const PRESETS: PeriodPreset[] = [
  * month-by-month series and a PDF / CSV download. Every member reads them.
  * The summary (opening, in, out, closing) lives on the Cash Flow Statement.
  */
-export function ReportsPage() {
+export function ReportsPage({ embedded = false }: { embedded?: boolean }) {
   const { communityId } = useWorkspace();
   const [kind, setKind] = useState<ReportKind>('contributions');
   const [preset, setPreset] = useState<PeriodPreset>('this_year');
@@ -81,7 +81,8 @@ export function ReportsPage() {
 
   return (
     <div className="page">
-      <PageHeader
+      <SectionHeader
+        embedded={embedded}
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Reports"
         subtitle="Where contributions, income and expenses came from and went, for any period."

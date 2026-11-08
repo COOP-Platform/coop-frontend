@@ -21,6 +21,9 @@
   /* ---- Accent (sparing use only — badges, highlights, brand mark;
      never primary buttons/links/body text) ---- */
   --color-accent: #fcc20c;
+  /* The accent deep enough for chart marks (dataviz lightness band); pairs with --color-success. */
+  --color-accent-deep: #d9a106;
+  --color-accent-soft: #fff6d6;
   --color-accent-contrast: #18181b;
 
   /* ---- Surfaces ---- */

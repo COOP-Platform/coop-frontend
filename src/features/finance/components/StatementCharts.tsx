@@ -5,8 +5,8 @@ import { monthName } from '../month';
 
 /*
  * The statement's two charts, drawn in plain SVG/HTML (the app has no chart
- * library). Colours are the validated pair for money in (blue) and money out
- * (orange); identity never rides on colour alone: a legend, direct labels and
+ * library). Colours are the app's own: success green for money in and the deep accent
+ * gold for money out (styles/app.css); identity never rides on colour alone: a legend, direct labels and
  * a hover/focus tooltip carry it too.
  */
 

@@ -3170,13 +3170,16 @@
   gap: var(--space-4);
 }
 
-/* Validated pair (dataviz validator, light surface): money in / money out. */
+/* The app's own colours for money in / money out: success green and the deep
+   accent gold (dataviz validator, light surface: CVD and lightness pass; the gold
+   is under 3:1, so every value is also written out: legend, tooltip, bar labels,
+   table). */
 .flow-chart,
 .category-bars,
 .chart-legend,
 .kpi-grid {
-  --series-in: #2a78d6;
-  --series-out: #eb6834;
+  --series-in: var(--color-success);
+  --series-out: var(--color-accent-deep);
 }
 
 .kpi-grid {
@@ -3212,12 +3215,12 @@
 
 .kpi--in {
   --kpi-accent: var(--series-in);
-  --kpi-soft: #e6f0fb;
+  --kpi-soft: var(--color-success-soft);
 }
 
 .kpi--out {
   --kpi-accent: var(--series-out);
-  --kpi-soft: #fdeee7;
+  --kpi-soft: var(--color-accent-soft);
 }
 
 .kpi--brand {
@@ -3325,11 +3328,11 @@
 }
 
 .legend-swatch--in {
-  background-color: var(--series-in, #2a78d6);
+  background-color: var(--series-in, var(--color-success));
 }
 
 .legend-swatch--out {
-  background-color: var(--series-out, #eb6834);
+  background-color: var(--series-out, var(--color-accent-deep));
 }
 
 .flow-chart {

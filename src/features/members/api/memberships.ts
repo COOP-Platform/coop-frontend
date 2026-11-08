@@ -13,6 +13,8 @@ export interface Membership {
   email?: string;
   community: string;
   member_category: string;
+  /** Shares held (S3-34); set through PATCH .../members/{id}/shares/. */
+  shares?: number;
   status: MembershipStatus;
   join_date: string | null;
   emergency_contact_name: string | null;

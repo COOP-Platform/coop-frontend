@@ -21,12 +21,15 @@ import { Route as CommunityIndexRouteImport } from './routes/community.index';
 import { Route as CommunityReportsRouteImport } from './routes/community.reports';
 import { Route as CommunitySettingsRouteImport } from './routes/community.settings';
 import { Route as FinanceIndexRouteImport } from './routes/finance.index';
+import { Route as FinanceAccountsRouteImport } from './routes/finance.accounts';
+import { Route as FinanceBudgetsRouteImport } from './routes/finance.budgets';
 import { Route as FinanceContributionsRouteImport } from './routes/finance.contributions';
 import { Route as FinanceExpensesRouteImport } from './routes/finance.expenses';
 import { Route as FinanceIncomeRouteImport } from './routes/finance.income';
 import { Route as FinanceMoneyRouteImport } from './routes/finance.money';
 import { Route as FinanceMyContributionsRouteImport } from './routes/finance.my-contributions';
 import { Route as FinanceReportsRouteImport } from './routes/finance.reports';
+import { Route as FinanceSharesRouteImport } from './routes/finance.shares';
 import { Route as FinanceStatementsRouteImport } from './routes/finance.statements';
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations.accept';
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index';
@@ -99,6 +102,16 @@ const FinanceIndexRoute = FinanceIndexRouteImport.update({
   path: '/',
   getParentRoute: () => FinanceRoute,
 } as any);
+const FinanceAccountsRoute = FinanceAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
+  getParentRoute: () => FinanceRoute,
+} as any);
+const FinanceBudgetsRoute = FinanceBudgetsRouteImport.update({
+  id: '/budgets',
+  path: '/budgets',
+  getParentRoute: () => FinanceRoute,
+} as any);
 const FinanceContributionsRoute = FinanceContributionsRouteImport.update({
   id: '/contributions',
   path: '/contributions',
@@ -127,6 +140,11 @@ const FinanceMyContributionsRoute = FinanceMyContributionsRouteImport.update({
 const FinanceReportsRoute = FinanceReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => FinanceRoute,
+} as any);
+const FinanceSharesRoute = FinanceSharesRouteImport.update({
+  id: '/shares',
+  path: '/shares',
   getParentRoute: () => FinanceRoute,
 } as any);
 const FinanceStatementsRoute = FinanceStatementsRouteImport.update({
@@ -199,12 +217,15 @@ export interface FileRoutesByFullPath {
   '/status': typeof StatusRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
+  '/finance/accounts': typeof FinanceAccountsRoute;
+  '/finance/budgets': typeof FinanceBudgetsRoute;
   '/finance/contributions': typeof FinanceContributionsRoute;
   '/finance/expenses': typeof FinanceExpensesRoute;
   '/finance/income': typeof FinanceIncomeRoute;
   '/finance/money': typeof FinanceMoneyRoute;
   '/finance/my-contributions': typeof FinanceMyContributionsRoute;
   '/finance/reports': typeof FinanceReportsRoute;
+  '/finance/shares': typeof FinanceSharesRoute;
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
@@ -228,12 +249,15 @@ export interface FileRoutesByTo {
   '/status': typeof StatusRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
+  '/finance/accounts': typeof FinanceAccountsRoute;
+  '/finance/budgets': typeof FinanceBudgetsRoute;
   '/finance/contributions': typeof FinanceContributionsRoute;
   '/finance/expenses': typeof FinanceExpensesRoute;
   '/finance/income': typeof FinanceIncomeRoute;
   '/finance/money': typeof FinanceMoneyRoute;
   '/finance/my-contributions': typeof FinanceMyContributionsRoute;
   '/finance/reports': typeof FinanceReportsRoute;
+  '/finance/shares': typeof FinanceSharesRoute;
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
@@ -260,12 +284,15 @@ export interface FileRoutesById {
   '/status': typeof StatusRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
+  '/finance/accounts': typeof FinanceAccountsRoute;
+  '/finance/budgets': typeof FinanceBudgetsRoute;
   '/finance/contributions': typeof FinanceContributionsRoute;
   '/finance/expenses': typeof FinanceExpensesRoute;
   '/finance/income': typeof FinanceIncomeRoute;
   '/finance/money': typeof FinanceMoneyRoute;
   '/finance/my-contributions': typeof FinanceMyContributionsRoute;
   '/finance/reports': typeof FinanceReportsRoute;
+  '/finance/shares': typeof FinanceSharesRoute;
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
@@ -293,12 +320,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/community/reports'
     | '/community/settings'
+    | '/finance/accounts'
+    | '/finance/budgets'
     | '/finance/contributions'
     | '/finance/expenses'
     | '/finance/income'
     | '/finance/money'
     | '/finance/my-contributions'
     | '/finance/reports'
+    | '/finance/shares'
     | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
@@ -322,12 +352,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/community/reports'
     | '/community/settings'
+    | '/finance/accounts'
+    | '/finance/budgets'
     | '/finance/contributions'
     | '/finance/expenses'
     | '/finance/income'
     | '/finance/money'
     | '/finance/my-contributions'
     | '/finance/reports'
+    | '/finance/shares'
     | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
@@ -353,12 +386,15 @@ export interface FileRouteTypes {
     | '/status'
     | '/community/reports'
     | '/community/settings'
+    | '/finance/accounts'
+    | '/finance/budgets'
     | '/finance/contributions'
     | '/finance/expenses'
     | '/finance/income'
     | '/finance/money'
     | '/finance/my-contributions'
     | '/finance/reports'
+    | '/finance/shares'
     | '/finance/statements'
     | '/invitations/accept'
     | '/onboarding/create'
@@ -475,6 +511,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FinanceIndexRouteImport;
       parentRoute: typeof FinanceRoute;
     };
+    '/finance/accounts': {
+      id: '/finance/accounts';
+      path: '/accounts';
+      fullPath: '/finance/accounts';
+      preLoaderRoute: typeof FinanceAccountsRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
+    '/finance/budgets': {
+      id: '/finance/budgets';
+      path: '/budgets';
+      fullPath: '/finance/budgets';
+      preLoaderRoute: typeof FinanceBudgetsRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
     '/finance/contributions': {
       id: '/finance/contributions';
       path: '/contributions';
@@ -515,6 +565,13 @@ declare module '@tanstack/react-router' {
       path: '/reports';
       fullPath: '/finance/reports';
       preLoaderRoute: typeof FinanceReportsRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
+    '/finance/shares': {
+      id: '/finance/shares';
+      path: '/shares';
+      fullPath: '/finance/shares';
+      preLoaderRoute: typeof FinanceSharesRouteImport;
       parentRoute: typeof FinanceRoute;
     };
     '/finance/statements': {
@@ -626,23 +683,29 @@ const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
 );
 
 interface FinanceRouteChildren {
+  FinanceAccountsRoute: typeof FinanceAccountsRoute;
+  FinanceBudgetsRoute: typeof FinanceBudgetsRoute;
   FinanceContributionsRoute: typeof FinanceContributionsRoute;
   FinanceExpensesRoute: typeof FinanceExpensesRoute;
   FinanceIncomeRoute: typeof FinanceIncomeRoute;
   FinanceMoneyRoute: typeof FinanceMoneyRoute;
   FinanceMyContributionsRoute: typeof FinanceMyContributionsRoute;
   FinanceReportsRoute: typeof FinanceReportsRoute;
+  FinanceSharesRoute: typeof FinanceSharesRoute;
   FinanceStatementsRoute: typeof FinanceStatementsRoute;
   FinanceIndexRoute: typeof FinanceIndexRoute;
 }
 
 const FinanceRouteChildren: FinanceRouteChildren = {
+  FinanceAccountsRoute: FinanceAccountsRoute,
+  FinanceBudgetsRoute: FinanceBudgetsRoute,
   FinanceContributionsRoute: FinanceContributionsRoute,
   FinanceExpensesRoute: FinanceExpensesRoute,
   FinanceIncomeRoute: FinanceIncomeRoute,
   FinanceMoneyRoute: FinanceMoneyRoute,
   FinanceMyContributionsRoute: FinanceMyContributionsRoute,
   FinanceReportsRoute: FinanceReportsRoute,
+  FinanceSharesRoute: FinanceSharesRoute,
   FinanceStatementsRoute: FinanceStatementsRoute,
   FinanceIndexRoute: FinanceIndexRoute,
 };

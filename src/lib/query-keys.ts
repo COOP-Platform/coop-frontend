@@ -54,6 +54,15 @@ export const queryKeys = {
       ['finance', communityId, 'cash-flow', from, to] as const,
     report: (communityId: string, type: string, from: string, to: string) =>
       ['finance', communityId, 'report', type, from, to] as const,
+    shareCategories: (communityId: string) => ['finance', communityId, 'share-categories'] as const,
+    budgets: (communityId: string, status: string) =>
+      ['finance', communityId, 'budgets', status] as const,
+    budget: (communityId: string, id: string) => ['finance', communityId, 'budget', id] as const,
+    campaigns: (communityId: string, status: string) =>
+      ['finance', communityId, 'campaigns', status] as const,
+    accounts: (communityId: string) => ['finance', communityId, 'accounts'] as const,
+    accountBalances: (communityId: string, id: string) =>
+      ['finance', communityId, 'account-balances', id] as const,
     cashFlowItems: (communityId: string, filters: Record<string, unknown>) =>
       ['finance', communityId, 'cash-flow-items', filters] as const,
     summary: (communityId: string, year: number) =>

@@ -3494,3 +3494,224 @@
 .statement-table__unit {
   margin-right: auto;
 }
+
+/* ---------- Finance: shares, budgets, accounts, reports ---------- */
+
+.share-cards,
+.budget-cards,
+.account-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share-card,
+.account-card,
+.budget-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+
+.budget-card {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--color-border);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.budget-card:hover {
+  border-color: var(--color-brand);
+}
+
+.budget-card--static {
+  cursor: default;
+}
+
+.budget-card--static:hover {
+  border-color: var(--color-border);
+}
+
+.share-card__head,
+.budget-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.budget-card__head {
+  justify-content: space-between;
+}
+
+.share-card__name,
+.budget-card__title,
+.account-card__name {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.share-card__price,
+.budget-card__planned,
+.account-card__balance {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.share-card__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.budget-card__left {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.account-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.meter {
+  width: 100%;
+}
+
+.meter__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+  font-size: 0.875rem;
+}
+
+.meter__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.meter__track {
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--color-surface-tint);
+}
+
+.meter__fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.meter__fill--in {
+  background-color: var(--color-success);
+}
+
+.meter__fill--out {
+  background-color: var(--color-accent-deep);
+}
+
+.campaign-mine {
+  width: 100%;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-tint);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+}
+
+.budget-lines-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.budget-lines-editor__row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.budget-lines-editor__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.budget-lines,
+.budget-campaigns {
+  width: 100%;
+}
+
+.budget-campaigns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.accounts-check {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+@media (max-width: 760px) {
+  .accounts-check {
+    grid-template-columns: 1fr;
+  }
+}
+
+.report-total {
+  border-top-width: 4px;
+}
+
+.report-grid {
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.attach-proof {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+/* The lines table lives in the narrow details drawer: fixed layout, tight cells. */
+.budget-lines {
+  table-layout: fixed;
+  font-size: 0.875rem;
+}
+
+.budget-lines th,
+.budget-lines td {
+  padding: var(--space-2);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.budget-lines th:first-child,
+.budget-lines td:first-child {
+  width: 34%;
+}

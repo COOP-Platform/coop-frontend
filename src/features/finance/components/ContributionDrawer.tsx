@@ -10,6 +10,7 @@ import { formatDate, formatLongDate } from '@/lib/format/date';
 import { receiptPath, useContributionDetail } from '../api/my-contributions';
 import type { Contribution } from '../api/my-contributions';
 import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL, periodLabel } from '../labels';
+import { AttachProof } from './AttachProof';
 import { Money } from './Money';
 
 interface ContributionDrawerContentProps {
@@ -189,6 +190,8 @@ export function ContributionDrawerContent({
           {errorMessage(detail.error)}
         </p>
       )}
+
+      <AttachProof row={row} />
 
       {actions?.(row)}
 

@@ -3132,3 +3132,31 @@
   align-items: flex-end;
   gap: var(--space-3);
 }
+
+.cash-box__latest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+  padding: var(--space-2) 0 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.cash-box__latest > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.cash-box__latest-who {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cash-box__latest-amount {
+  font-weight: 600;
+}

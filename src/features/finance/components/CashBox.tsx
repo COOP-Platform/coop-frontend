@@ -7,13 +7,16 @@ import { errorMessage } from '@/lib/api/errors';
 import { useCashFlow, useCashFlowItems } from '../api/cashflow';
 import { formatAmount } from '../format';
 import { THIS_MONTH } from '../month';
+import { formatShortDate } from '@/lib/format/date';
 import { Money } from './Money';
 
 /** The backend keeps no money record before 2020, so this covers everything. */
 const SINCE = '2020-01-01';
+/** Records listed under each source. */
+const LATEST = 3;
 const today = () => new Date().toLocaleDateString('en-CA');
 
-/** All-time total of one kind of record: one row is enough, the summary covers every page. */
+/** All-time total of one kind of record (the summary covers every page), and its latest few. */
 function useAllTime(
   communityId: string | undefined,
   source: 'contribution' | 'income' | 'expense',
@@ -22,7 +25,7 @@ function useAllTime(
     source,
     from_date: SINCE,
     to_date: today(),
-    page_size: 1,
+    page_size: LATEST,
   });
 }
 
@@ -68,14 +71,20 @@ export function CashBox() {
       label: 'Member contributions',
       minor: contributions.data.summary.money_in_minor,
       count: contributions.data.summary.in_count,
+      items: contributions.data.items,
       sign: '+' as const,
       tone: 'in',
-      link: <Link to="/finance/money">See payments</Link>,
+      link: (
+        <Link to="/finance/money" search={{ tab: 'payments' }}>
+          See payments
+        </Link>
+      ),
     },
     {
       label: 'Other income',
       minor: income.data.summary.money_in_minor,
       count: income.data.summary.in_count,
+      items: income.data.items,
       sign: '+' as const,
       tone: 'in',
       link: <Link to="/finance/income">See income</Link>,
@@ -84,6 +93,7 @@ export function CashBox() {
       label: 'Expenses paid',
       minor: expenses.data.summary.money_out_minor,
       count: expenses.data.summary.out_count,
+      items: expenses.data.items,
       sign: '-' as const,
       tone: 'out',
       link: <Link to="/finance/expenses">See expenses</Link>,
@@ -139,8 +149,25 @@ export function CashBox() {
                 sign={source.minor > 0 ? source.sign : undefined}
               />
             </span>
+            {source.items.length > 0 && (
+              <ul
+                className="cash-box__latest"
+                role="list"
+                aria-label={`Latest ${source.label.toLowerCase()}`}
+              >
+                {source.items.map((item) => (
+                  <li key={item.source.id}>
+                    <span className="cash-box__latest-who">{item.party ?? item.narrative}</span>
+                    <span className="cash-box__latest-amount">
+                      {formatAmount(item.amount_minor)}
+                    </span>
+                    <span className="table__muted">{formatShortDate(item.date)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <span className="table__muted">
-              {source.count} record{source.count === 1 ? '' : 's'} · {source.link}
+              {source.count} record{source.count === 1 ? '' : 's'} so far · {source.link}
             </span>
           </li>
         ))}

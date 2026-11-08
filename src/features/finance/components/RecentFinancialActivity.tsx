@@ -92,8 +92,8 @@ export function RecentFinancialActivity({ entries, showAllLink }: RecentFinancia
       </ul>
 
       {showAllLink && (
-        <Link to="/finance/contributions" className="finance-activity__all">
-          View All Transactions in Contributions
+        <Link to="/finance/money" className="finance-activity__all">
+          View All in Community Money
           <IconArrowRight width={20} height={20} />
         </Link>
       )}

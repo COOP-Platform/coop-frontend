@@ -79,9 +79,9 @@ export const FINANCE_APP: AppDefinition = {
     { label: 'Dashboard', icon: <IconGrid />, to: '/finance', exact: true },
     { label: 'My Contributions', icon: <IconWallet />, to: '/finance/my-contributions' },
     {
-      label: 'Contributions',
+      label: 'Community Money',
       icon: <IconBanknote />,
-      to: '/finance/contributions',
+      to: '/finance/money',
       permission: 'finance.contribution.view',
     },
     {

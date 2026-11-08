@@ -1,4 +1,3 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 
 import {
@@ -16,12 +15,10 @@ import {
   IconClipboardClock,
   IconCommunity,
   IconEye,
-  IconPlusCircle,
   IconSearch,
   IconWallet,
   Input,
   LoadingState,
-  PageHeader,
   SegmentedControl,
   StatCard,
 } from '@/components/ui';
@@ -33,7 +30,6 @@ import { useCommunityContributions } from '../api/contributions';
 import type { Contribution } from '../api/my-contributions';
 import type { ContributionStatus } from '../api/types';
 import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL, periodLabel } from '../labels';
-import { CashBox } from './CashBox';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
 import { useReviewRights } from '../review-rights';
@@ -63,15 +59,14 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
 ];
 
 /**
- * Every contribution in the community (1 Nov: every member reads every
- * record). Whoever reviews payments -- the Treasurer -- also gets the queue
- * of payments waiting for them, with Approve / Reject, and Reverse in the
- * details of a confirmed one.
+ * The "Member contributions" section of Community Money. Every contribution
+ * in the community (1 Nov: every member reads every record). Whoever reviews
+ * payments -- the Treasurer -- also gets the queue of payments waiting for
+ * them, with Approve / Reject, and Reverse in the details of a confirmed one.
  */
-export function CommunityContributions() {
-  const navigate = useNavigate();
+export function MemberContributions() {
   const searchId = useId();
-  const { communityId, can } = useWorkspace();
+  const { communityId } = useWorkspace();
   const rights = useReviewRights();
   const isReviewer = rights.canConfirm || rights.canReject;
 
@@ -111,49 +106,39 @@ export function CommunityContributions() {
   const label = monthLabel(month);
 
   return (
-    <div className="page">
-      <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title="Contributions"
-        subtitle="All the money in the community pocket and where it comes from, then every member payment."
-        actions={
-          <>
-            <Input
-              label="Month"
-              type="month"
-              value={month}
-              max={THIS_MONTH}
-              onChange={(event) => {
-                if (event.target.value) {
-                  setMonth(event.target.value);
-                  setPage(1);
-                }
-              }}
-            />
-            {rights.canRemind && (
-              <Button
-                variant="secondary"
-                inline
-                icon={<IconBellAlert />}
-                onClick={() => setReminding(true)}
-              >
-                Remind unpaid
-              </Button>
-            )}
-            {can('finance.contribution.record') && (
-              <Button
-                inline
-                icon={<IconPlusCircle />}
-                onClick={() =>
-                  void navigate({ to: '/finance/my-contributions', search: { record: true } })
-                }
-              >
-                Record Contribution
-              </Button>
-            )}
-          </>
-        }
-      />
+    <div className="money-section">
+      <div className="section-bar">
+        <div>
+          <h2 className="section-title">Contributions for {label}</h2>
+          <p className="table__muted">
+            What members owe and paid this month, and every payment they recorded.
+          </p>
+        </div>
+        <div className="section-bar__actions">
+          <Input
+            label="Month"
+            type="month"
+            value={month}
+            max={THIS_MONTH}
+            onChange={(event) => {
+              if (event.target.value) {
+                setMonth(event.target.value);
+                setPage(1);
+              }
+            }}
+          />
+          {rights.canRemind && (
+            <Button
+              variant="secondary"
+              inline
+              icon={<IconBellAlert />}
+              onClick={() => setReminding(true)}
+            >
+              Remind unpaid
+            </Button>
+          )}
+        </div>
+      </div>
 
       {notice && (
         <div className="notice notice--success" role="status">
@@ -164,10 +149,6 @@ export function CommunityContributions() {
           </div>
         </div>
       )}
-
-      <CashBox />
-
-      <h2 className="section-title">Contributions for {label}</h2>
 
       <div className="stat-grid stat-grid--four">
         <StatCard

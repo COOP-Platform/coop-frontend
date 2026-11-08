@@ -115,7 +115,7 @@ export function CommunityContributions() {
       <PageHeader
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Contributions"
-        subtitle="The money in the cash box and where it comes from, every payment members made, and the ones waiting for review."
+        subtitle="All the money in the community pocket and where it comes from, then every member payment."
         actions={
           <>
             <Input

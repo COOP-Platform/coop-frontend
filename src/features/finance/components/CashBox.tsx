@@ -1,92 +1,107 @@
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
 
-import {
-  Badge,
-  EmptyState,
-  IconArrowRight,
-  IconHistory,
-  IconInstitution,
-  IconPiggyBank,
-  IconSend,
-  IconTile,
-} from '@/components/ui';
+import { IconInstitution, IconPiggyBank, IconSend } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
-import { formatLongDate } from '@/lib/format/date';
 
 import { useCashFlow, useCashFlowItems } from '../api/cashflow';
 import { formatAmount } from '../format';
-import { humanize } from '../labels';
-import { THIS_MONTH, monthName } from '../month';
+import { THIS_MONTH } from '../month';
 import { Money } from './Money';
 
-const THIS_YEAR = Number(THIS_MONTH.slice(0, 4));
-const YEAR_START = `${THIS_YEAR}-01`;
-/** Months listed before "Show all". */
-const RECENT_MONTHS = 6;
+/** The backend keeps no money record before 2020, so this covers everything. */
+const SINCE = '2020-01-01';
+const today = () => new Date().toLocaleDateString('en-CA');
 
-/** "+10,000", or a dash when nothing moved. */
-const signed = (sign: string, minor: number) => (minor === 0 ? '—' : sign + formatAmount(minor));
+/** All-time total of one kind of record: one row is enough, the summary covers every page. */
+function useAllTime(
+  communityId: string | undefined,
+  source: 'contribution' | 'income' | 'expense',
+) {
+  return useCashFlowItems(communityId, {
+    source,
+    from_date: SINCE,
+    to_date: today(),
+    page_size: 1,
+  });
+}
 
 /**
- * Money in the community's cash box and where it came from, for every
- * member: brought forward + contributions + other income - expenses = cash in
- * hand. Built from the cash flow (the same rule as the dashboard balance), so
- * the numbers always add up.
+ * All the money in the community's pocket, and where it came from:
+ * contributions + other income - expenses = cash in hand. Every member sees
+ * the same numbers; only confirmed contributions, recorded income and
+ * approved expenses count.
  */
 export function CashBox() {
   const { communityId, can } = useWorkspace();
-  const flow = useCashFlow(communityId, YEAR_START, THIS_MONTH);
-  const recent = useCashFlowItems(communityId, {
-    from_date: `${YEAR_START}-01`,
-    to_date: new Date().toLocaleDateString('en-CA'),
-    page_size: 6,
-  });
-  const [showAll, setShowAll] = useState(false);
+  const wallet = useCashFlow(communityId, THIS_MONTH, THIS_MONTH);
+  const contributions = useAllTime(communityId, 'contribution');
+  const income = useAllTime(communityId, 'income');
+  const expenses = useAllTime(communityId, 'expense');
 
-  if (flow.isPending) {
-    return (
-      <section className="card cash-box" aria-busy="true">
-        <p className="table__muted">Counting the cash box…</p>
-      </section>
-    );
-  }
-  if (flow.data === undefined) {
+  const failed = [wallet, contributions, income, expenses].find((part) => part.error);
+  if (failed) {
     return (
       <section className="card cash-box">
         <p className="table__warn" role="alert">
-          {errorMessage(flow.error)}
+          {errorMessage(failed.error)}
         </p>
       </section>
     );
   }
+  if (
+    wallet.data === undefined ||
+    contributions.data === undefined ||
+    income.data === undefined ||
+    expenses.data === undefined
+  ) {
+    return (
+      <section className="card cash-box" aria-busy="true">
+        <p className="table__muted">Counting the money…</p>
+      </section>
+    );
+  }
 
-  const { currency, months, opening_balance_minor: opening } = flow.data;
-  const contributions = months.reduce((sum, m) => sum + m.money_in.contributions_minor, 0);
-  const income = months.reduce((sum, m) => sum + m.money_in.income_minor, 0);
-  const expenses = months.reduce((sum, m) => sum + m.money_out.expenses_minor, 0);
-  const cash = flow.data.wallet_balance_minor;
-  const active = [...months]
-    .reverse()
-    .filter((m) => m.money_in.total_minor > 0 || m.money_out.total_minor > 0);
+  const currency = wallet.data.currency;
+  const sources = [
+    {
+      label: 'Member contributions',
+      minor: contributions.data.summary.money_in_minor,
+      count: contributions.data.summary.in_count,
+      sign: '+' as const,
+      tone: 'in',
+      link: <a href="#all-title">See payments</a>,
+    },
+    {
+      label: 'Other income',
+      minor: income.data.summary.money_in_minor,
+      count: income.data.summary.in_count,
+      sign: '+' as const,
+      tone: 'in',
+      link: <Link to="/finance/income">See income</Link>,
+    },
+    {
+      label: 'Expenses paid',
+      minor: expenses.data.summary.money_out_minor,
+      count: expenses.data.summary.out_count,
+      sign: '-' as const,
+      tone: 'out',
+      link: <Link to="/finance/expenses">See expenses</Link>,
+    },
+  ];
 
   return (
     <section className="card cash-box" aria-labelledby="cash-box-title">
       <div className="cash-box__top">
-        <div className="cash-box__balance">
-          <IconTile tone="brand" size="lg">
-            <IconInstitution />
-          </IconTile>
-          <div>
-            <p className="cash-box__eyebrow">Money in the cash box</p>
-            <h2 id="cash-box-title" className="cash-box__figure">
-              <Money minor={cash} currency={currency} />
-            </h2>
-            <p className="table__muted">
-              Confirmed contributions and income, less approved expenses. The same for every member.
-            </p>
-          </div>
+        <div>
+          <p className="cash-box__eyebrow">
+            <IconInstitution width={16} height={16} aria-hidden="true" /> Money in the community
+            pocket
+          </p>
+          <h2 id="cash-box-title" className="cash-box__figure">
+            <Money minor={wallet.data.wallet_balance_minor} currency={currency} />
+          </h2>
+          <p className="table__muted">Everything since the community started.</p>
         </div>
 
         {(can('finance.income.record') || can('finance.expense.record')) && (
@@ -95,165 +110,41 @@ export function CashBox() {
               <Link
                 to="/finance/income"
                 search={{ record: true }}
-                className="btn btn--secondary btn--inline"
+                className="btn btn--secondary btn--inline btn--sm"
               >
-                <IconPiggyBank width={18} height={18} aria-hidden="true" /> Add income
+                <IconPiggyBank width={16} height={16} aria-hidden="true" /> Add income
               </Link>
             )}
             {can('finance.expense.record') && (
               <Link
                 to="/finance/expenses"
                 search={{ record: true }}
-                className="btn btn--secondary btn--inline"
+                className="btn btn--secondary btn--inline btn--sm"
               >
-                <IconSend width={18} height={18} aria-hidden="true" /> Record expense
+                <IconSend width={16} height={16} aria-hidden="true" /> Record expense
               </Link>
             )}
           </div>
         )}
       </div>
 
-      <h3 className="cash-box__subhead">Where the money comes from in {THIS_YEAR}</h3>
-      <dl className="cash-box__sum">
-        <div>
-          <dt>Brought forward from before {THIS_YEAR}</dt>
-          <dd>
-            <Money minor={opening} currency={currency} />
-          </dd>
-        </div>
-        <div className="cash-box__in">
-          <dt>
-            + Member contributions{' '}
-            <a href="#all-title" className="cash-box__link">
-              see below
-            </a>
-          </dt>
-          <dd>
-            <Money
-              minor={contributions}
-              currency={currency}
-              sign={contributions > 0 ? '+' : undefined}
-            />
-          </dd>
-        </div>
-        <div className="cash-box__in">
-          <dt>
-            + Other income (donations, events, interest){' '}
-            <Link to="/finance/income" className="cash-box__link">
-              open
-            </Link>
-          </dt>
-          <dd>
-            <Money minor={income} currency={currency} sign={income > 0 ? '+' : undefined} />
-          </dd>
-        </div>
-        <div className="cash-box__out">
-          <dt>
-            − Expenses paid out{' '}
-            <Link to="/finance/expenses" className="cash-box__link">
-              open
-            </Link>
-          </dt>
-          <dd>
-            <Money minor={expenses} currency={currency} sign={expenses > 0 ? '-' : undefined} />
-          </dd>
-        </div>
-        <div className="cash-box__total">
-          <dt>= Cash in hand today</dt>
-          <dd>
-            <Money minor={cash} currency={currency} />
-          </dd>
-        </div>
-      </dl>
-
-      <div className="cash-box__columns">
-        <div>
-          <h3 className="cash-box__subhead">Month by month</h3>
-          {active.length === 0 ? (
-            <p className="table__muted">No money has moved in {THIS_YEAR} yet.</p>
-          ) : (
-            <div className="table-scroll">
-              <table className="table table--compact">
-                <thead>
-                  <tr>
-                    <th scope="col">Month</th>
-                    <th scope="col">Contributions</th>
-                    <th scope="col">Income</th>
-                    <th scope="col">Expenses</th>
-                    <th scope="col">Cash at end ({flow.data.currency})</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(showAll ? active : active.slice(0, RECENT_MONTHS)).map((m) => (
-                    <tr key={m.month}>
-                      <td>{monthName(m.month)}</td>
-                      <td className="cash-box__in">
-                        {signed('+', m.money_in.contributions_minor)}
-                      </td>
-                      <td className="cash-box__in">{signed('+', m.money_in.income_minor)}</td>
-                      <td className="cash-box__out">{signed('−', m.money_out.expenses_minor)}</td>
-                      <td className="table__amount">{formatAmount(m.closing_balance_minor)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {active.length > RECENT_MONTHS && (
-            <button
-              type="button"
-              className="link-action"
-              onClick={() => setShowAll((value) => !value)}
-            >
-              {showAll ? 'Show fewer months' : `Show all ${active.length} months`}
-            </button>
-          )}
-        </div>
-
-        <div>
-          <h3 className="cash-box__subhead">Latest movements</h3>
-          {recent.data && recent.data.items.length === 0 && (
-            <EmptyState
-              icon={<IconHistory />}
-              title="Nothing yet"
-              message="Confirmed contributions, income and approved expenses show here."
-            />
-          )}
-          <ul className="cash-box__moves" role="list">
-            {(recent.data?.items ?? []).map((item) => {
-              const incoming = item.direction === 'in';
-              return (
-                <li key={`${item.source.type}-${item.source.id}`}>
-                  <IconTile tone={incoming ? 'brand' : 'warning'} round size="sm">
-                    <IconArrowRight
-                      className={incoming ? 'finance-arrow finance-arrow--in' : 'finance-arrow'}
-                    />
-                  </IconTile>
-                  <div className="cash-box__move-body">
-                    <p className="cash-box__move-title">
-                      {item.party ?? item.narrative}{' '}
-                      <Badge tone={incoming ? 'success' : 'warning'}>
-                        {humanize(item.source.type)}
-                      </Badge>
-                    </p>
-                    <p className="table__muted">
-                      {item.party ? `${item.narrative} · ` : ''}
-                      {formatLongDate(item.date)}
-                    </p>
-                  </div>
-                  <p className={incoming ? 'cash-box__in' : 'cash-box__out'}>
-                    <Money
-                      minor={item.amount_minor}
-                      currency={item.currency}
-                      sign={incoming ? '+' : '-'}
-                    />
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </div>
+      <ul className="cash-box__sources" role="list" aria-label="Where the money comes from">
+        {sources.map((source) => (
+          <li key={source.label} className={`cash-box__source cash-box__source--${source.tone}`}>
+            <span className="cash-box__source-label">{source.label}</span>
+            <span className="cash-box__source-figure">
+              <Money
+                minor={source.minor}
+                currency={currency}
+                sign={source.minor > 0 ? source.sign : undefined}
+              />
+            </span>
+            <span className="table__muted">
+              {source.count} record{source.count === 1 ? '' : 's'} · {source.link}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -267,8 +158,8 @@ export function CashBoxLine() {
     <div className="notice notice--info cash-box-line" role="status">
       <IconInstitution width={20} height={20} aria-hidden="true" />
       <p className="notice__text">
-        <strong>Cash in hand: </strong>
-        <Money minor={flow.data.wallet_balance_minor} currency={flow.data.currency} />{' '}
+        <strong>Money in the community pocket: </strong>
+        {formatAmount(flow.data.wallet_balance_minor)} {flow.data.currency}{' '}
         <Link to="/finance/contributions" className="cash-box__link">
           where it comes from
         </Link>

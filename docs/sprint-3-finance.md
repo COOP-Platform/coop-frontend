@@ -16,7 +16,10 @@ walkthrough is `coop-backend/docs/sprint-3-5-backend-guide.html`.
 | `/finance/expenses` | Live: spent / awaiting approval, approval queue (approve / reject), list, details, reverse, CSV export, record with receipt and budget | `.../expenses/` · `/approve/` · `/reject/` · `/reverse/` · `/export/` |
 | `/finance/income` | Live: totals, list by source, details, reverse, record with receipt | `.../income/` · `/reverse/` |
 | `/finance/statements` (Cash Flow Statement) | Live: period presets or custom months; *Statement* (opening cash, cash in by contribution type and income source, cash out by expense category, net change, closing cash), *Month by month*, *Transactions*; PDF and CSV downloads | `GET .../finance/reports/?type=` (summary, contributions, income, expenses) · `/reports/export/` · `.../cash-flow/items/` · `/cash-flow/export/` |
-| `/finance/reports` | "Coming soon" placeholder | see §4 |
+| `/finance/reports` | Live: contributions (by type, by member category), income (by source), expenses (by category) for a period; PDF and CSV | `GET .../finance/reports/?type=` · `/reports/export/` |
+| `/finance/budgets` | Live: budgets (create with lines, edit, close) and dedicated contributions (`?tab=campaigns`: open, edit, close, what you owe, Pay now) | `.../budgets/` · `/close/` · `.../campaigns/` · `/close/` |
+| `/finance/shares` | Live: share categories (add, edit) and members' shares (change) | `.../share-categories/` · `PATCH .../members/{id}/shares/` |
+| `/finance/accounts` | Live: bank / MoMo / cash accounts, balances, history, against the community pocket | `.../finance/accounts/` · `/balances/` · `/retire/` |
 
 `/finance/*` uses the same guard as `/community/*` (signed in, belongs to a community).
 
@@ -46,14 +49,9 @@ baseline includes `finance.contribution.view`, `expense.view`, `income.view`,
 `cashflow.view`, `budget.view`, `campaign.view` and `report.view`. Proof files
 of other members' payments stay private (the API sends `proofs: null`).
 
-## 4. Still to build (endpoints are live)
+## 4. Still to build
 
-| Screen | Endpoints |
-| --- | --- |
-| Shares (Treasurer) | `GET/POST .../share-categories/` · `PATCH .../members/{mid}/shares/` |
-| Budgets + dedicated contributions | `.../budgets/` · `/close/` · `.../campaigns/` · `/close/` |
-| Accounts (Treasurer enters bank/MoMo balances) | `.../finance/accounts/` · `/balances/` · `/retire/` |
-| Reports | `GET .../finance/reports/` · `/export/` (PDF, CSV) |
+Every finance endpoint now has a screen. Also live: editing an expense's details (`PATCH .../expenses/{id}/`) and attaching a proof to your own pending payment (`POST .../contributions/{id}/proofs/`).
 
 ## 5. Gaps against the Figma
 

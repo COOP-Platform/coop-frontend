@@ -14,6 +14,7 @@ import {
   IconEye,
   IconFile,
   IconHistory,
+  IconPencil,
   IconSearch,
   IconSend,
   LoadingState,
@@ -41,6 +42,7 @@ import { CashBoxLine } from './CashBox';
 import { Money } from './Money';
 import { MonthPicker } from './MonthPicker';
 import { Pager, ReasonPrompt } from './ReasonPrompt';
+import { EditExpenseDialog } from './EditExpenseDialog';
 import { RecordExpenseDialog } from './RecordExpenseDialog';
 import { SuccessNotice } from './SuccessNotice';
 
@@ -514,7 +516,8 @@ function ExpenseActions({
 }
 
 function ExpenseDetails({ expense, onDone }: { expense: Expense; onDone: (m: string) => void }) {
-  const { communityId } = useWorkspace();
+  const { communityId, can } = useWorkspace();
+  const [editing, setEditing] = useState(false);
   const detail = useExpenseDetail(communityId, expense.id);
   const row = detail.data ?? expense;
   const badge = EXPENSE_STATUS[row.status];
@@ -603,7 +606,24 @@ function ExpenseDetails({ expense, onDone }: { expense: Expense; onDone: (m: str
         </p>
       )}
 
+      {can('finance.expense.record') && (row.status === 'pending' || row.status === 'approved') && (
+        <div className="review-actions">
+          <Button variant="tint" inline icon={<IconPencil />} onClick={() => setEditing(true)}>
+            Edit details
+          </Button>
+        </div>
+      )}
+
       <ExpenseActions row={row} onDone={onDone} />
+
+      <EditExpenseDialog
+        expense={editing ? row : null}
+        onClose={() => setEditing(false)}
+        onSaved={(message) => {
+          setEditing(false);
+          onDone(message);
+        }}
+      />
     </section>
   );
 }

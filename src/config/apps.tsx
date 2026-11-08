@@ -18,6 +18,9 @@ import {
   IconGrid,
   IconIdBadge,
   IconMail,
+  IconInstitution,
+  IconLayers,
+  IconFlag,
   IconPiggyBank,
   IconSend,
   IconUsers,
@@ -95,6 +98,23 @@ export const FINANCE_APP: AppDefinition = {
       icon: <IconPiggyBank />,
       to: '/finance/income',
       permission: 'finance.income.view',
+    },
+    {
+      label: 'Budgets',
+      icon: <IconFlag />,
+      to: '/finance/budgets',
+      permission: 'finance.budget.view',
+    },
+    {
+      label: 'Shares',
+      icon: <IconLayers />,
+      to: '/finance/shares',
+    },
+    {
+      label: 'Accounts',
+      icon: <IconInstitution />,
+      to: '/finance/accounts',
+      permission: 'finance.cashflow.view',
     },
     {
       label: 'Cash Flow Statement',

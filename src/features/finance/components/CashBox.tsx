@@ -70,7 +70,7 @@ export function CashBox() {
       count: contributions.data.summary.in_count,
       sign: '+' as const,
       tone: 'in',
-      link: <a href="#all-title">See payments</a>,
+      link: <Link to="/finance/money">See payments</Link>,
     },
     {
       label: 'Other income',
@@ -160,7 +160,7 @@ export function CashBoxLine() {
       <p className="notice__text">
         <strong>Money in the community pocket: </strong>
         {formatAmount(flow.data.wallet_balance_minor)} {flow.data.currency}{' '}
-        <Link to="/finance/contributions" className="cash-box__link">
+        <Link to="/finance/money" search={{ tab: 'pocket' }} className="cash-box__link">
           where it comes from
         </Link>
       </p>

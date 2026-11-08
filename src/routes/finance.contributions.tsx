@@ -1,15 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { CommunityContributions, FinanceAccessGate } from '@/features/finance';
-
+/* The page was renamed Community Money; old links and bookmarks land there. */
 export const Route = createFileRoute('/finance/contributions')({
-  component: ContributionsPage,
+  beforeLoad: () => {
+    throw redirect({ to: '/finance/money' });
+  },
 });
-
-function ContributionsPage() {
-  return (
-    <FinanceAccessGate permission="finance.contribution.view">
-      <CommunityContributions />
-    </FinanceAccessGate>
-  );
-}

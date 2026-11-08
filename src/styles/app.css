@@ -3160,3 +3160,168 @@
 .cash-box__latest-amount {
   font-weight: 600;
 }
+
+/* ---------- Finance: cash flow statement ---------- */
+
+.statement-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.statement-period__text {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 0 auto;
+  text-align: right;
+}
+
+.statement {
+  max-width: 52rem;
+  padding: var(--space-8) var(--space-8) var(--space-6);
+}
+
+.statement__head {
+  margin-bottom: var(--space-6);
+  border-bottom: 2px solid var(--color-text);
+  padding-bottom: var(--space-4);
+  text-align: center;
+}
+
+.statement__org {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.statement__title {
+  margin: var(--space-1) 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.statement__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.statement__table th,
+.statement__table td {
+  padding: var(--space-2) 0;
+  text-align: left;
+  font-weight: 400;
+}
+
+.statement__heading th {
+  padding-top: var(--space-5);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.statement__subheading th {
+  padding-left: var(--space-4);
+  font-weight: 600;
+}
+
+.statement__line--indent-1 td:first-child {
+  padding-left: var(--space-4);
+}
+
+.statement__line--indent-2 td:first-child {
+  padding-left: var(--space-8);
+}
+
+.statement__amount {
+  width: 12rem;
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.statement__note {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.statement__line--muted td {
+  color: var(--color-text-muted);
+}
+
+.statement__line--subtotal td {
+  font-weight: 600;
+}
+
+.statement__line--subtotal .statement__amount {
+  border-top: 1px solid var(--color-border);
+}
+
+.statement__line--strong td {
+  font-weight: 700;
+}
+
+.statement__line--in .statement__amount {
+  color: var(--color-brand);
+}
+
+.statement__line--out .statement__amount {
+  color: var(--color-warning);
+}
+
+.statement__line--rule td {
+  border-top: 1px solid var(--color-text);
+  padding-top: var(--space-3);
+}
+
+.statement__line--grand td {
+  border-top: 1px solid var(--color-text);
+  border-bottom: 3px double var(--color-text);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.statement__foot {
+  margin-top: var(--space-6);
+  font-size: 0.8125rem;
+}
+
+.statement-months td,
+.statement-months th {
+  text-align: right;
+}
+
+.statement-months td:first-child,
+.statement-months th:first-child {
+  text-align: left;
+}
+
+.statement-months__opening td {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.statement-months tfoot th,
+.statement-months tfoot td {
+  border-top: 2px solid var(--color-text);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .statement {
+    padding: var(--space-5);
+  }
+
+  .statement__amount {
+    width: auto;
+  }
+
+  .statement-period__text {
+    margin-left: 0;
+    text-align: left;
+  }
+}

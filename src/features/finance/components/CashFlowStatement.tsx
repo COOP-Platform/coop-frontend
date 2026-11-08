@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import {
@@ -6,8 +6,14 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  IconArrowRight,
+  IconBarChart,
+  IconCheckCircle,
   IconDownload,
+  IconFile,
   IconHistory,
+  IconInstitution,
+  IconSearch,
   Input,
   LoadingState,
   PageHeader,
@@ -16,60 +22,51 @@ import {
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
-import { formatLongDate } from '@/lib/format/date';
+import { formatDate } from '@/lib/format/date';
 
-import { useCashFlowItems } from '../api/cashflow';
+import { useAllCashFlowItems } from '../api/cashflow';
 import { downloadStatementPdf, downloadTransactionsCsv, useReport } from '../api/reports';
+import type { SummaryReport } from '../api/reports';
+import type { CashFlowItem } from '../api/summary';
 import { formatAmount } from '../format';
 import { humanize } from '../labels';
 import { THIS_MONTH, monthName } from '../month';
-import { MAX_MONTHS, PRESET_LABEL, lastDay, monthsBetween, presetPeriod } from '../period';
+import {
+  MAX_MONTHS,
+  PRESET_LABEL,
+  lastDay,
+  monthsBetween,
+  presetPeriod,
+  previousPeriod,
+} from '../period';
 import type { Period, PeriodPreset } from '../period';
 import { Pager } from './ReasonPrompt';
-
-type View = 'statement' | 'monthly' | 'transactions';
-
-const VIEWS: { value: View; label: string }[] = [
-  { value: 'statement', label: 'Statement' },
-  { value: 'monthly', label: 'Month by month' },
-  { value: 'transactions', label: 'Transactions' },
-];
+import { CashFlowBars, CategoryBars } from './StatementCharts';
 
 const PRESETS: PeriodPreset[] = [
   'this_month',
-  'last_month',
-  'this_quarter',
+  'last_3',
+  'last_6',
   'this_year',
   'last_year',
   'custom',
 ];
-
-/** Money as an accountant writes it: outflows and decreases in brackets. */
-function amount(minor: number): string {
-  if (minor === 0) return '0';
-  return minor < 0 ? `(${formatAmount(-minor)})` : formatAmount(minor);
-}
-
-function periodText(period: Period): string {
-  return period.from === period.to
-    ? monthName(period.from)
-    : `${monthName(period.from)} to ${monthName(period.to)}`;
-}
+const ROWS_PER_PAGE = 10;
+const ALL = '';
 
 /**
- * The community's cash flow statement, as a business would draw one up for a
- * period: opening cash, cash in by source, cash out by category, the net
- * change and the closing cash. Built from the backend's finance reports, so
- * it always agrees with the cash flow and the dashboard balance. Every member
- * reads it.
+ * The community's cash flow statement for a period: opening balance, cash in,
+ * cash out and closing balance (each against the previous period), money in
+ * and out by month, by category, and every transaction with its running
+ * balance. Built from the backend's finance reports and cash flow, so every
+ * figure agrees with the dashboard. Every member reads it.
  */
 export function CashFlowStatement() {
-  const { communityId, membership } = useWorkspace();
-  const [preset, setPreset] = useState<PeriodPreset>('this_year');
-  const [custom, setCustom] = useState<Period>(presetPeriod('this_year'));
-  const [view, setView] = useState<View>('statement');
-  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const { communityId } = useWorkspace();
+  const [preset, setPreset] = useState<PeriodPreset>('last_6');
+  const [custom, setCustom] = useState<Period>(presetPeriod('last_6'));
   const [busy, setBusy] = useState<'pdf' | 'csv' | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const period = preset === 'custom' ? custom : presetPeriod(preset);
   const span = monthsBetween(period.from, period.to);
@@ -99,66 +96,58 @@ export function CashFlowStatement() {
       <PageHeader
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Cash Flow Statement"
-        subtitle="Cash the community had at the start, what came in, what went out, and what is left."
+        subtitle="Track the community's cash: what it started with, what came in, what went out and what is left."
         actions={
           <>
+            <Select
+              label="Period"
+              value={preset}
+              onChange={(event) => setPreset(event.target.value as PeriodPreset)}
+              options={PRESETS.map((p) => ({ value: p, label: PRESET_LABEL[p] }))}
+            />
             <Button
               variant="secondary"
+              inline
+              icon={<IconFile />}
+              disabled={busy !== null || periodError !== null}
+              onClick={() => void download('pdf')}
+            >
+              {busy === 'pdf' ? 'Preparing…' : 'Export PDF'}
+            </Button>
+            <Button
               inline
               icon={<IconDownload />}
               disabled={busy !== null || periodError !== null}
               onClick={() => void download('csv')}
             >
-              {busy === 'csv' ? 'Preparing…' : 'Transactions (CSV)'}
-            </Button>
-            <Button
-              inline
-              icon={<IconDownload />}
-              disabled={busy !== null || periodError !== null}
-              onClick={() => void download('pdf')}
-            >
-              {busy === 'pdf' ? 'Preparing…' : 'Download PDF'}
+              {busy === 'csv' ? 'Preparing…' : 'Export Excel (CSV)'}
             </Button>
           </>
         }
       />
 
-      <div className="toolbar card statement-period">
-        <Select
-          label="Period"
-          value={preset}
-          onChange={(event) => setPreset(event.target.value as PeriodPreset)}
-          options={PRESETS.map((p) => ({ value: p, label: PRESET_LABEL[p] }))}
-        />
-        {preset === 'custom' && (
-          <>
-            <Input
-              label="From"
-              type="month"
-              value={custom.from}
-              max={THIS_MONTH}
-              onChange={(event) =>
-                event.target.value && setCustom({ ...custom, from: event.target.value })
-              }
-            />
-            <Input
-              label="To"
-              type="month"
-              value={custom.to}
-              max={THIS_MONTH}
-              onChange={(event) =>
-                event.target.value && setCustom({ ...custom, to: event.target.value })
-              }
-            />
-          </>
-        )}
-        <p className="statement-period__text">
-          <strong>{periodText(period)}</strong>
-          <span className="table__muted">
-            {span} month{span === 1 ? '' : 's'}
-          </span>
-        </p>
-      </div>
+      {preset === 'custom' && (
+        <div className="toolbar card statement-period">
+          <Input
+            label="From"
+            type="month"
+            value={custom.from}
+            max={THIS_MONTH}
+            onChange={(event) =>
+              event.target.value && setCustom({ ...custom, from: event.target.value })
+            }
+          />
+          <Input
+            label="To"
+            type="month"
+            value={custom.to}
+            max={THIS_MONTH}
+            onChange={(event) =>
+              event.target.value && setCustom({ ...custom, to: event.target.value })
+            }
+          />
+        </div>
+      )}
 
       {periodError && <p className="form-error">{periodError}</p>}
       {downloadError && (
@@ -167,358 +156,391 @@ export function CashFlowStatement() {
         </p>
       )}
 
-      <SegmentedControl label="View" options={VIEWS} value={view} onChange={setView} />
-
       {periodError === null && communityId && (
-        <>
-          {view === 'statement' && (
-            <Statement
-              communityId={communityId}
-              communityName={membership?.community.name ?? 'The community'}
-              period={period}
-            />
-          )}
-          {view === 'monthly' && <MonthByMonth communityId={communityId} period={period} />}
-          {view === 'transactions' && (
-            <Transactions
-              key={`${period.from}-${period.to}`}
-              communityId={communityId}
-              period={period}
-            />
-          )}
-        </>
+        <StatementBody
+          key={`${period.from}-${period.to}`}
+          communityId={communityId}
+          period={period}
+        />
       )}
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// The statement
-// ---------------------------------------------------------------------------
-
-function Statement({
-  communityId,
-  communityName,
-  period,
-}: {
-  communityId: string;
-  communityName: string;
-  period: Period;
-}) {
+function StatementBody({ communityId, period }: { communityId: string; period: Period }) {
+  const before = previousPeriod(period);
   const summary = useReport(communityId, 'summary', period.from, period.to);
+  const previous = useReport(communityId, 'summary', before.from, before.to);
   const contributions = useReport(communityId, 'contributions', period.from, period.to);
   const income = useReport(communityId, 'income', period.from, period.to);
   const expenses = useReport(communityId, 'expenses', period.from, period.to);
+  const items = useAllCashFlowItems(communityId, `${period.from}-01`, lastDay(period.to));
 
-  const failed = [summary, contributions, income, expenses].find((q) => q.error);
+  const failed = [summary, contributions, income, expenses, items].find((q) => q.error);
   if (failed) return <ErrorState message={errorMessage(failed.error)} />;
-  if (!summary.data || !contributions.data || !income.data || !expenses.data) {
+  if (!summary.data || !contributions.data || !income.data || !expenses.data || !items.data) {
     return <LoadingState label="Drawing up the statement…" />;
   }
 
   const s = summary.data;
   const currency = s.currency;
-  const contributionRows = contributions.data.by_type.filter((row) => row.amount_minor > 0);
-  const incomeRows = income.data.by_source.filter((row) => row.amount_minor > 0);
-  const expenseRows = expenses.data.by_category.filter((row) => row.amount_minor > 0);
-  const net = s.totals.net_minor;
-
-  return (
-    <article className="card statement" aria-labelledby="statement-title">
-      <header className="statement__head">
-        <p className="statement__org">{communityName}</p>
-        <h2 id="statement-title" className="statement__title">
-          Cash Flow Statement
-        </h2>
-        <p className="table__muted">
-          For the period {formatLongDate(`${period.from}-01`)} to{' '}
-          {formatLongDate(lastDay(period.to))} · Amounts in {currency}
-        </p>
-      </header>
-
-      <table className="statement__table">
-        <tbody>
-          <Line label="Cash at the start of the period" value={s.opening_balance_minor} strong />
-
-          <Heading>Cash coming in</Heading>
-          <SubHeading>Member contributions</SubHeading>
-          {contributionRows.length === 0 ? (
-            <Line label="None" value={0} indent={2} muted />
-          ) : (
-            contributionRows.map((row) => (
-              <Line
-                key={row.key}
-                label={row.label}
-                note={`${row.count} payment${row.count === 1 ? '' : 's'}`}
-                value={row.amount_minor}
-                indent={2}
-              />
-            ))
-          )}
-          <Line
-            label="Total contributions"
-            value={s.totals.contributions_minor}
-            indent={1}
-            subtotal
-          />
-
-          <SubHeading>Other income</SubHeading>
-          {incomeRows.length === 0 ? (
-            <Line label="None" value={0} indent={2} muted />
-          ) : (
-            incomeRows.map((row) => (
-              <Line
-                key={row.key}
-                label={row.label}
-                note={`${row.count} record${row.count === 1 ? '' : 's'}`}
-                value={row.amount_minor}
-                indent={2}
-              />
-            ))
-          )}
-          <Line label="Total other income" value={s.totals.income_minor} indent={1} subtotal />
-          <Line label="Total cash in" value={s.totals.money_in_minor} strong tone="in" />
-
-          <Heading>Cash going out</Heading>
-          <SubHeading>Expenses</SubHeading>
-          {expenseRows.length === 0 ? (
-            <Line label="None" value={0} indent={2} muted />
-          ) : (
-            expenseRows.map((row) => (
-              <Line
-                key={row.label}
-                label={humanize(row.label)}
-                note={`${row.count} expense${row.count === 1 ? '' : 's'}`}
-                value={-row.amount_minor}
-                indent={2}
-              />
-            ))
-          )}
-          <Line label="Total cash out" value={-s.totals.expenses_minor} strong tone="out" />
-
-          <Line
-            label={net >= 0 ? 'Net increase in cash' : 'Net decrease in cash'}
-            value={net}
-            strong
-            rule
-          />
-          <Line label="Cash at the end of the period" value={s.closing_balance_minor} grand />
-        </tbody>
-      </table>
-
-      <p className="statement__foot table__muted">
-        Counts confirmed contributions, recorded income and approved expenses only. Pending,
-        rejected and reversed records are left out. Amounts in brackets are money going out.
-      </p>
-    </article>
-  );
-}
-
-function Heading({ children }: { children: ReactNode }) {
-  return (
-    <tr className="statement__heading">
-      <th scope="rowgroup" colSpan={2}>
-        {children}
-      </th>
-    </tr>
-  );
-}
-
-function SubHeading({ children }: { children: ReactNode }) {
-  return (
-    <tr className="statement__subheading">
-      <th scope="row" colSpan={2}>
-        {children}
-      </th>
-    </tr>
-  );
-}
-
-function Line({
-  label,
-  value,
-  note,
-  indent = 0,
-  strong = false,
-  subtotal = false,
-  grand = false,
-  rule = false,
-  muted = false,
-  tone,
-}: {
-  label: string;
-  value: number;
-  note?: string;
-  indent?: 0 | 1 | 2;
-  strong?: boolean;
-  subtotal?: boolean;
-  grand?: boolean;
-  rule?: boolean;
-  muted?: boolean;
-  tone?: 'in' | 'out';
-}) {
-  const classes = [
-    'statement__line',
-    `statement__line--indent-${indent}`,
-    strong ? 'statement__line--strong' : null,
-    subtotal ? 'statement__line--subtotal' : null,
-    grand ? 'statement__line--grand' : null,
-    rule ? 'statement__line--rule' : null,
-    muted ? 'statement__line--muted' : null,
-    tone ? `statement__line--${tone}` : null,
+  const inRows = [
+    ...contributions.data.by_type.map((r) => ({ ...r, label: `${r.label} contributions` })),
+    ...income.data.by_source,
   ]
-    .filter(Boolean)
-    .join(' ');
+    .filter((r) => r.amount_minor > 0)
+    .sort((a, b) => b.amount_minor - a.amount_minor);
+  const outRows = expenses.data.by_category
+    .filter((r) => r.amount_minor > 0)
+    .map((r) => ({ ...r, label: humanize(r.label) }));
+
   return (
-    <tr className={classes}>
-      <td>
-        {label}
-        {note && <span className="statement__note"> · {note}</span>}
-      </td>
-      <td className="statement__amount">{muted ? '—' : amount(value)}</td>
-    </tr>
+    <>
+      <KpiCards summary={s} previous={previous.data} />
+
+      <div className="statement-grid">
+        <section className="card statement-panel" aria-labelledby="overview-title">
+          <header className="statement-panel__head">
+            <h2 id="overview-title" className="section-head__title">
+              <IconBarChart width={20} height={20} aria-hidden="true" /> Cash flow overview
+            </h2>
+            <p className="chart-legend">
+              <span>
+                <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> Money in
+              </span>
+              <span>
+                <span className="legend-swatch legend-swatch--out" aria-hidden="true" /> Money out
+              </span>
+            </p>
+          </header>
+          <CashFlowBars
+            months={s.monthly.map((m) => ({
+              month: m.month,
+              in_minor: m.contributions_minor + m.income_minor,
+              out_minor: m.expenses_minor,
+            }))}
+          />
+        </section>
+
+        <CategoryPanel inRows={inRows} outRows={outRows} currency={currency} />
+      </div>
+
+      <TransactionTable items={items.data} closing={s.closing_balance_minor} currency={currency} />
+    </>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Month by month
+// Summary cards
 // ---------------------------------------------------------------------------
 
-function MonthByMonth({ communityId, period }: { communityId: string; period: Period }) {
-  const summary = useReport(communityId, 'summary', period.from, period.to);
-  if (summary.error) return <ErrorState message={errorMessage(summary.error)} />;
-  if (!summary.data) return <LoadingState />;
-  const s = summary.data;
-
+function KpiCards({ summary, previous }: { summary: SummaryReport; previous?: SummaryReport }) {
+  const currency = summary.currency;
   return (
-    <section className="card table-card" aria-label="Cash flow month by month">
-      <div className="table-scroll">
-        <table className="table table--compact statement-months">
-          <thead>
-            <tr>
-              <th scope="col">Month</th>
-              <th scope="col">Contributions</th>
-              <th scope="col">Other income</th>
-              <th scope="col">Expenses</th>
-              <th scope="col">Net</th>
-              <th scope="col">Cash at month end</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="statement-months__opening">
-              <td colSpan={5}>Cash at the start</td>
-              <td>{amount(s.opening_balance_minor)}</td>
-            </tr>
-            {s.monthly.map((m) => (
-              <tr key={m.month}>
-                <td>{monthName(m.month)}</td>
-                <td>{m.contributions_minor ? formatAmount(m.contributions_minor) : '—'}</td>
-                <td>{m.income_minor ? formatAmount(m.income_minor) : '—'}</td>
-                <td>{m.expenses_minor ? amount(-m.expenses_minor) : '—'}</td>
-                <td className={m.net_minor < 0 ? 'cash-box__out' : undefined}>
-                  {amount(m.net_minor)}
-                </td>
-                <td className="table__amount">{amount(m.running_balance_minor)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row">Total</th>
-              <td>{formatAmount(s.totals.contributions_minor)}</td>
-              <td>{formatAmount(s.totals.income_minor)}</td>
-              <td>{amount(-s.totals.expenses_minor)}</td>
-              <td>{amount(s.totals.net_minor)}</td>
-              <td className="table__amount">{amount(s.closing_balance_minor)}</td>
-            </tr>
-          </tfoot>
-        </table>
+    <div className="kpi-grid">
+      <Kpi
+        tone="info"
+        icon={<IconInstitution />}
+        label="Opening balance"
+        minor={summary.opening_balance_minor}
+        currency={currency}
+        note={`At the start of ${monthName(summary.period.from.slice(0, 7))}`}
+      />
+      <Kpi
+        tone="in"
+        icon={<IconArrowRight className="kpi__arrow-in" />}
+        label="Total cash in"
+        minor={summary.totals.money_in_minor}
+        currency={currency}
+        change={change(summary.totals.money_in_minor, previous?.totals.money_in_minor)}
+      />
+      <Kpi
+        tone="out"
+        icon={<IconArrowRight className="kpi__arrow-out" />}
+        label="Total cash out"
+        minor={summary.totals.expenses_minor}
+        currency={currency}
+        change={change(summary.totals.expenses_minor, previous?.totals.expenses_minor)}
+      />
+      <Kpi
+        tone="brand"
+        icon={<IconCheckCircle />}
+        label="Closing balance"
+        minor={summary.closing_balance_minor}
+        currency={currency}
+        change={change(summary.closing_balance_minor, previous?.closing_balance_minor)}
+      />
+    </div>
+  );
+}
+
+/** Percent change against the previous period; null when there is nothing to compare. */
+function change(now: number, before: number | undefined): number | null {
+  if (before === undefined || before === 0) return null;
+  return ((now - before) / Math.abs(before)) * 100;
+}
+
+function Kpi({
+  tone,
+  icon,
+  label,
+  minor,
+  currency,
+  change: delta,
+  note,
+}: {
+  tone: 'info' | 'in' | 'out' | 'brand';
+  icon: ReactNode;
+  label: string;
+  minor: number;
+  currency: string;
+  change?: number | null;
+  note?: string;
+}) {
+  return (
+    <section className={`card kpi kpi--${tone}`} aria-label={label}>
+      <span className="kpi__icon" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="kpi__body">
+        <p className="kpi__label">{label}</p>
+        <p className="kpi__value">
+          {currency} {formatAmount(minor)}
+        </p>
+        <p className="kpi__note">
+          {note ??
+            (delta === null || delta === undefined
+              ? 'Nothing to compare with before'
+              : `${delta >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(delta))}% vs previous period`)}
+        </p>
       </div>
     </section>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Transactions
+// By category
 // ---------------------------------------------------------------------------
 
-const TX_PAGE = 20;
+function CategoryPanel({
+  inRows,
+  outRows,
+  currency,
+}: {
+  inRows: { label: string; amount_minor: number; count: number }[];
+  outRows: { label: string; amount_minor: number; count: number }[];
+  currency: string;
+}) {
+  const [side, setSide] = useState<'in' | 'out'>('in');
+  return (
+    <section className="card statement-panel" aria-labelledby="category-title">
+      <header className="statement-panel__head">
+        <h2 id="category-title" className="section-head__title">
+          Cash flow by category
+        </h2>
+        <SegmentedControl
+          label="Money in or out"
+          options={[
+            { value: 'in', label: 'Money in' },
+            { value: 'out', label: 'Money out' },
+          ]}
+          value={side}
+          onChange={setSide}
+        />
+      </header>
+      <CategoryBars rows={side === 'in' ? inRows : outRows} kind={side} currency={currency} />
+    </section>
+  );
+}
 
-function Transactions({ communityId, period }: { communityId: string; period: Period }) {
+// ---------------------------------------------------------------------------
+// The statement table
+// ---------------------------------------------------------------------------
+
+const PREFIX: Record<CashFlowItem['source']['type'], string> = {
+  contribution: 'CON',
+  income: 'INC',
+  expense: 'EXP',
+};
+
+function reference(item: CashFlowItem): string {
+  return (
+    item.payment_reference ??
+    `${PREFIX[item.source.type]}-${item.source.id.slice(0, 6).toUpperCase()}`
+  );
+}
+
+function categoryOf(item: CashFlowItem): string {
+  if (!item.category) return humanize(item.source.type);
+  const name = humanize(item.category);
+  return item.source.type === 'contribution' ? `${name} contribution` : name;
+}
+
+function TransactionTable({
+  items,
+  closing,
+  currency,
+}: {
+  items: CashFlowItem[];
+  closing: number;
+  currency: string;
+}) {
+  const searchId = useId();
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState(ALL);
+  const [method, setMethod] = useState(ALL);
   const [page, setPage] = useState(1);
-  const items = useCashFlowItems(communityId, {
-    from_date: `${period.from}-01`,
-    to_date: lastDay(period.to),
-    page,
-    page_size: TX_PAGE,
+
+  // Newest first: the newest row's balance is the closing balance, and each
+  // older row's is the one after it less what that later row moved.
+  const withBalance = useMemo(() => {
+    let balance = closing;
+    return items.map((item) => {
+      const row = { item, balance };
+      balance -= item.direction === 'in' ? item.amount_minor : -item.amount_minor;
+      return row;
+    });
+  }, [items, closing]);
+
+  const categories = [...new Set(items.map(categoryOf))].sort();
+  const methods = [
+    ...new Set(items.map((i) => i.payment_method).filter((m): m is string => !!m)),
+  ].sort();
+  const needle = search.trim().toLowerCase();
+  const filtered = withBalance.filter(({ item }) => {
+    if (category !== ALL && categoryOf(item) !== category) return false;
+    if (method !== ALL && item.payment_method !== method) return false;
+    if (!needle) return true;
+    return [item.narrative, item.party, reference(item), categoryOf(item)].some(
+      (text) => text !== null && text.toLowerCase().includes(needle),
+    );
   });
-  if (items.error) return <ErrorState message={errorMessage(items.error)} />;
-  if (!items.data) return <LoadingState />;
-  const { summary } = items.data;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
+  const current = Math.min(page, pageCount);
+  const visible = filtered.slice((current - 1) * ROWS_PER_PAGE, current * ROWS_PER_PAGE);
 
   return (
-    <section className="card table-card" aria-label="Transactions in the period">
-      <header className="table-card__head">
-        <p className="section-head__subtitle">
-          {summary.in_count} in ({formatAmount(summary.money_in_minor)} {summary.currency}) ·{' '}
-          {summary.out_count} out ({formatAmount(summary.money_out_minor)} {summary.currency})
-        </p>
+    <section className="card table-card" aria-labelledby="statement-table-title">
+      <header className="statement-table__head">
+        <h2 id="statement-table-title" className="section-head__title">
+          Cash flow statement
+        </h2>
+        <p className="table__muted statement-table__unit">Amounts in {currency}</p>
+        <div className="statement-table__filters">
+          <div className="search-field">
+            <label htmlFor={searchId} className="visually-hidden">
+              Search transactions
+            </label>
+            <span className="search-field__icon" aria-hidden="true">
+              <IconSearch />
+            </span>
+            <input
+              id={searchId}
+              type="search"
+              className="search-field__input"
+              placeholder="Search transactions..."
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <Select
+            label="Category"
+            value={category}
+            onChange={(event) => {
+              setCategory(event.target.value);
+              setPage(1);
+            }}
+            options={[
+              { value: ALL, label: 'All categories' },
+              ...categories.map((c) => ({ value: c, label: c })),
+            ]}
+          />
+          <Select
+            label="Payment method"
+            value={method}
+            onChange={(event) => {
+              setMethod(event.target.value);
+              setPage(1);
+            }}
+            options={[
+              { value: ALL, label: 'All payment methods' },
+              ...methods.map((m) => ({ value: m, label: humanize(m) })),
+            ]}
+          />
+        </div>
       </header>
-      {items.data.items.length === 0 ? (
+
+      {visible.length === 0 ? (
         <EmptyState
           icon={<IconHistory />}
-          title="No money moved in this period"
+          title={
+            items.length === 0 ? 'No money moved in this period' : 'Nothing matches these filters'
+          }
           message="Confirmed contributions, recorded income and approved expenses show here."
         />
       ) : (
         <div className="table-scroll">
-          <table className="table">
+          <table className="table statement-table">
             <thead>
               <tr>
                 <th scope="col">Date</th>
-                <th scope="col">What</th>
-                <th scope="col">Who</th>
-                <th scope="col">In</th>
-                <th scope="col">Out</th>
+                <th scope="col">Reference</th>
+                <th scope="col">Description</th>
+                <th scope="col">Category</th>
+                <th scope="col" className="statement-table__num">
+                  Cash in
+                </th>
+                <th scope="col" className="statement-table__num">
+                  Cash out
+                </th>
+                <th scope="col" className="statement-table__num">
+                  Balance
+                </th>
               </tr>
             </thead>
             <tbody>
-              {items.data.items.map((item) => (
+              {visible.map(({ item, balance }) => (
                 <tr key={`${item.source.type}-${item.source.id}`}>
-                  <td>{formatLongDate(item.date)}</td>
+                  <td className="statement-table__date">{formatDate(item.date)}</td>
+                  <td className="mono">{reference(item)}</td>
                   <td>
                     <span className="table__stack">
-                      <span>{item.narrative}</span>
-                      <span>
-                        <Badge tone={item.direction === 'in' ? 'success' : 'warning'}>
-                          {humanize(item.source.type)}
-                        </Badge>
-                      </span>
+                      <span>{item.party ?? item.narrative}</span>
+                      {item.party && <span className="table__muted">{item.narrative}</span>}
                     </span>
                   </td>
-                  <td>{item.party ?? '—'}</td>
-                  <td className="cash-box__in">
-                    {item.direction === 'in' ? formatAmount(item.amount_minor) : ''}
+                  <td>
+                    <Badge tone={item.direction === 'in' ? 'info' : 'warning'}>
+                      {categoryOf(item)}
+                    </Badge>
                   </td>
-                  <td className="cash-box__out">
-                    {item.direction === 'out' ? `(${formatAmount(item.amount_minor)})` : ''}
+                  <td className="statement-table__num cash-box__in">
+                    {item.direction === 'in' ? formatAmount(item.amount_minor) : '—'}
                   </td>
+                  <td className="statement-table__num cash-box__out">
+                    {item.direction === 'out' ? formatAmount(item.amount_minor) : '—'}
+                  </td>
+                  <td className="statement-table__num table__amount">{formatAmount(balance)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
       <footer className="table-footer">
         <p className="table-footer__summary">
-          Showing <strong>{items.data.items.length}</strong> of <strong>{items.data.total}</strong>{' '}
-          records
+          Showing{' '}
+          <strong>
+            {filtered.length === 0 ? 0 : (current - 1) * ROWS_PER_PAGE + 1}–
+            {(current - 1) * ROWS_PER_PAGE + visible.length}
+          </strong>{' '}
+          of <strong>{filtered.length}</strong> transactions
         </p>
-        <Pager
-          page={page}
-          pageCount={Math.max(1, Math.ceil(items.data.total / TX_PAGE))}
-          onChange={setPage}
-        />
+        <Pager page={current} pageCount={pageCount} onChange={setPage} />
       </footer>
     </section>
   );

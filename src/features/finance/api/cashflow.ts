@@ -82,3 +82,42 @@ export function useCashFlowItems(communityId: string | undefined, filters: CashF
     enabled: communityId !== undefined,
   });
 }
+
+/** Most records one statement loads; far beyond a community's money moves in five years. */
+const ALL_ITEMS_CAP_PAGES = 30;
+
+/**
+ * Every money record between two dates, newest first, gathered page by page
+ * (100 a page). The statement table needs all of them to filter, search and
+ * keep a true running balance in the browser.
+ */
+export function useAllCashFlowItems(
+  communityId: string | undefined,
+  fromDate: string,
+  toDate: string,
+) {
+  return useQuery({
+    queryKey: queryKeys.finance.cashFlowItems(communityId ?? '', {
+      all: true,
+      from_date: fromDate,
+      to_date: toDate,
+    }),
+    queryFn: async () => {
+      const items: CashFlowItem[] = [];
+      for (let page = 1; page <= ALL_ITEMS_CAP_PAGES; page += 1) {
+        const batch = await apiFetch<CashFlowItemList>(
+          `/communities/${communityId ?? ''}/cash-flow/items/?${toQuery({
+            from_date: fromDate,
+            to_date: toDate,
+            page,
+            page_size: 100,
+          })}`,
+        );
+        items.push(...batch.items);
+        if (items.length >= batch.total) break;
+      }
+      return items;
+    },
+    enabled: communityId !== undefined,
+  });
+}

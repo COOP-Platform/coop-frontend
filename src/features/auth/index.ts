@@ -2,7 +2,13 @@
 export { AuthLayout } from './components/AuthLayout';
 export { LoginForm } from './components/LoginForm';
 export { SignUpForm } from './components/SignUpForm';
-export { requireUser, requireCommunity, requireNoCommunity, redirectIfSignedIn } from './guards';
+export {
+  requireUser,
+  requireCommunity,
+  requireNoCommunity,
+  requirePermission,
+  redirectIfSignedIn,
+} from './guards';
 export { ForgotPasswordForm } from './components/ForgotPasswordForm';
 export { ResetPasswordForm } from './components/ResetPasswordForm';
 export {

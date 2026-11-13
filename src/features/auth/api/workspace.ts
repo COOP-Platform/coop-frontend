@@ -35,6 +35,21 @@ export function selectCommunity(communityId: string): void {
   listeners.forEach((listener) => listener());
 }
 
+/**
+ * The membership the user is working in: the one picked in the switcher, else
+ * the first active one, else any. Shared by `useWorkspace` and the route
+ * guards so a page and its guard always agree on the community.
+ */
+export function activeMembership(me: CurrentUser | undefined): MembershipSummary | undefined {
+  const memberships = usableMemberships(me);
+  const stored = read();
+  return (
+    memberships.find((m) => m.community.id === stored) ??
+    memberships.find((m) => m.status === 'active') ??
+    memberships[0]
+  );
+}
+
 export interface Workspace {
   me: CurrentUser | undefined;
   isPending: boolean;

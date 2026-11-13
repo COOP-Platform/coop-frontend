@@ -18,6 +18,7 @@ import {
   IconGrid,
   IconIdBadge,
   IconMail,
+  IconMegaphone,
   IconFlag,
   IconSend,
   IconUsers,
@@ -104,22 +105,47 @@ export const FINANCE_APP: AppDefinition = {
   ],
 };
 
+/*
+ * Meetings and events, one app (Sprint 3-5). Pages a member has no use for
+ * carry the permission that unlocks them; the backend enforces all of it.
+ */
+export const MEETINGS_APP: AppDefinition = {
+  id: 'meetings',
+  name: 'Meetings & Events',
+  description: 'Meetings, minutes, attendance, events and announcements',
+  icon: <IconCalendar />,
+  to: '/meetings',
+  nav: [
+    { label: 'Dashboard', icon: <IconGrid />, to: '/meetings', exact: true },
+    {
+      label: 'Meetings',
+      icon: <IconChat />,
+      to: '/meetings/list',
+      permission: 'meeting.view',
+    },
+    {
+      label: 'Events',
+      icon: <IconCalendar />,
+      to: '/meetings/events',
+      permission: 'event.view',
+    },
+    {
+      label: 'Announcements',
+      icon: <IconMegaphone />,
+      to: '/meetings/announcements',
+      permission: 'announcement.view',
+    },
+    {
+      label: 'Reports',
+      icon: <IconBarChart />,
+      to: '/meetings/reports',
+      permission: 'meeting.view',
+    },
+  ],
+};
+
 /** Shown in the switcher as "coming soon" so the direction is visible. */
 const PLANNED_APPS: readonly AppDefinition[] = [
-  {
-    id: 'meetings',
-    name: 'Meetings',
-    description: 'Assemblies, minutes and attendance',
-    icon: <IconChat />,
-    nav: [],
-  },
-  {
-    id: 'events',
-    name: 'Events',
-    description: 'Community events and activities',
-    icon: <IconCalendar />,
-    nav: [],
-  },
   {
     id: 'voting',
     name: 'Voting',
@@ -136,4 +162,9 @@ const PLANNED_APPS: readonly AppDefinition[] = [
   },
 ];
 
-export const APPS: readonly AppDefinition[] = [COMMUNITY_APP, FINANCE_APP, ...PLANNED_APPS];
+export const APPS: readonly AppDefinition[] = [
+  COMMUNITY_APP,
+  FINANCE_APP,
+  MEETINGS_APP,
+  ...PLANNED_APPS,
+];

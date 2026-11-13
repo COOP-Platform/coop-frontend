@@ -1,0 +1,184 @@
+/* Meetings & Events app: minutes. */
+
+/* ---------- List (Minutes tab of /meetings/list) ---------- */
+
+.minutes-list__head {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.minutes-list__link {
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.minutes-list__link:hover,
+.minutes-list__link:focus-visible {
+  color: var(--color-brand);
+  text-decoration: underline;
+}
+
+.minutes-list__download {
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+/* ---------- One meeting's minutes ---------- */
+
+.minutes-tab,
+.minutes-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.minutes-view__record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.minutes-view__record .section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.minutes-view__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.minutes-view__section.table-card {
+  gap: 0;
+}
+
+.minutes-view__pad {
+  padding: 0 var(--space-8) var(--space-6);
+}
+
+.minutes-view__agenda,
+.minutes-view__decisions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.minutes-view__notes {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.minutes-view__decision-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.minutes-view__decision-title {
+  font-weight: 600;
+}
+
+.minutes-view__decision-detail {
+  margin: var(--space-1) 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Editor ---------- */
+
+.minutes-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.minutes-editor__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.minutes-editor__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.minutes-editor__help {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.minutes-editor__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.minutes-editor__item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.minutes-editor__number {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.minutes-editor__votes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.minutes-editor__action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.minutes-editor__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.minutes-editor__actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .minutes-editor__votes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .minutes-editor__votes > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .minutes-editor__action-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

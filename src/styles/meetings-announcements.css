@@ -1,0 +1,97 @@
+/* Meetings & Events app: announcements. */
+
+.announcement-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.announcement-card {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-5) var(--space-6);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.announcement-card:hover {
+  border-color: var(--color-brand);
+  box-shadow: var(--shadow-md);
+}
+
+.announcement-card:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.announcement-card--unread {
+  border-left: 4px solid var(--color-brand);
+  background-color: var(--color-brand-soft);
+}
+
+.announcement-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.announcement-card__dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--color-brand);
+}
+
+.announcement-card__title {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.announcement-card--unread .announcement-card__title {
+  font-weight: 700;
+}
+
+.announcement-card__badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.announcement-card__excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  white-space: pre-line;
+}
+
+.announcement-body {
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .announcement-card {
+    padding: var(--space-4);
+  }
+
+  .announcement-card__badges {
+    margin-left: 0;
+  }
+}

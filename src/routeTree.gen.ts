@@ -14,6 +14,7 @@ import { Route as CommunityRouteImport } from './routes/community';
 import { Route as FinanceRouteImport } from './routes/finance';
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password';
 import { Route as LoginRouteImport } from './routes/login';
+import { Route as MeetingsRouteImport } from './routes/meetings';
 import { Route as RegisterRouteImport } from './routes/register';
 import { Route as ResetPasswordRouteImport } from './routes/reset-password';
 import { Route as StatusRouteImport } from './routes/status';
@@ -34,6 +35,11 @@ import { Route as FinanceReportsRouteImport } from './routes/finance.reports';
 import { Route as FinanceSharesRouteImport } from './routes/finance.shares';
 import { Route as FinanceStatementsRouteImport } from './routes/finance.statements';
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations.accept';
+import { Route as MeetingsIndexRouteImport } from './routes/meetings.index';
+import { Route as MeetingsMeetingIdRouteImport } from './routes/meetings.$meetingId';
+import { Route as MeetingsAnnouncementsRouteImport } from './routes/meetings.announcements';
+import { Route as MeetingsListRouteImport } from './routes/meetings.list';
+import { Route as MeetingsReportsRouteImport } from './routes/meetings.reports';
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index';
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create';
 import { Route as ReviewPaymentRouteImport } from './routes/review.payment';
@@ -43,6 +49,8 @@ import { Route as CommunityMembersIndexRouteImport } from './routes/community.me
 import { Route as CommunityMembersMemberIdRouteImport } from './routes/community.members.$memberId';
 import { Route as CommunityPositionsIndexRouteImport } from './routes/community.positions.index';
 import { Route as CommunityPositionsPositionIdRouteImport } from './routes/community.positions.$positionId';
+import { Route as MeetingsEventsIndexRouteImport } from './routes/meetings.events.index';
+import { Route as MeetingsEventsEventIdRouteImport } from './routes/meetings.events.$eventId';
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -67,6 +75,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const MeetingsRoute = MeetingsRouteImport.update({
+  id: '/meetings',
+  path: '/meetings',
   getParentRoute: () => rootRouteImport,
 } as any);
 const RegisterRoute = RegisterRouteImport.update({
@@ -169,6 +182,31 @@ const InvitationsAcceptRoute = InvitationsAcceptRouteImport.update({
   path: '/invitations/accept',
   getParentRoute: () => rootRouteImport,
 } as any);
+const MeetingsIndexRoute = MeetingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MeetingsRoute,
+} as any);
+const MeetingsMeetingIdRoute = MeetingsMeetingIdRouteImport.update({
+  id: '/$meetingId',
+  path: '/$meetingId',
+  getParentRoute: () => MeetingsRoute,
+} as any);
+const MeetingsAnnouncementsRoute = MeetingsAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => MeetingsRoute,
+} as any);
+const MeetingsListRoute = MeetingsListRouteImport.update({
+  id: '/list',
+  path: '/list',
+  getParentRoute: () => MeetingsRoute,
+} as any);
+const MeetingsReportsRoute = MeetingsReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => MeetingsRoute,
+} as any);
 const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   id: '/onboarding/',
   path: '/onboarding/',
@@ -217,6 +255,16 @@ const CommunityPositionsPositionIdRoute =
     path: '/positions/$positionId',
     getParentRoute: () => CommunityRoute,
   } as any);
+const MeetingsEventsIndexRoute = MeetingsEventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => MeetingsRoute,
+} as any);
+const MeetingsEventsEventIdRoute = MeetingsEventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
+  getParentRoute: () => MeetingsRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
@@ -224,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/finance': typeof FinanceRouteWithChildren;
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
+  '/meetings': typeof MeetingsRouteWithChildren;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
@@ -242,17 +291,24 @@ export interface FileRoutesByFullPath {
   '/finance/shares': typeof FinanceSharesRoute;
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
+  '/meetings/$meetingId': typeof MeetingsMeetingIdRoute;
+  '/meetings/announcements': typeof MeetingsAnnouncementsRoute;
+  '/meetings/list': typeof MeetingsListRoute;
+  '/meetings/reports': typeof MeetingsReportsRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
   '/review/payment': typeof ReviewPaymentRoute;
   '/community/': typeof CommunityIndexRoute;
   '/finance/': typeof FinanceIndexRoute;
+  '/meetings/': typeof MeetingsIndexRoute;
   '/onboarding/': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
+  '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
   '/community/members/': typeof CommunityMembersIndexRoute;
   '/community/positions/': typeof CommunityPositionsIndexRoute;
+  '/meetings/events/': typeof MeetingsEventsIndexRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
@@ -276,17 +332,24 @@ export interface FileRoutesByTo {
   '/finance/shares': typeof FinanceSharesRoute;
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
+  '/meetings/$meetingId': typeof MeetingsMeetingIdRoute;
+  '/meetings/announcements': typeof MeetingsAnnouncementsRoute;
+  '/meetings/list': typeof MeetingsListRoute;
+  '/meetings/reports': typeof MeetingsReportsRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
   '/review/payment': typeof ReviewPaymentRoute;
   '/community': typeof CommunityIndexRoute;
   '/finance': typeof FinanceIndexRoute;
+  '/meetings': typeof MeetingsIndexRoute;
   '/onboarding': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
+  '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
   '/community/invitations': typeof CommunityInvitationsIndexRoute;
   '/community/members': typeof CommunityMembersIndexRoute;
   '/community/positions': typeof CommunityPositionsIndexRoute;
+  '/meetings/events': typeof MeetingsEventsIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -295,6 +358,7 @@ export interface FileRoutesById {
   '/finance': typeof FinanceRouteWithChildren;
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
+  '/meetings': typeof MeetingsRouteWithChildren;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
@@ -313,17 +377,24 @@ export interface FileRoutesById {
   '/finance/shares': typeof FinanceSharesRoute;
   '/finance/statements': typeof FinanceStatementsRoute;
   '/invitations/accept': typeof InvitationsAcceptRoute;
+  '/meetings/$meetingId': typeof MeetingsMeetingIdRoute;
+  '/meetings/announcements': typeof MeetingsAnnouncementsRoute;
+  '/meetings/list': typeof MeetingsListRoute;
+  '/meetings/reports': typeof MeetingsReportsRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
   '/review/payment': typeof ReviewPaymentRoute;
   '/community/': typeof CommunityIndexRoute;
   '/finance/': typeof FinanceIndexRoute;
+  '/meetings/': typeof MeetingsIndexRoute;
   '/onboarding/': typeof OnboardingIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
+  '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
   '/community/members/': typeof CommunityMembersIndexRoute;
   '/community/positions/': typeof CommunityPositionsIndexRoute;
+  '/meetings/events/': typeof MeetingsEventsIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -333,6 +404,7 @@ export interface FileRouteTypes {
     | '/finance'
     | '/forgot-password'
     | '/login'
+    | '/meetings'
     | '/register'
     | '/reset-password'
     | '/status'
@@ -351,17 +423,24 @@ export interface FileRouteTypes {
     | '/finance/shares'
     | '/finance/statements'
     | '/invitations/accept'
+    | '/meetings/$meetingId'
+    | '/meetings/announcements'
+    | '/meetings/list'
+    | '/meetings/reports'
     | '/onboarding/create'
     | '/review/payment'
     | '/community/'
     | '/finance/'
+    | '/meetings/'
     | '/onboarding/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
+    | '/meetings/events/$eventId'
     | '/community/invitations/'
     | '/community/members/'
-    | '/community/positions/';
+    | '/community/positions/'
+    | '/meetings/events/';
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
@@ -385,17 +464,24 @@ export interface FileRouteTypes {
     | '/finance/shares'
     | '/finance/statements'
     | '/invitations/accept'
+    | '/meetings/$meetingId'
+    | '/meetings/announcements'
+    | '/meetings/list'
+    | '/meetings/reports'
     | '/onboarding/create'
     | '/review/payment'
     | '/community'
     | '/finance'
+    | '/meetings'
     | '/onboarding'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
+    | '/meetings/events/$eventId'
     | '/community/invitations'
     | '/community/members'
-    | '/community/positions';
+    | '/community/positions'
+    | '/meetings/events';
   id:
     | '__root__'
     | '/'
@@ -403,6 +489,7 @@ export interface FileRouteTypes {
     | '/finance'
     | '/forgot-password'
     | '/login'
+    | '/meetings'
     | '/register'
     | '/reset-password'
     | '/status'
@@ -421,17 +508,24 @@ export interface FileRouteTypes {
     | '/finance/shares'
     | '/finance/statements'
     | '/invitations/accept'
+    | '/meetings/$meetingId'
+    | '/meetings/announcements'
+    | '/meetings/list'
+    | '/meetings/reports'
     | '/onboarding/create'
     | '/review/payment'
     | '/community/'
     | '/finance/'
+    | '/meetings/'
     | '/onboarding/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
+    | '/meetings/events/$eventId'
     | '/community/invitations/'
     | '/community/members/'
-    | '/community/positions/';
+    | '/community/positions/'
+    | '/meetings/events/';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -440,6 +534,7 @@ export interface RootRouteChildren {
   FinanceRoute: typeof FinanceRouteWithChildren;
   ForgotPasswordRoute: typeof ForgotPasswordRoute;
   LoginRoute: typeof LoginRoute;
+  MeetingsRoute: typeof MeetingsRouteWithChildren;
   RegisterRoute: typeof RegisterRoute;
   ResetPasswordRoute: typeof ResetPasswordRoute;
   StatusRoute: typeof StatusRoute;
@@ -484,6 +579,13 @@ declare module '@tanstack/react-router' {
       path: '/login';
       fullPath: '/login';
       preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/meetings': {
+      id: '/meetings';
+      path: '/meetings';
+      fullPath: '/meetings';
+      preLoaderRoute: typeof MeetingsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/register': {
@@ -626,6 +728,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvitationsAcceptRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/meetings/': {
+      id: '/meetings/';
+      path: '/';
+      fullPath: '/meetings/';
+      preLoaderRoute: typeof MeetingsIndexRouteImport;
+      parentRoute: typeof MeetingsRoute;
+    };
+    '/meetings/$meetingId': {
+      id: '/meetings/$meetingId';
+      path: '/$meetingId';
+      fullPath: '/meetings/$meetingId';
+      preLoaderRoute: typeof MeetingsMeetingIdRouteImport;
+      parentRoute: typeof MeetingsRoute;
+    };
+    '/meetings/announcements': {
+      id: '/meetings/announcements';
+      path: '/announcements';
+      fullPath: '/meetings/announcements';
+      preLoaderRoute: typeof MeetingsAnnouncementsRouteImport;
+      parentRoute: typeof MeetingsRoute;
+    };
+    '/meetings/list': {
+      id: '/meetings/list';
+      path: '/list';
+      fullPath: '/meetings/list';
+      preLoaderRoute: typeof MeetingsListRouteImport;
+      parentRoute: typeof MeetingsRoute;
+    };
+    '/meetings/reports': {
+      id: '/meetings/reports';
+      path: '/reports';
+      fullPath: '/meetings/reports';
+      preLoaderRoute: typeof MeetingsReportsRouteImport;
+      parentRoute: typeof MeetingsRoute;
+    };
     '/onboarding/': {
       id: '/onboarding/';
       path: '/onboarding';
@@ -688,6 +825,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/community/positions/$positionId';
       preLoaderRoute: typeof CommunityPositionsPositionIdRouteImport;
       parentRoute: typeof CommunityRoute;
+    };
+    '/meetings/events/': {
+      id: '/meetings/events/';
+      path: '/events';
+      fullPath: '/meetings/events/';
+      preLoaderRoute: typeof MeetingsEventsIndexRouteImport;
+      parentRoute: typeof MeetingsRoute;
+    };
+    '/meetings/events/$eventId': {
+      id: '/meetings/events/$eventId';
+      path: '/events/$eventId';
+      fullPath: '/meetings/events/$eventId';
+      preLoaderRoute: typeof MeetingsEventsEventIdRouteImport;
+      parentRoute: typeof MeetingsRoute;
     };
   }
 }
@@ -755,12 +906,37 @@ const FinanceRouteChildren: FinanceRouteChildren = {
 const FinanceRouteWithChildren =
   FinanceRoute._addFileChildren(FinanceRouteChildren);
 
+interface MeetingsRouteChildren {
+  MeetingsMeetingIdRoute: typeof MeetingsMeetingIdRoute;
+  MeetingsAnnouncementsRoute: typeof MeetingsAnnouncementsRoute;
+  MeetingsListRoute: typeof MeetingsListRoute;
+  MeetingsReportsRoute: typeof MeetingsReportsRoute;
+  MeetingsIndexRoute: typeof MeetingsIndexRoute;
+  MeetingsEventsEventIdRoute: typeof MeetingsEventsEventIdRoute;
+  MeetingsEventsIndexRoute: typeof MeetingsEventsIndexRoute;
+}
+
+const MeetingsRouteChildren: MeetingsRouteChildren = {
+  MeetingsMeetingIdRoute: MeetingsMeetingIdRoute,
+  MeetingsAnnouncementsRoute: MeetingsAnnouncementsRoute,
+  MeetingsListRoute: MeetingsListRoute,
+  MeetingsReportsRoute: MeetingsReportsRoute,
+  MeetingsIndexRoute: MeetingsIndexRoute,
+  MeetingsEventsEventIdRoute: MeetingsEventsEventIdRoute,
+  MeetingsEventsIndexRoute: MeetingsEventsIndexRoute,
+};
+
+const MeetingsRouteWithChildren = MeetingsRoute._addFileChildren(
+  MeetingsRouteChildren,
+);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CommunityRoute: CommunityRouteWithChildren,
   FinanceRoute: FinanceRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  MeetingsRoute: MeetingsRouteWithChildren,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   StatusRoute: StatusRoute,

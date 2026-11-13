@@ -1,0 +1,178 @@
+/* Meetings & Events app: reports. */
+
+/* ---------- Attendance register ---------- */
+
+.register-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.register-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The letter carries the meaning; the colour only helps scanning. */
+.register-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.register-mark--present {
+  background-color: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.register-mark--apology {
+  background-color: var(--color-accent-soft);
+  color: var(--color-warning);
+}
+
+.register-mark--absent {
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.register-mark--none {
+  border-color: var(--color-border);
+  color: var(--color-text-subtle);
+}
+
+.register-scroll:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+
+.register-table th,
+.register-table td {
+  padding: var(--space-3) var(--space-4);
+}
+
+.register-table__member {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 11rem;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.register-table thead .register-table__member {
+  background-color: var(--color-surface-tint);
+}
+
+.register-table tbody tr:nth-child(even) .register-table__member {
+  background-color: color-mix(in srgb, var(--color-surface-muted) 60%, var(--color-surface));
+}
+
+.register-table tbody th.register-table__member {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+}
+
+.register-table__meeting {
+  min-width: 5.5rem;
+  max-width: 8rem;
+  text-align: center !important;
+  vertical-align: bottom;
+}
+
+.register-table__date,
+.register-table__title {
+  display: block;
+}
+
+.register-table__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+}
+
+.register-table__cell {
+  text-align: center;
+}
+
+.register-table__count {
+  font-size: var(--text-sm);
+}
+
+/* ---------- Summary ---------- */
+
+.report-summary-grid {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.report-summary-grid tbody th {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  background-color: transparent;
+}
+
+.report-summary-grid tfoot th,
+.report-summary-grid tfoot td {
+  border-top: 1px solid var(--color-border);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-text);
+}
+
+.report-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 10rem;
+}
+
+.report-bar__track {
+  flex: 1;
+  height: 0.5rem;
+  border-radius: 999px;
+  background-color: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+.report-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--color-success);
+}
+
+/* Quorum not reached: also said in words in the Quorum column. */
+.report-bar__fill--short {
+  background-color: var(--color-accent-deep);
+}
+
+.report-bar__value {
+  min-width: 3.25rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

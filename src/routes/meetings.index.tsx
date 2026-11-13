@@ -1,17 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ComingSoon, PageHeader } from '@/components/ui';
+import { AppDashboard } from '@/features/meetings/components/AppDashboard';
 
-// Placeholder: replaced by the page that owns this route.
 export const Route = createFileRoute('/meetings/')({
-  component: Page,
+  component: AppDashboard,
 });
-
-function Page() {
-  return (
-    <div className="page">
-      <PageHeader title="Meetings & Events" />
-      <ComingSoon title="Meetings & Events are on the way" message="This page is being built." />
-    </div>
-  );
-}

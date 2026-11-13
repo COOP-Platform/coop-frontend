@@ -1,17 +1,28 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ComingSoon, PageHeader } from '@/components/ui';
+import { ReportsPage } from '@/features/meetings/components/ReportsPage';
 
-// Placeholder: replaced by the page that owns this route.
+interface Search {
+  /** The attendance register when absent. */
+  tab?: 'summary';
+}
+
 export const Route = createFileRoute('/meetings/reports')({
+  validateSearch: (raw: Record<string, unknown>): Search => ({
+    tab: raw.tab === 'summary' ? 'summary' : undefined,
+  }),
   component: Page,
 });
 
 function Page() {
+  const { tab } = Route.useSearch();
+  const navigate = Route.useNavigate();
   return (
-    <div className="page">
-      <PageHeader title="Reports" />
-      <ComingSoon title="Reports are on the way" message="This page is being built." />
-    </div>
+    <ReportsPage
+      tab={tab ?? 'register'}
+      onTabChange={(next) =>
+        void navigate({ search: { tab: next === 'summary' ? 'summary' : undefined } })
+      }
+    />
   );
 }

@@ -1,17 +1,28 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ComingSoon, PageHeader } from '@/components/ui';
+import { MeetingsListPage } from '@/features/meetings/components/MeetingsListPage';
 
-// Placeholder: replaced by the page that owns this route.
+interface Search {
+  /** Upcoming when absent. */
+  tab?: 'past' | 'minutes';
+}
+
 export const Route = createFileRoute('/meetings/list')({
+  validateSearch: (raw: Record<string, unknown>): Search => ({
+    tab: raw.tab === 'past' || raw.tab === 'minutes' ? raw.tab : undefined,
+  }),
   component: Page,
 });
 
 function Page() {
+  const { tab } = Route.useSearch();
+  const navigate = Route.useNavigate();
   return (
-    <div className="page">
-      <PageHeader title="Meetings" />
-      <ComingSoon title="Meetings are on the way" message="This page is being built." />
-    </div>
+    <MeetingsListPage
+      tab={tab ?? 'upcoming'}
+      onTabChange={(next) =>
+        void navigate({ search: { tab: next === 'upcoming' ? undefined : next } })
+      }
+    />
   );
 }

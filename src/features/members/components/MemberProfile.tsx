@@ -2,7 +2,6 @@ import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import {
-  Avatar,
   Badge,
   Button,
   Dialog,
@@ -18,6 +17,7 @@ import {
   IconTile,
   IconUser,
   IconUserMinus,
+  IconUserCog,
   IconUserPen,
   IconUsers,
   LoadingState,
@@ -39,8 +39,14 @@ import { useMemberDirectory } from '../api/directory';
 import type { LifecycleAction } from '../api/lifecycle';
 import { useLeaveCommunity, useMemberLifecycle } from '../api/lifecycle';
 import { useMemberCategories } from '../api/member-categories';
+import type { MemberProfile } from '../api/profile';
+import { useMemberProfile } from '../api/profile';
+import { EditOwnProfileDialog } from './profile/EditOwnProfileDialog';
+import { ManageMembershipDialog } from './profile/ManageMembershipDialog';
+import { ProfilePhoto } from './profile/ProfilePhoto';
+import { StatusHistory } from './profile/StatusHistory';
 
-type PendingAction = 'assign' | LifecycleAction | 'leave' | null;
+type PendingAction = 'assign' | 'editOwn' | 'manage' | LifecycleAction | 'leave' | null;
 
 /**
  * A member's details, shown in the side panel over the Members list.
@@ -84,18 +90,24 @@ function Profile({ member }: { member: DirectoryMember }) {
   const revoke = useRevokePosition(communityId ?? '');
   const categories = useMemberCategories(communityId);
   const category = categories.data?.find((c) => c.id === member.categoryId);
+  const profile = useMemberProfile(communityId, member.membershipId);
+  const details = profile.data;
 
   const isActive = member.status === 'active';
   const canAssign = can('position.assign');
   const canSuspend = can('member.suspend') && !member.isYou;
   const canRemove = can('member.remove') && !member.isYou;
+  const canManage =
+    !member.isYou &&
+    (can('member.update') ||
+      (can('member.suspend') && (isActive || member.status === 'suspended')));
   const granted = new Set(member.permissions);
 
   return (
     <div className="member-panel">
       <header className="details__head">
         <div className="member-panel__identity">
-          <Avatar name={member.fullName} tone="brand" size="lg" square />
+          <ProfilePhoto communityId={communityId ?? ''} name={member.fullName} profile={details} />
           <div>
             <p className="section-head__eyebrow">Member</p>
             <div className="position-panel__title-row">
@@ -127,8 +139,24 @@ function Profile({ member }: { member: DirectoryMember }) {
         </div>
       </header>
 
-      {(canAssign || canSuspend || canRemove || member.isYou) && (
+      {(canAssign || canSuspend || canRemove || canManage || member.isYou) && (
         <div className="position-panel__actions">
+          {member.isYou && details && (
+            <Button size="sm" inline icon={<IconUserPen />} onClick={() => setPending('editOwn')}>
+              Edit my profile
+            </Button>
+          )}
+          {canManage && details && (
+            <Button
+              variant="secondary"
+              size="sm"
+              inline
+              icon={<IconUserCog />}
+              onClick={() => setPending('manage')}
+            >
+              Edit membership
+            </Button>
+          )}
           {canAssign && (
             <Button size="sm" inline icon={<IconUserPen />} onClick={() => setPending('assign')}>
               Assign Position
@@ -229,7 +257,7 @@ function Profile({ member }: { member: DirectoryMember }) {
         <dl className="panel-facts">
           <div>
             <dt>Category</dt>
-            <dd>{category?.name ?? '—'}</dd>
+            <dd>{details?.member_category.name ?? category?.name ?? '—'}</dd>
           </div>
           <div>
             <dt>Joined</dt>
@@ -247,6 +275,12 @@ function Profile({ member }: { member: DirectoryMember }) {
           </div>
         </dl>
       </section>
+
+      <AboutSection profile={details} error={profile.error} isPending={profile.isPending} />
+
+      {details?.can_view_history && communityId && (
+        <StatusHistory communityId={communityId} membershipId={member.membershipId} />
+      )}
 
       {member.permissions.length > 0 && (
         <section className="panel-section" aria-labelledby="member-permissions-title">
@@ -282,12 +316,101 @@ function Profile({ member }: { member: DirectoryMember }) {
           onClose={() => setPending(null)}
         />
       )}
+      {details && communityId && (
+        <>
+          <EditOwnProfileDialog
+            communityId={communityId}
+            profile={details}
+            open={pending === 'editOwn'}
+            onClose={() => setPending(null)}
+          />
+          <ManageMembershipDialog
+            communityId={communityId}
+            profile={details}
+            open={pending === 'manage'}
+            onClose={() => setPending(null)}
+          />
+        </>
+      )}
       <StatusDialog
         member={member}
-        action={pending === 'assign' ? null : pending}
+        action={
+          pending === 'assign' || pending === 'editOwn' || pending === 'manage' ? null : pending
+        }
         onClose={() => setPending(null)}
       />
     </div>
+  );
+}
+
+/** Family relationship, emergency contact and notes, as far as the viewer may see them. */
+function AboutSection({
+  profile,
+  error,
+  isPending,
+}: {
+  profile: MemberProfile | undefined;
+  error: unknown;
+  isPending: boolean;
+}) {
+  return (
+    <section className="panel-section" aria-labelledby="member-about-title">
+      <h3 id="member-about-title" className="panel-section__title">
+        About
+      </h3>
+      {isPending ? (
+        <p className="table__muted">Loading profile…</p>
+      ) : !profile ? (
+        <p className="form-error">{errorMessage(error)}</p>
+      ) : (
+        <>
+          <dl className="panel-facts">
+            <div>
+              <dt>Family relationship</dt>
+              <dd>
+                {profile.family_relationship ?? <span className="table__muted">Not given</span>}
+              </dd>
+            </div>
+            {profile.private_visible && (
+              <div>
+                <dt>Emergency contact</dt>
+                <dd>
+                  {profile.emergency_contact_name || profile.emergency_contact_phone ? (
+                    <>
+                      {profile.emergency_contact_name}
+                      {profile.emergency_contact_phone && (
+                        <>
+                          {profile.emergency_contact_name && <br />}
+                          <a href={`tel:${profile.emergency_contact_phone}`}>
+                            {profile.emergency_contact_phone}
+                          </a>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <span className="table__muted">
+                      {profile.is_you ? 'Not added yet — use Edit my profile' : 'Not given'}
+                    </span>
+                  )}
+                </dd>
+              </div>
+            )}
+            {profile.private_visible && profile.notes && !profile.is_you && (
+              <div className="panel-facts__wide">
+                <dt>Notes</dt>
+                <dd className="profile-notes">{profile.notes}</dd>
+              </div>
+            )}
+          </dl>
+          {!profile.private_visible && (
+            <p className="table__muted">
+              Emergency contact details are only shown to the member and to people who manage
+              members.
+            </p>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 

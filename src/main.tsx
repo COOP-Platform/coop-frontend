@@ -17,6 +17,11 @@ import './styles/meetings-events.css';
 import './styles/meetings-announcements.css';
 import './styles/meetings-reports.css';
 import './styles/meetings-dashboard.css';
+// Ticket close-out, one file per area.
+import './styles/closeout-settings.css';
+import './styles/closeout-access.css';
+import './styles/closeout-platform.css';
+import './styles/closeout-member-profile.css';
 
 const router = createRouter({
   routeTree,

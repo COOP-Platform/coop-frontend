@@ -16,6 +16,31 @@ interface Draft {
   form: WizardForm;
   step: StepIndex;
   savedAt: string;
+  /**
+   * 2 added the Positions step at index 1. A draft without it was saved by
+   * the three-step wizard, so its step is moved along one past Basics.
+   */
+  version?: number;
+}
+
+const DRAFT_VERSION = 2;
+
+/** Drop keys an older wizard stored that the form no longer has (`committee`). */
+function knownFields(saved: Partial<WizardForm> | undefined): Partial<WizardForm> {
+  if (saved === undefined) {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(saved).filter(([field]) => field in INITIAL_FORM),
+  ) as Partial<WizardForm>;
+}
+
+function restoredStep(draft: Partial<Draft>): StepIndex {
+  const step = draft.step ?? 0;
+  if (draft.version === undefined && step > 0) {
+    return Math.min(step + 1, 3) as StepIndex;
+  }
+  return step;
 }
 
 function key(): string | null {
@@ -36,9 +61,10 @@ export function loadDraft(): Draft | null {
     const draft = JSON.parse(raw) as Partial<Draft>;
     // Merged over the defaults so a draft saved before a field existed still loads.
     return {
-      form: { ...INITIAL_FORM, ...draft.form },
-      step: draft.step ?? 0,
+      form: { ...INITIAL_FORM, ...knownFields(draft.form) },
+      step: restoredStep(draft),
       savedAt: draft.savedAt ?? new Date().toISOString(),
+      version: DRAFT_VERSION,
     };
   } catch {
     return null;
@@ -51,7 +77,12 @@ export function saveDraft(form: WizardForm, step: StepIndex): boolean {
   if (storageKey === null) {
     return false;
   }
-  const draft: Draft = { form, step, savedAt: new Date().toISOString() };
+  const draft: Draft = {
+    form,
+    step,
+    savedAt: new Date().toISOString(),
+    version: DRAFT_VERSION,
+  };
   try {
     localStorage.setItem(storageKey, JSON.stringify(draft));
     return true;

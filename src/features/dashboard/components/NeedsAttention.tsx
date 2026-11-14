@@ -6,11 +6,13 @@ import {
   IconAlertTriangle,
   IconBellAlert,
   IconMail,
+  IconPencil,
   IconTile,
   IconUserOff,
   IconUsers,
 } from '@/components/ui';
 import type { DirectoryMember, Invitation } from '@/features/members';
+import { listInWords } from '@/features/communities/components/settings/profile';
 import type { Position } from '@/features/positions';
 
 /** Pending invitations inside this window of their expiry get flagged. */
@@ -23,6 +25,11 @@ interface NeedsAttentionProps {
   membersWithoutPosition: readonly DirectoryMember[];
   canInvite: boolean;
   canAssign: boolean;
+  /**
+   * Parts of the community profile still empty ("vision", "logo"), for
+   * members who may edit it. The setup hub: finishing it is one click away.
+   */
+  incompleteProfile?: readonly string[];
   /** "Not needed" on the vacant seats — the community decided it has no committee. */
   onDismissVacant?: () => void;
 }
@@ -46,6 +53,7 @@ export function NeedsAttention({
   membersWithoutPosition,
   canInvite,
   canAssign,
+  incompleteProfile = [],
   onDismissVacant,
 }: NeedsAttentionProps) {
   const navigate = useNavigate();
@@ -58,6 +66,19 @@ export function NeedsAttention({
   );
 
   const items: AttentionItem[] = [];
+
+  if (incompleteProfile.length > 0) {
+    items.push({
+      id: 'profile',
+      icon: <IconPencil />,
+      title: 'Finish your community profile',
+      detail: `Still missing: ${listInWords(incompleteProfile)}. Members read it to learn who you are.`,
+      action: {
+        label: 'Complete Profile',
+        onClick: () => void navigate({ to: '/community/settings', search: { edit: true } }),
+      },
+    });
+  }
 
   if (unsent.length > 0) {
     items.push({

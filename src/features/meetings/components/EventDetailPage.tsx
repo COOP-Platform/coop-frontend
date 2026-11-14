@@ -28,7 +28,7 @@ import { eventTypeLabel, formatEventWhen, useCancelEvent, useEvent } from '../ap
 import type { CommunityEvent } from '../api/events';
 import { EventBudget } from './EventBudget';
 import { EventFormDialog, HIDDEN_EXPLAINER } from './EventFormDialog';
-import { EventRsvp } from './EventRsvp';
+import { EventResponses, EventRsvp } from './EventRsvp';
 import { EventStatusBadge, HiddenBadge } from './EventsPage';
 
 function BackLink() {
@@ -88,7 +88,7 @@ function EventDetails({
   notice,
   onNotice,
 }: {
-  event: CommunityEvent;
+  event: CommunityEventDetail;
   notice: string | null;
   onNotice: (message: string | null) => void;
 }) {
@@ -295,7 +295,7 @@ function CancelEventDialog({
   onDone,
 }: {
   open: boolean;
-  event: CommunityEvent;
+  event: CommunityEventDetail;
   onClose: () => void;
   onDone: (message: string) => void;
 }) {

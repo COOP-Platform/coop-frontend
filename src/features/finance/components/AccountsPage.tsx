@@ -537,29 +537,31 @@ function BalanceHistory({ account }: { account: Account }) {
       ) : balances.data.items.length === 0 ? (
         <EmptyState icon={<IconHistory />} title="No balances yet" message="Enter the first one." />
       ) : (
-        <table className="table table--compact">
-          <thead>
-            <tr>
-              <th scope="col">As of</th>
-              <th scope="col" className="statement-table__num">
-                Balance (RWF)
-              </th>
-              <th scope="col">Entered by</th>
-            </tr>
-          </thead>
-          <tbody>
-            {balances.data.items.map((b) => (
-              <tr key={b.id}>
-                <td>
-                  {formatDate(b.as_of)}
-                  {b.note && <span className="table__muted"> · {b.note}</span>}
-                </td>
-                <td className="statement-table__num">{formatAmount(b.balance_minor)}</td>
-                <td>{b.entered_by?.full_name ?? '—'}</td>
+        <div className="table-scroll">
+          <table className="table table--compact">
+            <thead>
+              <tr>
+                <th scope="col">As of</th>
+                <th scope="col" className="statement-table__num">
+                  Balance (RWF)
+                </th>
+                <th scope="col">Entered by</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {balances.data.items.map((b) => (
+                <tr key={b.id}>
+                  <td>
+                    {formatDate(b.as_of)}
+                    {b.note && <span className="table__muted"> · {b.note}</span>}
+                  </td>
+                  <td className="statement-table__num">{formatAmount(b.balance_minor)}</td>
+                  <td>{b.entered_by?.full_name ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

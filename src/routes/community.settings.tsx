@@ -1,20 +1,38 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ComingSoon, PageHeader } from '@/components/ui';
+import { CommunitySettings } from '@/features/communities/components/settings/CommunitySettings';
+
+interface SettingsSearch {
+  /** Which section is open; the community profile when absent. */
+  tab?: 'privacy';
+  /** Profile edit mode. Ignored for members who may not edit. */
+  edit?: boolean;
+}
 
 export const Route = createFileRoute('/community/settings')({
+  validateSearch: (raw: Record<string, unknown>): SettingsSearch => ({
+    tab: raw.tab === 'privacy' ? 'privacy' : undefined,
+    edit: raw.edit === true || raw.edit === 'true' ? true : undefined,
+  }),
   component: SettingsPage,
 });
 
-// Not built yet — the sidebar entry lands on an honest "coming soon".
 function SettingsPage() {
+  const { tab, edit } = Route.useSearch();
+  const navigate = Route.useNavigate();
+
   return (
-    <div className="page">
-      <PageHeader title="Settings" subtitle="Community profile, charter and preferences." />
-      <ComingSoon
-        title="Settings are on the way"
-        message="Soon you'll manage your community's profile and preferences here."
-      />
-    </div>
+    <CommunitySettings
+      tab={tab ?? 'profile'}
+      editing={edit === true}
+      onNavigate={(next) =>
+        void navigate({
+          search: {
+            tab: next.tab === 'privacy' ? 'privacy' : undefined,
+            edit: next.editing ? true : undefined,
+          },
+        })
+      }
+    />
   );
 }

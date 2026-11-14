@@ -15,9 +15,11 @@ import { Route as FinanceRouteImport } from './routes/finance';
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as MeetingsRouteImport } from './routes/meetings';
+import { Route as PlatformRouteImport } from './routes/platform';
 import { Route as RegisterRouteImport } from './routes/register';
 import { Route as ResetPasswordRouteImport } from './routes/reset-password';
 import { Route as StatusRouteImport } from './routes/status';
+import { Route as AccountPasswordRouteImport } from './routes/account.password';
 import { Route as CommunityIndexRouteImport } from './routes/community.index';
 import { Route as CommunityReportsRouteImport } from './routes/community.reports';
 import { Route as CommunitySettingsRouteImport } from './routes/community.settings';
@@ -42,6 +44,8 @@ import { Route as MeetingsListRouteImport } from './routes/meetings.list';
 import { Route as MeetingsReportsRouteImport } from './routes/meetings.reports';
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index';
 import { Route as OnboardingCreateRouteImport } from './routes/onboarding.create';
+import { Route as PlatformIndexRouteImport } from './routes/platform.index';
+import { Route as PlatformAuditLogRouteImport } from './routes/platform.audit-log';
 import { Route as ReviewPaymentRouteImport } from './routes/review.payment';
 import { Route as CommunityInvitationsIndexRouteImport } from './routes/community.invitations.index';
 import { Route as CommunityInvitationsNewRouteImport } from './routes/community.invitations.new';
@@ -51,6 +55,8 @@ import { Route as CommunityPositionsIndexRouteImport } from './routes/community.
 import { Route as CommunityPositionsPositionIdRouteImport } from './routes/community.positions.$positionId';
 import { Route as MeetingsEventsIndexRouteImport } from './routes/meetings.events.index';
 import { Route as MeetingsEventsEventIdRouteImport } from './routes/meetings.events.$eventId';
+import { Route as PlatformCommunitiesIndexRouteImport } from './routes/platform.communities.index';
+import { Route as PlatformCommunitiesCommunityIdRouteImport } from './routes/platform.communities.$communityId';
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -82,6 +88,11 @@ const MeetingsRoute = MeetingsRouteImport.update({
   path: '/meetings',
   getParentRoute: () => rootRouteImport,
 } as any);
+const PlatformRoute = PlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -95,6 +106,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const StatusRoute = StatusRouteImport.update({
   id: '/status',
   path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const AccountPasswordRoute = AccountPasswordRouteImport.update({
+  id: '/account/password',
+  path: '/account/password',
   getParentRoute: () => rootRouteImport,
 } as any);
 const CommunityIndexRoute = CommunityIndexRouteImport.update({
@@ -217,6 +233,16 @@ const OnboardingCreateRoute = OnboardingCreateRouteImport.update({
   path: '/onboarding/create',
   getParentRoute: () => rootRouteImport,
 } as any);
+const PlatformIndexRoute = PlatformIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PlatformRoute,
+} as any);
+const PlatformAuditLogRoute = PlatformAuditLogRouteImport.update({
+  id: '/audit-log',
+  path: '/audit-log',
+  getParentRoute: () => PlatformRoute,
+} as any);
 const ReviewPaymentRoute = ReviewPaymentRouteImport.update({
   id: '/review/payment',
   path: '/review/payment',
@@ -265,6 +291,18 @@ const MeetingsEventsEventIdRoute = MeetingsEventsEventIdRouteImport.update({
   path: '/events/$eventId',
   getParentRoute: () => MeetingsRoute,
 } as any);
+const PlatformCommunitiesIndexRoute =
+  PlatformCommunitiesIndexRouteImport.update({
+    id: '/communities/',
+    path: '/communities/',
+    getParentRoute: () => PlatformRoute,
+  } as any);
+const PlatformCommunitiesCommunityIdRoute =
+  PlatformCommunitiesCommunityIdRouteImport.update({
+    id: '/communities/$communityId',
+    path: '/communities/$communityId',
+    getParentRoute: () => PlatformRoute,
+  } as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
@@ -273,9 +311,11 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/meetings': typeof MeetingsRouteWithChildren;
+  '/platform': typeof PlatformRouteWithChildren;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
+  '/account/password': typeof AccountPasswordRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/finance/accounts': typeof FinanceAccountsRoute;
@@ -296,19 +336,23 @@ export interface FileRoutesByFullPath {
   '/meetings/list': typeof MeetingsListRoute;
   '/meetings/reports': typeof MeetingsReportsRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
+  '/platform/audit-log': typeof PlatformAuditLogRoute;
   '/review/payment': typeof ReviewPaymentRoute;
   '/community/': typeof CommunityIndexRoute;
   '/finance/': typeof FinanceIndexRoute;
   '/meetings/': typeof MeetingsIndexRoute;
   '/onboarding/': typeof OnboardingIndexRoute;
+  '/platform/': typeof PlatformIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
   '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
+  '/platform/communities/$communityId': typeof PlatformCommunitiesCommunityIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
   '/community/members/': typeof CommunityMembersIndexRoute;
   '/community/positions/': typeof CommunityPositionsIndexRoute;
   '/meetings/events/': typeof MeetingsEventsIndexRoute;
+  '/platform/communities/': typeof PlatformCommunitiesIndexRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
@@ -317,6 +361,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
+  '/account/password': typeof AccountPasswordRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/finance/accounts': typeof FinanceAccountsRoute;
@@ -337,19 +382,23 @@ export interface FileRoutesByTo {
   '/meetings/list': typeof MeetingsListRoute;
   '/meetings/reports': typeof MeetingsReportsRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
+  '/platform/audit-log': typeof PlatformAuditLogRoute;
   '/review/payment': typeof ReviewPaymentRoute;
   '/community': typeof CommunityIndexRoute;
   '/finance': typeof FinanceIndexRoute;
   '/meetings': typeof MeetingsIndexRoute;
   '/onboarding': typeof OnboardingIndexRoute;
+  '/platform': typeof PlatformIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
   '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
+  '/platform/communities/$communityId': typeof PlatformCommunitiesCommunityIdRoute;
   '/community/invitations': typeof CommunityInvitationsIndexRoute;
   '/community/members': typeof CommunityMembersIndexRoute;
   '/community/positions': typeof CommunityPositionsIndexRoute;
   '/meetings/events': typeof MeetingsEventsIndexRoute;
+  '/platform/communities': typeof PlatformCommunitiesIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -359,9 +408,11 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/meetings': typeof MeetingsRouteWithChildren;
+  '/platform': typeof PlatformRouteWithChildren;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
+  '/account/password': typeof AccountPasswordRoute;
   '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/finance/accounts': typeof FinanceAccountsRoute;
@@ -382,19 +433,23 @@ export interface FileRoutesById {
   '/meetings/list': typeof MeetingsListRoute;
   '/meetings/reports': typeof MeetingsReportsRoute;
   '/onboarding/create': typeof OnboardingCreateRoute;
+  '/platform/audit-log': typeof PlatformAuditLogRoute;
   '/review/payment': typeof ReviewPaymentRoute;
   '/community/': typeof CommunityIndexRoute;
   '/finance/': typeof FinanceIndexRoute;
   '/meetings/': typeof MeetingsIndexRoute;
   '/onboarding/': typeof OnboardingIndexRoute;
+  '/platform/': typeof PlatformIndexRoute;
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
   '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
+  '/platform/communities/$communityId': typeof PlatformCommunitiesCommunityIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
   '/community/members/': typeof CommunityMembersIndexRoute;
   '/community/positions/': typeof CommunityPositionsIndexRoute;
   '/meetings/events/': typeof MeetingsEventsIndexRoute;
+  '/platform/communities/': typeof PlatformCommunitiesIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -405,9 +460,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/meetings'
+    | '/platform'
     | '/register'
     | '/reset-password'
     | '/status'
+    | '/account/password'
     | '/community/reports'
     | '/community/settings'
     | '/finance/accounts'
@@ -428,19 +485,23 @@ export interface FileRouteTypes {
     | '/meetings/list'
     | '/meetings/reports'
     | '/onboarding/create'
+    | '/platform/audit-log'
     | '/review/payment'
     | '/community/'
     | '/finance/'
     | '/meetings/'
     | '/onboarding/'
+    | '/platform/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
     | '/meetings/events/$eventId'
+    | '/platform/communities/$communityId'
     | '/community/invitations/'
     | '/community/members/'
     | '/community/positions/'
-    | '/meetings/events/';
+    | '/meetings/events/'
+    | '/platform/communities/';
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
@@ -449,6 +510,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/status'
+    | '/account/password'
     | '/community/reports'
     | '/community/settings'
     | '/finance/accounts'
@@ -469,19 +531,23 @@ export interface FileRouteTypes {
     | '/meetings/list'
     | '/meetings/reports'
     | '/onboarding/create'
+    | '/platform/audit-log'
     | '/review/payment'
     | '/community'
     | '/finance'
     | '/meetings'
     | '/onboarding'
+    | '/platform'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
     | '/meetings/events/$eventId'
+    | '/platform/communities/$communityId'
     | '/community/invitations'
     | '/community/members'
     | '/community/positions'
-    | '/meetings/events';
+    | '/meetings/events'
+    | '/platform/communities';
   id:
     | '__root__'
     | '/'
@@ -490,9 +556,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/meetings'
+    | '/platform'
     | '/register'
     | '/reset-password'
     | '/status'
+    | '/account/password'
     | '/community/reports'
     | '/community/settings'
     | '/finance/accounts'
@@ -513,19 +581,23 @@ export interface FileRouteTypes {
     | '/meetings/list'
     | '/meetings/reports'
     | '/onboarding/create'
+    | '/platform/audit-log'
     | '/review/payment'
     | '/community/'
     | '/finance/'
     | '/meetings/'
     | '/onboarding/'
+    | '/platform/'
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
     | '/meetings/events/$eventId'
+    | '/platform/communities/$communityId'
     | '/community/invitations/'
     | '/community/members/'
     | '/community/positions/'
-    | '/meetings/events/';
+    | '/meetings/events/'
+    | '/platform/communities/';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -535,9 +607,11 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute;
   LoginRoute: typeof LoginRoute;
   MeetingsRoute: typeof MeetingsRouteWithChildren;
+  PlatformRoute: typeof PlatformRouteWithChildren;
   RegisterRoute: typeof RegisterRoute;
   ResetPasswordRoute: typeof ResetPasswordRoute;
   StatusRoute: typeof StatusRoute;
+  AccountPasswordRoute: typeof AccountPasswordRoute;
   InvitationsAcceptRoute: typeof InvitationsAcceptRoute;
   OnboardingCreateRoute: typeof OnboardingCreateRoute;
   ReviewPaymentRoute: typeof ReviewPaymentRoute;
@@ -588,6 +662,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeetingsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/platform': {
+      id: '/platform';
+      path: '/platform';
+      fullPath: '/platform';
+      preLoaderRoute: typeof PlatformRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/register': {
       id: '/register';
       path: '/register';
@@ -607,6 +688,13 @@ declare module '@tanstack/react-router' {
       path: '/status';
       fullPath: '/status';
       preLoaderRoute: typeof StatusRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/account/password': {
+      id: '/account/password';
+      path: '/account/password';
+      fullPath: '/account/password';
+      preLoaderRoute: typeof AccountPasswordRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/community/': {
@@ -777,6 +865,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingCreateRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/platform/': {
+      id: '/platform/';
+      path: '/';
+      fullPath: '/platform/';
+      preLoaderRoute: typeof PlatformIndexRouteImport;
+      parentRoute: typeof PlatformRoute;
+    };
+    '/platform/audit-log': {
+      id: '/platform/audit-log';
+      path: '/audit-log';
+      fullPath: '/platform/audit-log';
+      preLoaderRoute: typeof PlatformAuditLogRouteImport;
+      parentRoute: typeof PlatformRoute;
+    };
     '/review/payment': {
       id: '/review/payment';
       path: '/review/payment';
@@ -839,6 +941,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/meetings/events/$eventId';
       preLoaderRoute: typeof MeetingsEventsEventIdRouteImport;
       parentRoute: typeof MeetingsRoute;
+    };
+    '/platform/communities/': {
+      id: '/platform/communities/';
+      path: '/communities';
+      fullPath: '/platform/communities/';
+      preLoaderRoute: typeof PlatformCommunitiesIndexRouteImport;
+      parentRoute: typeof PlatformRoute;
+    };
+    '/platform/communities/$communityId': {
+      id: '/platform/communities/$communityId';
+      path: '/communities/$communityId';
+      fullPath: '/platform/communities/$communityId';
+      preLoaderRoute: typeof PlatformCommunitiesCommunityIdRouteImport;
+      parentRoute: typeof PlatformRoute;
     };
   }
 }
@@ -930,6 +1046,24 @@ const MeetingsRouteWithChildren = MeetingsRoute._addFileChildren(
   MeetingsRouteChildren,
 );
 
+interface PlatformRouteChildren {
+  PlatformAuditLogRoute: typeof PlatformAuditLogRoute;
+  PlatformIndexRoute: typeof PlatformIndexRoute;
+  PlatformCommunitiesCommunityIdRoute: typeof PlatformCommunitiesCommunityIdRoute;
+  PlatformCommunitiesIndexRoute: typeof PlatformCommunitiesIndexRoute;
+}
+
+const PlatformRouteChildren: PlatformRouteChildren = {
+  PlatformAuditLogRoute: PlatformAuditLogRoute,
+  PlatformIndexRoute: PlatformIndexRoute,
+  PlatformCommunitiesCommunityIdRoute: PlatformCommunitiesCommunityIdRoute,
+  PlatformCommunitiesIndexRoute: PlatformCommunitiesIndexRoute,
+};
+
+const PlatformRouteWithChildren = PlatformRoute._addFileChildren(
+  PlatformRouteChildren,
+);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CommunityRoute: CommunityRouteWithChildren,
@@ -937,9 +1071,11 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   MeetingsRoute: MeetingsRouteWithChildren,
+  PlatformRoute: PlatformRouteWithChildren,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   StatusRoute: StatusRoute,
+  AccountPasswordRoute: AccountPasswordRoute,
   InvitationsAcceptRoute: InvitationsAcceptRoute,
   OnboardingCreateRoute: OnboardingCreateRoute,
   ReviewPaymentRoute: ReviewPaymentRoute,

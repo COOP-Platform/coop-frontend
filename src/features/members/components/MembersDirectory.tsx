@@ -33,6 +33,7 @@ import { PositionIcon } from '@/lib/positions';
 
 import type { DirectoryMember } from '../api/directory';
 import { useMemberDirectory } from '../api/directory';
+import { useMemberCategories } from '../api/member-categories';
 import { MemberPanel } from './MemberProfile';
 import type { MembersSearch, MemberStatusFilter } from '../search';
 
@@ -73,6 +74,9 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
     }
   }
   const positions = usePositions(communityId, can('position.view'));
+  // Contribution category per member (S1-17): memberships carry only its id.
+  const categories = useMemberCategories(communityId);
+  const categoryName = new Map((categories.data ?? []).map((c) => [c.id, c.name]));
 
   const members = directory.members;
   const status: MemberStatusFilter = search.status ?? 'all';
@@ -104,11 +108,12 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
   function exportCsv() {
     downloadCsv(
       `${membership?.community.slug ?? 'community'}-members.csv`,
-      ['Name', 'Email', 'Positions', 'Status', 'Joined'],
+      ['Name', 'Email', 'Positions', 'Contribution category', 'Status', 'Joined'],
       filtered.map((m) => [
         m.fullName,
         m.email ?? '',
         m.positions.map((p) => p.name).join('; '),
+        categoryName.get(m.categoryId) ?? '',
         m.status,
         m.joinDate ?? '',
       ]),
@@ -270,6 +275,7 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
                 <colgroup>
                   <col className="table--roster__member" />
                   <col className="table--roster__position" />
+                  <col className="table--roster__category" />
                   <col className="table--roster__status" />
                 </colgroup>
               )}
@@ -277,6 +283,7 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
                 <tr>
                   <th scope="col">Member</th>
                   <th scope="col">Position</th>
+                  <th scope="col">Contribution category</th>
                   <th scope="col" className={isAdmin ? undefined : 'table__status-col'}>
                     Status
                   </th>
@@ -293,6 +300,7 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
                     onOpen={() => onSearchChange({ ...search, selected: member.membershipId })}
                     key={member.membershipId}
                     member={member}
+                    category={categoryName.get(member.categoryId)}
                     showActions={isAdmin}
                     committeeSeats={
                       member.positionsKnown
@@ -361,11 +369,14 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
 function MemberRow({
   onOpen,
   member,
+  category,
   showActions,
   committeeSeats,
 }: {
   onOpen: () => void;
   member: DirectoryMember;
+  /** The contribution category's name; undefined while loading or unknown. */
+  category: string | undefined;
   showActions: boolean;
   /** Seat names from the committee, when the member's own positions are not readable. */
   committeeSeats?: readonly string[];
@@ -409,6 +420,13 @@ function MemberRow({
           <span className="table__muted">
             {committeeSeats !== undefined ? 'Member' : (plain?.name ?? 'No position')}
           </span>
+        )}
+      </td>
+      <td>
+        {category ? (
+          <span className="table__muted">{category}</span>
+        ) : (
+          <span className="table__muted">—</span>
         )}
       </td>
       <td className={showActions ? undefined : 'table__status-col'}>

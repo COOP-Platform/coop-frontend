@@ -1,0 +1,221 @@
+/* Ticket close-out: platform. */
+
+/* ---------- Create wizard: starting positions (#18) and privacy note (#20) ---------- */
+
+.wizard-positions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.wizard-positions:disabled {
+  opacity: 0.6;
+}
+
+.wizard-position {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.wizard-position.is-admin {
+  border-color: var(--color-brand);
+  background-color: var(--color-brand-soft);
+}
+
+.wizard-position__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3) var(--space-4);
+}
+
+.wizard-position__name {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.wizard-position__admin {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wizard-position__admin input {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--color-brand);
+}
+
+.wizard-position__admin:has(input:disabled) {
+  cursor: not-allowed;
+  color: var(--color-text-subtle);
+}
+
+.wizard-position__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.wizard-position__remove:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.wizard-position__description,
+.wizard-position__note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.wizard-position__note {
+  font-style: italic;
+}
+
+.wizard-position__toggle {
+  align-self: flex-start;
+}
+
+.wizard-positions__status {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.wizard-positions__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-warning-fill) 40%, transparent);
+  border-radius: var(--radius-md);
+  background-color: var(--color-attention-bg);
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.wizard-positions__confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.wizard-privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-tint);
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.wizard-privacy > svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: var(--color-brand);
+}
+
+.wizard-privacy strong {
+  color: var(--color-text);
+}
+
+/* ---------- Platform Administrator area (#21) ---------- */
+
+.platform-back {
+  white-space: nowrap;
+}
+
+.platform-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.platform-nowrap {
+  white-space: nowrap;
+}
+
+.platform-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-4);
+}
+
+.platform-filters {
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.platform-filters > .field {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.platform-filters__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.platform-support-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.platform-support-form__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.platform-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.platform-facts {
+  display: grid;
+  gap: var(--space-4) var(--space-6);
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  margin: 0;
+}
+
+.platform-facts dt {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.platform-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .platform-support-form__actions > * {
+    width: 100%;
+  }
+}

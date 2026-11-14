@@ -171,6 +171,14 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
+/** `accounts.views.ChangePasswordView`: a fresh token pair replaces the old one. */
+export interface ChangePasswordResponse {
+  detail: string;
+  access: string;
+  refresh: string;
+  must_change_password: boolean;
+}
+
 /**
  * A voluntary change by someone who knows their current password.
  * `POST /auth/change-password/` replaced the PATCH to `/users/{id}/` this
@@ -179,7 +187,7 @@ export interface ChangePasswordRequest {
 export function useChangePassword() {
   return useMutation({
     mutationFn: (payload: ChangePasswordRequest) =>
-      apiFetch<{ detail: string }>('/auth/change-password/', {
+      apiFetch<ChangePasswordResponse>('/auth/change-password/', {
         method: 'POST',
         body: payload,
       }),

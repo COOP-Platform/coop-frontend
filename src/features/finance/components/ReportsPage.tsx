@@ -2,7 +2,9 @@ import { useState } from 'react';
 
 import {
   Button,
+  EmptyState,
   ErrorState,
+  IconBarChart,
   IconDownload,
   IconFile,
   Input,
@@ -191,6 +193,24 @@ function ReportBody({
           ];
 
   const noun = kind === 'contributions' ? 'payment' : kind === 'income' ? 'record' : 'expense';
+
+  if (data.count === 0) {
+    const what =
+      kind === 'contributions'
+        ? 'No confirmed contributions'
+        : kind === 'income'
+          ? 'No income recorded'
+          : 'No approved expenses';
+    return (
+      <section className="card">
+        <EmptyState
+          icon={<IconBarChart />}
+          title={`${what} in this period`}
+          message="Pick a longer period, or come back once money has been recorded."
+        />
+      </section>
+    );
+  }
 
   return (
     <div className="money-section">

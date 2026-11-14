@@ -17,6 +17,7 @@ export interface Membership {
   shares?: number;
   status: MembershipStatus;
   join_date: string | null;
+  /** Emergency contact and notes are null unless this is you or you hold `member.update`. */
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   family_relationship: string | null;

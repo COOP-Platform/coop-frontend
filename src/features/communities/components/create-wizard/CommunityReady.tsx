@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router';
 import type { ReactNode, RefObject } from 'react';
 
 import {
@@ -6,7 +7,9 @@ import {
   IconArrowRight,
   IconCheckCircle,
   IconImage,
+  IconUserPlus,
 } from '@/components/ui';
+import { selectCommunity } from '@/features/auth';
 
 import type { Community, FoundCommunityResult } from '../../api/communities';
 import { communityTypeLabel } from './community-types';
@@ -55,8 +58,8 @@ interface CommunityReadyProps {
   /** What the server saved — not what the form held — so the summary is the record. */
   community: Community;
   imageErrors: FoundCommunityResult['imageErrors'];
-  /** What the founder chose; the response does not echo it. */
-  withCommittee: boolean;
+  /** The starting positions the founder sent; the response does not echo them. */
+  positions: string[];
   /** Focused on arrival, so screen readers announce the outcome. */
   titleRef?: RefObject<HTMLHeadingElement>;
   onContinue: () => void;
@@ -67,10 +70,11 @@ const IMAGE_LABEL = { logo: 'logo', cover: 'cover banner' } as const;
 export function CommunityReady({
   community,
   imageErrors,
-  withCommittee,
+  positions,
   titleRef,
   onContinue,
 }: CommunityReadyProps) {
+  const navigate = useNavigate();
   const failedImages = (Object.keys(imageErrors) as (keyof typeof imageErrors)[]).filter(
     (kind) => imageErrors[kind] !== undefined,
   );
@@ -115,8 +119,8 @@ export function CommunityReady({
         <Section index={1} title="Community Basics">
           <Item label="Community name">{community.name}</Item>
           <Item label="Community type">{communityTypeLabel(community.type)}</Item>
-          <Item label="Leadership committee">
-            {withCommittee ? 'Suggested officer positions created' : 'No committee'}
+          <Item label="Positions" wide>
+            {positions.length > 0 ? positions.join(', ') : NOT_SET}
           </Item>
           <Item label="Description" wide>
             {community.description ?? NOT_SET}
@@ -167,10 +171,24 @@ export function CommunityReady({
           <p className="ready-card__note">
             <IconCheckCircle /> All details validated and saved to your community profile.
           </p>
-          <Button variant="primary" inline onClick={onContinue}>
-            Go to your dashboard
-            <IconArrowRight />
-          </Button>
+          <div className="ready-card__actions">
+            <Button
+              variant="secondary"
+              inline
+              icon={<IconUserPlus />}
+              onClick={() => {
+                // Work in the new community, then open the invite form there.
+                selectCommunity(community.id);
+                void navigate({ to: '/community/invitations', search: { invite: true } });
+              }}
+            >
+              Invite members
+            </Button>
+            <Button variant="primary" inline onClick={onContinue}>
+              Go to your dashboard
+              <IconArrowRight />
+            </Button>
+          </div>
         </footer>
       </div>
     </div>

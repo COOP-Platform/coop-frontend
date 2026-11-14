@@ -52,10 +52,13 @@ export function RecordExpenseDialog({
   open,
   onClose,
   onRecorded,
+  budgetId,
 }: {
   open: boolean;
   onClose: () => void;
   onRecorded: (expense: ExpenseDetail) => void;
+  /** Start with this budget chosen, e.g. from an event's page. */
+  budgetId?: string;
 }) {
   return (
     <Dialog
@@ -69,7 +72,7 @@ export function RecordExpenseDialog({
         </IconTile>
       }
     >
-      {open && <ExpenseForm onClose={onClose} onRecorded={onRecorded} />}
+      {open && <ExpenseForm onClose={onClose} onRecorded={onRecorded} budgetId={budgetId} />}
     </Dialog>
   );
 }
@@ -77,9 +80,11 @@ export function RecordExpenseDialog({
 function ExpenseForm({
   onClose,
   onRecorded,
+  budgetId: startBudget,
 }: {
   onClose: () => void;
   onRecorded: (expense: ExpenseDetail) => void;
+  budgetId?: string;
 }) {
   const { communityId } = useWorkspace();
   const record = useRecordExpense();
@@ -92,7 +97,7 @@ function ExpenseForm({
   const [spentAt, setSpentAt] = useState(today());
   const [method, setMethod] = useState<PaymentMethod>('mobile_money');
   const [reference, setReference] = useState('');
-  const [budgetId, setBudgetId] = useState('');
+  const [budgetId, setBudgetId] = useState(startBudget ?? '');
   const [memo, setMemo] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});

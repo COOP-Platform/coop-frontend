@@ -50,8 +50,10 @@ interface RecordContributionDialogProps {
 export interface RecordInitial {
   type: ContributionType;
   /** `YYYY-MM`. */
-  period: string;
-  amountMinor: number;
+  period?: string;
+  amountMinor?: number;
+  /** For a dedicated payment: the contribution it goes to. */
+  campaignId?: string;
 }
 
 /**
@@ -105,7 +107,7 @@ function RecordContributionForm({
   const today = new Date();
   const monthly = shares?.owed_per_month_minor;
   const [type, setType] = useState<ContributionType>(initial?.type ?? 'monthly');
-  const [campaignId, setCampaignId] = useState('');
+  const [campaignId, setCampaignId] = useState(initial?.campaignId ?? '');
   const [period, setPeriod] = useState(initial?.period ?? toIsoMonth(today));
   const [amount, setAmount] = useState(toInput(initial?.amountMinor ?? monthly));
   const [paidAt, setPaidAt] = useState(toIsoDate(today));

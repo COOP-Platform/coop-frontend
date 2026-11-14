@@ -26,6 +26,7 @@ import { formatLongDate } from '@/lib/format/date';
 
 import { eventTypeLabel, formatEventWhen, useCancelEvent, useEvent } from '../api/events';
 import type { CommunityEventDetail } from '../api/events';
+import { EventBudget } from './EventBudget';
 import { EventFormDialog, HIDDEN_EXPLAINER } from './EventFormDialog';
 import { EventResponses, EventRsvp } from './EventRsvp';
 import { EventStatusBadge, HiddenBadge } from './EventsPage';
@@ -196,18 +197,6 @@ function EventDetails({
               <dt>Guests</dt>
               <dd>{event.guests_allowed ? 'Members may bring guests' : 'Members only'}</dd>
             </div>
-            {event.budget && (
-              <div>
-                <dt>Budget</dt>
-                <dd>
-                  {can('finance.budget.view') ? (
-                    <Link to="/finance/planning">{event.budget.title}</Link>
-                  ) : (
-                    event.budget.title
-                  )}
-                </dd>
-              </div>
-            )}
           </dl>
           {event.description && <p className="event-detail__description">{event.description}</p>}
         </section>
@@ -249,6 +238,8 @@ function EventDetails({
         </section>
 
         <EventResponses event={event} />
+
+        <EventBudget event={event} />
 
         {event.hidden_from && event.hidden_from.length > 0 && (
           <section className="card event-detail__hidden" aria-labelledby="event-hidden">

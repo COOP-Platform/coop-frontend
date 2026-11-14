@@ -111,7 +111,7 @@ export function BudgetsPage({
 export type BudgetsSectionName = Section;
 
 /** A thin bar for "x of y", with the numbers written beside it. */
-function Meter({
+export function Meter({
   label,
   value,
   of,
@@ -484,14 +484,17 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
   );
 }
 
-function BudgetFormDialog({
+export function BudgetFormDialog({
   open,
   budget,
+  event,
   onClose,
   onSaved,
 }: {
   open: boolean;
   budget: BudgetDetail | null;
+  /** Planning a new budget from an event's page: it belongs to that event. */
+  event?: { id: string; title: string };
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -499,7 +502,7 @@ function BudgetFormDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title={budget ? 'Edit budget' : 'New budget'}
+      title={budget ? 'Edit budget' : event ? `Budget for ${event.title}` : 'New budget'}
       subtitle="List what it will cost, line by line. The planned total is the sum of the lines."
       icon={
         <IconTile tone="brand" round>
@@ -507,7 +510,7 @@ function BudgetFormDialog({
         </IconTile>
       }
     >
-      {open && <BudgetForm budget={budget} onClose={onClose} onSaved={onSaved} />}
+      {open && <BudgetForm budget={budget} forEvent={event} onClose={onClose} onSaved={onSaved} />}
     </Dialog>
   );
 }
@@ -521,17 +524,19 @@ interface LineDraft {
 
 function BudgetForm({
   budget,
+  forEvent,
   onClose,
   onSaved,
 }: {
   budget: BudgetDetail | null;
+  forEvent?: { id: string; title: string };
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
   const { communityId } = useWorkspace();
   const create = useCreateBudget();
   const update = useUpdateBudget();
-  const [title, setTitle] = useState(budget?.title ?? '');
+  const [title, setTitle] = useState(budget?.title ?? (forEvent ? `${forEvent.title} budget` : ''));
   const [description, setDescription] = useState(budget?.description ?? '');
   const [lines, setLines] = useState<LineDraft[]>(
     budget
@@ -580,7 +585,8 @@ function BudgetForm({
       setErrors({
         title: f.title,
         lines: f.lines,
-        form: f.title || f.lines ? undefined : errorMessage(error),
+        // An event problem (cancelled, already has a budget) is shown as a whole.
+        form: f.title || f.lines ? undefined : (f.event_id ?? errorMessage(error)),
       });
     };
     if (budget) {
@@ -589,7 +595,10 @@ function BudgetForm({
         { onSuccess: () => onSaved(`${body.title} saved.`), onError },
       );
     } else {
-      create.mutate(body, { onSuccess: () => onSaved(`${body.title} created.`), onError });
+      create.mutate(forEvent ? { ...body, event_id: forEvent.id } : body, {
+        onSuccess: () => onSaved(`${body.title} created.`),
+        onError,
+      });
     }
   }
 
@@ -866,7 +875,7 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
   );
 }
 
-function CampaignFormDialog({
+export function CampaignFormDialog({
   open,
   campaign,
   budgetId,

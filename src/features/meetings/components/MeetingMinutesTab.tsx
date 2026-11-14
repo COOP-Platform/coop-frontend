@@ -19,8 +19,14 @@ import { ApiError, apiDownload } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatLongDate } from '@/lib/format/date';
 
-import { minutesPdfName, minutesPdfPath, useFinaliseMinutes, useMinutes } from '../api/minutes';
-import type { MinutesDetail } from '../api/minutes';
+import {
+  minutesPdfName,
+  minutesPdfPath,
+  useFinaliseMinutes,
+  useMinutes,
+  useSetActionItemDone,
+} from '../api/minutes';
+import type { ActionItem, MinutesDetail } from '../api/minutes';
 import { MinutesEditor } from './MinutesEditor';
 import { DecisionResultBadge, MinutesStatusBadge } from './MinutesStatusBadge';
 
@@ -140,6 +146,7 @@ function MinutesView({
   const [confirming, setConfirming] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
   const draft = minutes.status === 'draft';
   const cancelled = minutes.meeting.status === 'cancelled';
 
@@ -326,11 +333,7 @@ function MinutesView({
                       )}
                     </td>
                     <td>
-                      {a.done ? (
-                        <span className="table__success">Done</span>
-                      ) : (
-                        <span className="table__muted">Not yet</span>
-                      )}
+                      <ActionItemDone item={a} minutesId={minutes.id} onError={setToggleError} />
                     </td>
                   </tr>
                 ))}
@@ -338,6 +341,7 @@ function MinutesView({
             </table>
           </div>
         )}
+        {toggleError && <p className="form-error minutes-view__pad">{toggleError}</p>}
       </section>
 
       {confirming && (
@@ -351,6 +355,63 @@ function MinutesView({
         />
       )}
     </article>
+  );
+}
+
+/**
+ * Whether an action item is done. Its assignee, and whoever writes minutes or
+ * manages meetings, can tick it off (or open it again) here, even once the
+ * minutes are final.
+ */
+function ActionItemDone({
+  item,
+  minutesId,
+  onError,
+}: {
+  item: ActionItem;
+  minutesId: string;
+  onError: (message: string | null) => void;
+}) {
+  const { communityId } = useWorkspace();
+  const toggle = useSetActionItemDone();
+  const who = item.done_by ? ` by ${item.done_by.full_name}` : '';
+  const when = item.done_at ? ` on ${formatDate(item.done_at)}` : '';
+  const marked = item.done && (who || when) ? `Marked${who}${when}` : null;
+
+  if (!item.can_mark_done) {
+    return item.done ? (
+      <span className="table__stack">
+        <span className="table__success">Done</span>
+        {marked && <span className="table__muted">{marked}</span>}
+      </span>
+    ) : (
+      <span className="table__muted">Not yet</span>
+    );
+  }
+
+  return (
+    <span className="table__stack">
+      <label className="minutes-done-toggle">
+        <input
+          type="checkbox"
+          checked={item.done}
+          disabled={toggle.isPending || !communityId}
+          onChange={(e) => {
+            if (!communityId) return;
+            onError(null);
+            toggle.mutate(
+              { communityId, meetingId: minutesId, itemId: item.id, done: e.target.checked },
+              { onError: (error) => onError(errorMessage(error)) },
+            );
+          }}
+        />
+        <span className={item.done ? 'table__success' : undefined}>
+          {item.done ? 'Done' : 'Mark done'}
+        </span>
+        <span className="visually-hidden">: {item.title}</span>
+      </label>
+      {marked && <span className="table__muted">{marked}</span>}
+    </span>
   );
 }
 

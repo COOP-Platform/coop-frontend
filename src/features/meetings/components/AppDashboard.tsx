@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import {
   Badge,
   EmptyState,
-  IconBarChart,
   IconCalendar,
   IconChat,
   IconFile,
@@ -20,14 +19,10 @@ import { useAnnouncements, useUnreadAnnouncementsCount } from '../api/announceme
 import { formatEventWhen, myRsvpLabel, useEvents } from '../api/events';
 import { MEETING_TYPE_LABELS, isUpcoming, useMeetings } from '../api/meetings';
 import { useMinutesList } from '../api/minutes';
-import { useMeetingReport } from '../api/reports';
-
-const THIS_YEAR = new Date().getFullYear();
 
 /**
  * The Meetings & Events dashboard: the next meeting, upcoming events with the
- * member's own answer, unread announcements, the latest minutes and this
- * year's attendance. Each panel links to the page that owns it; every member
+ * member's own answer, unread announcements and the latest minutes. Each panel links to the page that owns it; every member
  * sees it, and panels a member may not read are left out.
  */
 export function AppDashboard() {
@@ -57,7 +52,7 @@ export function AppDashboard() {
         subtitle={`What is coming up${membership ? ` in ${membership.community.name}` : ''}, and what you may have missed.`}
       />
 
-      <div className="stat-grid stat-grid--four">
+      <div className="stat-grid stat-grid--three">
         <StatCard
           label="Next meeting"
           value={next ? formatRelative(next.scheduled_at) : 'None planned'}
@@ -84,11 +79,6 @@ export function AppDashboard() {
           tone={unreadCount > 0 ? 'warning' : 'info'}
           emphasis={unreadCount > 0}
         />
-        {communityId && can('meeting.view') ? (
-          <AttendanceCard communityId={communityId} />
-        ) : (
-          <StatCard label="Attendance" value="—" caption="" icon={<IconBarChart />} tone="info" />
-        )}
       </div>
 
       <div className="meetings-dashboard">
@@ -204,24 +194,6 @@ export function AppDashboard() {
         </Panel>
       </div>
     </div>
-  );
-}
-
-function AttendanceCard({ communityId }: { communityId: string }) {
-  const report = useMeetingReport(communityId, 'attendance', THIS_YEAR, null);
-  const average = report.data?.summary.average_attendance;
-  return (
-    <StatCard
-      label={`Attendance in ${THIS_YEAR}`}
-      value={average === null || average === undefined ? '—' : `${Math.round(average)}%`}
-      caption={
-        report.data
-          ? `Over ${report.data.summary.recorded} recorded meeting${report.data.summary.recorded === 1 ? '' : 's'}`
-          : 'Loading…'
-      }
-      icon={<IconBarChart />}
-      tone="brand"
-    />
   );
 }
 

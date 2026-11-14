@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { SetupLayout } from '@/components/layout/SetupLayout';
@@ -18,21 +18,26 @@ import type { CreateCommunityRequest, FoundCommunityResult } from '../../api/com
 import { CommunityReady } from './CommunityReady';
 import { clearDraft, loadDraft, saveDraft } from './draft';
 import { dataUrlToBlob } from './images';
-import { buildPayload, FIELD_STEP, INITIAL_FORM, STEPS, validateStep } from './model';
+import { buildPayload, FIELD_STEP, INITIAL_FORM, LAST_STEP, STEPS, validateStep } from './model';
 import type { StepIndex, WizardErrors, WizardForm } from './model';
+import { positionsErrorMessage } from './positions';
+import { PositionsStep } from './PositionsStep';
 import { BasicsStep, BrandingStep, PurposeStep } from './steps';
 import type { StepProps } from './steps';
 import { WizardStepper } from './WizardStepper';
 
 const STEP_COPY: Record<StepIndex, { subtitle: string }> = {
   0: {
-    subtitle: 'Step 1 of 3: Provide the core details to establish your group.',
+    subtitle: 'Step 1 of 4: Provide the core details to establish your group.',
   },
   1: {
-    subtitle: "Step 2 of 3: Define your community's guiding purpose and official contact channels.",
+    subtitle: 'Step 2 of 4: Set up the positions your community starts with and what each can do.',
   },
   2: {
-    subtitle: 'Step 3 of 3: Add a visual identity and localization preferences, then launch.',
+    subtitle: "Step 3 of 4: Define your community's guiding purpose and official contact channels.",
+  },
+  3: {
+    subtitle: 'Step 4 of 4: Add a visual identity and localization preferences, then launch.',
   },
 };
 
@@ -40,7 +45,9 @@ const STEP_COPY: Record<StepIndex, { subtitle: string }> = {
 const API_FIELD: Record<keyof WizardForm, keyof CreateCommunityRequest> = {
   name: 'name',
   type: 'type',
-  committee: 'with_committee',
+  positions: 'positions',
+  positionsType: 'positions',
+  positionsEdited: 'positions',
   description: 'description',
   vision: 'vision',
   mission: 'mission',
@@ -57,9 +64,12 @@ const API_FIELD: Record<keyof WizardForm, keyof CreateCommunityRequest> = {
 
 const STEP_BODY: Record<StepIndex, (props: StepProps) => JSX.Element> = {
   0: BasicsStep,
-  1: PurposeStep,
-  2: BrandingStep,
+  1: PositionsStep,
+  2: PurposeStep,
+  3: BrandingStep,
 };
+
+const ALL_STEPS: readonly StepIndex[] = [0, 1, 2, 3];
 
 const AUTOSAVE_DELAY_MS = 600;
 
@@ -114,18 +124,20 @@ export function CreateCommunityWizard() {
     headingRef.current?.focus({ preventScroll: true });
   }, [step, created]);
 
-  function update<K extends keyof WizardForm>(key: K, value: WizardForm[K]) {
+  // Stable, because the positions step calls it from an effect.
+  const update = useCallback(<K extends keyof WizardForm>(key: K, value: WizardForm[K]) => {
     setForm((previous) => ({ ...previous, [key]: value }));
     setSavedNotice(false);
     const apiField = API_FIELD[key];
-    if (serverErrors[apiField] !== undefined) {
-      setServerErrors((previous) => {
-        const next = { ...previous };
-        delete next[apiField];
-        return next;
-      });
-    }
-  }
+    setServerErrors((previous) => {
+      if (previous[apiField] === undefined) {
+        return previous;
+      }
+      const next = { ...previous };
+      delete next[apiField];
+      return next;
+    });
+  }, []);
 
   function errorsFor(index: StepIndex): WizardErrors {
     const client = attempted.has(index) ? validateStep(index, form) : {};
@@ -156,7 +168,7 @@ export function CreateCommunityWizard() {
   async function submit() {
     // Every step, not just this one: a draft restored from an older version
     // of the form could carry a value the earlier steps would now refuse.
-    for (const index of [0, 1, 2] as const) {
+    for (const index of ALL_STEPS) {
       if (Object.keys(validateStep(index, form)).length > 0) {
         setAttempted((previous) => new Set(previous).add(index));
         goTo(index);
@@ -191,6 +203,13 @@ export function CreateCommunityWizard() {
               unmapped.push(message);
             }
           }
+          // One object per position is not a "field error" the client can
+          // read on its own; dig the sentence out so it still lands on step 2.
+          const positionsBody = (error.body as { positions?: unknown } | null)?.positions;
+          const positionsMessage = positionsErrorMessage(positionsBody);
+          if (positionsMessage !== undefined) {
+            fieldErrors.positions = positionsMessage;
+          }
           setServerErrors(fieldErrors);
 
           const steps = Object.keys(fieldErrors).map(
@@ -212,7 +231,7 @@ export function CreateCommunityWizard() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (step < 2) {
+    if (step < LAST_STEP) {
       setAttempted((previous) => new Set(previous).add(step));
       if (Object.keys(validateStep(step, form)).length > 0) {
         return;
@@ -233,7 +252,7 @@ export function CreateCommunityWizard() {
             titleRef={headingRef}
             community={created.community}
             imageErrors={created.imageErrors}
-            withCommittee={form.committee === 'yes'}
+            positions={form.positions.map((p) => p.name.trim())}
             onContinue={() => {
               selectCommunity(created.community.id);
               void navigate({ to: '/community' });
@@ -298,7 +317,7 @@ export function CreateCommunityWizard() {
                 icon={<IconArrowLeft />}
                 onClick={() => goTo((step - 1) as StepIndex)}
               >
-                Back to {STEPS[(step - 1) as 0 | 1].short}
+                Back to {STEPS[(step - 1) as 0 | 1 | 2].short}
               </Button>
             )}
 
@@ -319,9 +338,9 @@ export function CreateCommunityWizard() {
                 variant="primary"
                 inline
                 disabled={createCommunity.isPending}
-                icon={step === 2 ? <IconRocket /> : undefined}
+                icon={step === LAST_STEP ? <IconRocket /> : undefined}
               >
-                {step < 2 ? (
+                {step < LAST_STEP ? (
                   <>
                     Continue to Step {step + 2}
                     <IconArrowRight />

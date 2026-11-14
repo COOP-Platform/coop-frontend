@@ -15,7 +15,7 @@ interface SidebarProps {
 /** The selected app's pages. Switching apps (top bar) swaps this list. */
 export function Sidebar({ app, onNavigate }: SidebarProps) {
   const navigate = useNavigate();
-  const { can } = useWorkspace();
+  const { can, membership } = useWorkspace();
   // Pages a member has no use for are left out rather than shown and refused.
   const items = app.nav.filter((item) => item.permission === undefined || can(item.permission));
 
@@ -51,17 +51,21 @@ export function Sidebar({ app, onNavigate }: SidebarProps) {
       </nav>
 
       <div className="sidebar__footer">
-        <Link
-          to="/community/settings"
-          className="sidebar__item"
-          activeProps={{ className: 'is-active', 'aria-current': 'page' }}
-          onClick={onNavigate}
-        >
-          <span className="sidebar__item-icon" aria-hidden="true">
-            <IconSettings />
-          </span>
-          Settings
-        </Link>
+        {/* Community settings only make sense inside a community; a platform
+            administrator may have none. */}
+        {membership && (
+          <Link
+            to="/community/settings"
+            className="sidebar__item"
+            activeProps={{ className: 'is-active', 'aria-current': 'page' }}
+            onClick={onNavigate}
+          >
+            <span className="sidebar__item-icon" aria-hidden="true">
+              <IconSettings />
+            </span>
+            Settings
+          </Link>
+        )}
         <button type="button" className="sidebar__item" onClick={handleLogout}>
           <span className="sidebar__item-icon" aria-hidden="true">
             <IconLogout />

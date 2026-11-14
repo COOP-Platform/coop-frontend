@@ -10,12 +10,6 @@ export const COMMUNITY_TYPES = [
   { value: 'alumni', title: 'Alumni', description: 'Graduates & institutional' },
 ] as const;
 
-/** The committee question on step 1 — `with_committee` on the create request. */
-export const COMMITTEE_OPTIONS = [
-  { value: 'yes', title: 'Yes, set up a committee' },
-  { value: 'no', title: 'No committee' },
-] as const;
-
 /** "cooperative" -> "Cooperative", from the same catalogue the form uses. */
 export function communityTypeLabel(type: string): string {
   return COMMUNITY_TYPES.find((option) => option.value === type)?.title ?? type;

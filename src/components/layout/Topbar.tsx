@@ -5,6 +5,7 @@ import {
   IconBell,
   IconCheckCircle,
   IconInstitution,
+  IconKey,
   IconLogout,
   IconMenu,
   IconUser,
@@ -286,6 +287,12 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
                   <span className="menu__item-title">My profile</span>
                 </Link>
               )}
+              <Link to="/account/password" className="menu__item" onClick={close}>
+                <span className="menu__app-icon" aria-hidden="true">
+                  <IconKey />
+                </span>
+                <span className="menu__item-title">Change password</span>
+              </Link>
               <button
                 type="button"
                 className="menu__item menu__item--danger"

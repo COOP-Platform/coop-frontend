@@ -30,6 +30,7 @@ import { downloadCsv } from '@/lib/csv';
 import { formatDate, formatRelative, formatShortDate } from '@/lib/format/date';
 
 import { useMemberDirectory } from '../api/directory';
+import { invitationErrorMessage } from './invitationErrors';
 import { InviteMemberDialog } from './InviteMemberDialog';
 import type { Invitation, InvitationStatus } from '../api/invitations';
 import {
@@ -366,7 +367,7 @@ function InvitationRow({
         </span>
         {error && (
           <span className="table__warn table__warn--block" role="alert">
-            {errorMessage(error)}
+            {invitationErrorMessage(error)}
           </span>
         )}
       </td>
@@ -536,7 +537,7 @@ function InvitationDetails({
             {send.isPending ? 'Sending…' : 'Send New Invitation'}
           </button>
         )}
-        {error && <p className="form-error">{errorMessage(error)}</p>}
+        {error && <p className="form-error">{invitationErrorMessage(error)}</p>}
       </div>
     </section>
   );

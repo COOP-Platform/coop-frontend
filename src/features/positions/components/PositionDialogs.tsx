@@ -14,6 +14,7 @@ import {
   Textarea,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
+import { useMemberDirectory } from '@/features/members';
 import type { DirectoryMember } from '@/features/members';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
@@ -207,14 +208,32 @@ function DeleteConfirm({
   onKeep: () => void;
   onDelete: () => void;
 }) {
+  // Who loses the position (S2-14), by name — a count alone hides who to tell.
+  const directory = useMemberDirectory();
+  const holders = directory.members.filter((m) => m.positions.some((p) => p.id === position.id));
+  const namesKnown = !directory.positionsPending && holders.length > 0;
+
   return (
     <div className="details__confirm">
       <p className="dialog__text">
         Delete <strong>{position.name}</strong>?{' '}
         {position.holder_count === 0
           ? 'Nobody holds it.'
-          : `The ${position.holder_count} ${position.holder_count === 1 ? 'member' : 'members'} holding it lose it.`}
+          : `The ${position.holder_count} ${position.holder_count === 1 ? 'member' : 'members'} holding it will lose it${namesKnown ? ':' : '.'}`}
       </p>
+      {position.holder_count > 0 && namesKnown && (
+        <ul className="closeout-holders" aria-label={`Members holding ${position.name}`}>
+          {holders.map((member) => (
+            <li key={member.membershipId}>
+              {member.fullName}
+              {member.isYou && ' (you)'}
+            </li>
+          ))}
+        </ul>
+      )}
+      {position.holder_count > 0 && directory.positionsPending && (
+        <p className="dialog__text">Loading who holds it…</p>
+      )}
       <div className="dialog__footer dialog__footer--flush">
         <Button variant="tint" onClick={onKeep}>
           Keep it

@@ -9,11 +9,16 @@
 import type { SelectOption } from '@/components/ui';
 
 import type { CommunityType, CreateCommunityRequest } from '../../api/communities';
+import { positionsProblem, toPositionsPayload } from './positions';
+import type { PositionDraft } from './positions';
 
-export type StepIndex = 0 | 1 | 2;
+export type StepIndex = 0 | 1 | 2 | 3;
+
+export const LAST_STEP: StepIndex = 3;
 
 export const STEPS = [
   { title: 'Community Basics', short: 'Basics' },
+  { title: 'Positions', short: 'Positions' },
   { title: 'Purpose & Contact', short: 'Purpose' },
   { title: 'Branding & Preferences', short: 'Branding' },
 ] as const;
@@ -61,8 +66,16 @@ export const LANGUAGES: readonly SelectOption[] = [
 export interface WizardForm {
   name: string;
   type: CommunityType | '';
-  /** Whether to seed officer positions (Treasurer, Secretary, …). */
-  committee: 'yes' | 'no';
+  /** The starting positions, prefilled from the type's suggestions (positions.ts). */
+  positions: PositionDraft[];
+  /**
+   * Which type `positions` were suggested for, or last confirmed against.
+   * When it differs from `type` the list is out of date: replaced silently
+   * if untouched, or only once the founder agrees if they edited it.
+   */
+  positionsType: CommunityType | '';
+  /** The founder changed the suggestions, so a type change must ask first. */
+  positionsEdited: boolean;
   description: string;
   vision: string;
   mission: string;
@@ -81,7 +94,9 @@ export interface WizardForm {
 export const INITIAL_FORM: WizardForm = {
   name: '',
   type: '',
-  committee: 'yes',
+  positions: [],
+  positionsType: '',
+  positionsEdited: false,
   description: '',
   vision: '',
   mission: '',
@@ -103,18 +118,18 @@ export type WizardErrors = Partial<Record<keyof CreateCommunityRequest, string>>
 export const FIELD_STEP: Record<keyof CreateCommunityRequest, StepIndex> = {
   name: 0,
   type: 0,
-  with_committee: 0,
   description: 0,
-  vision: 1,
-  mission: 1,
-  contact_email: 1,
-  contact_phone: 1,
-  contact_address: 1,
-  logo_url: 2,
-  cover_url: 2,
-  currency: 2,
-  language: 2,
-  founded_year: 2,
+  positions: 1,
+  vision: 2,
+  mission: 2,
+  contact_email: 2,
+  contact_phone: 2,
+  contact_address: 2,
+  logo_url: 3,
+  cover_url: 3,
+  currency: 3,
+  language: 3,
+  founded_year: 3,
 };
 
 /** Same pattern as `core.validators.validate_e164_phone`. */
@@ -156,6 +171,17 @@ export function validateStep(step: StepIndex, form: WizardForm): WizardErrors {
   }
 
   if (step === 1) {
+    if (form.type !== '' && form.positionsType !== form.type) {
+      errors.positions = 'Check the positions for your community type before you continue.';
+    } else {
+      const problem = positionsProblem(form.positions);
+      if (problem !== undefined) {
+        errors.positions = problem;
+      }
+    }
+  }
+
+  if (step === 2) {
     if (form.vision.length > LIMITS.vision) {
       errors.vision = `Keep the vision under ${LIMITS.vision} characters.`;
     }
@@ -172,7 +198,7 @@ export function validateStep(step: StepIndex, form: WizardForm): WizardErrors {
     }
   }
 
-  if (step === 2) {
+  if (step === 3) {
     if (form.foundedYear !== '') {
       const year = Number(form.foundedYear);
       if (!Number.isInteger(year) || year < LIMITS.yearMin || year > currentYear()) {
@@ -195,7 +221,7 @@ export function buildPayload(form: WizardForm): CreateCommunityRequest {
   return {
     name: form.name.trim(),
     type: form.type as CommunityType,
-    with_committee: form.committee === 'yes',
+    positions: toPositionsPayload(form.positions),
     description: optional(form.description),
     vision: optional(form.vision),
     mission: optional(form.mission),

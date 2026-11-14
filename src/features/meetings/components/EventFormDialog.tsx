@@ -6,6 +6,7 @@ import {
   Checkbox,
   Dialog,
   IconCalendar,
+  IconClose,
   IconEyeOff,
   IconTile,
   Input,
@@ -336,9 +337,8 @@ function HiddenMembersPicker({
     return list.sort((a, b) => a.name.localeCompare(b.name));
   }, [members.data, organiserId, alreadyHidden]);
 
-  function toggle(id: string, on: boolean) {
-    onChange(on ? [...selected, id] : selected.filter((x) => x !== id));
-  }
+  const nameOf = (id: string) => options.find((o) => o.id === id)?.name ?? 'Member';
+  const remaining = options.filter((o) => !selected.includes(o.id));
 
   return (
     <fieldset className="event-hidden-picker">
@@ -356,16 +356,36 @@ function HiddenMembersPicker({
       ) : options.length === 0 ? (
         <p className="table__muted">There are no other members to hide it from.</p>
       ) : (
-        <div className="event-hidden-picker__list">
-          {options.map((o) => (
-            <Checkbox
-              key={o.id}
-              label={o.name}
-              checked={selected.includes(o.id)}
-              onChange={(e) => toggle(o.id, e.target.checked)}
-            />
-          ))}
-        </div>
+        <>
+          {/* A select, not a checkbox per member: a community can have many. */}
+          <Select
+            label="Add a member to hide it from"
+            value=""
+            placeholder={remaining.length === 0 ? 'Everyone is already hidden' : 'Choose a member…'}
+            disabled={remaining.length === 0}
+            options={remaining.map((o) => ({ value: o.id, label: o.name }))}
+            onChange={(e) => {
+              if (e.target.value) onChange([...selected, e.target.value]);
+            }}
+          />
+          {selected.length > 0 && (
+            <ul className="event-hidden-picker__chips" role="list" aria-label="Hidden from">
+              {selected.map((id) => (
+                <li key={id} className="event-hidden-picker__chip">
+                  {nameOf(id)}
+                  <button
+                    type="button"
+                    className="event-hidden-picker__remove"
+                    aria-label={`Stop hiding it from ${nameOf(id)}`}
+                    onClick={() => onChange(selected.filter((x) => x !== id))}
+                  >
+                    <IconClose width={14} height={14} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
       {selected.length > 0 && (
         <p className="table__muted">

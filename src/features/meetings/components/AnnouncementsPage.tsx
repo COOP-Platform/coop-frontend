@@ -223,6 +223,12 @@ const EMPTY: Record<AnnouncementsTab, { title: string; message: string }> = {
   },
 };
 
+/** "For: Treasurer, Secretary" on a card addressed to chosen positions. */
+function audienceLabel(a: Announcement): string {
+  const names = a.audience_positions.map((p) => p.name);
+  return names.length > 2 ? `For ${names.length} positions` : `For: ${names.join(', ')}`;
+}
+
 function AnnouncementCard({
   announcement: a,
   showUnread,
@@ -232,7 +238,7 @@ function AnnouncementCard({
   showUnread: boolean;
   onOpen: () => void;
 }) {
-  const unread = showUnread && !a.is_read;
+  const unread = showUnread && !a.is_read && a.is_for_me;
   const when = a.published_at ?? a.created_at;
   return (
     <button
@@ -245,6 +251,8 @@ function AnnouncementCard({
         {unread && <span className="announcement-card__dot" aria-label="Unread" />}
         <span className="announcement-card__title">{a.title}</span>
         <span className="announcement-card__badges">
+          {a.pinned && <Badge tone="brand">Pinned</Badge>}
+          {a.audience === 'positions' && <Badge tone="neutral">{audienceLabel(a)}</Badge>}
           {a.priority !== 'normal' && (
             <Badge tone={PRIORITY_TONE[a.priority]}>{PRIORITY_LABEL[a.priority]}</Badge>
           )}
@@ -287,10 +295,10 @@ function AnnouncementDetails({
   const { mutate: markReadMutate } = markRead;
   useEffect(() => {
     if (marked.current || communityId === undefined) return;
-    if (a.status !== 'published' || a.is_read) return;
+    if (a.status !== 'published' || a.is_read || !a.is_for_me) return;
     marked.current = true;
     markReadMutate({ communityId, announcementId: a.id });
-  }, [a.id, a.is_read, a.status, communityId, markReadMutate]);
+  }, [a.id, a.is_for_me, a.is_read, a.status, communityId, markReadMutate]);
 
   const status = STATUS_BADGE[a.status];
   const target = communityId ? { communityId, announcementId: a.id } : null;
@@ -328,6 +336,21 @@ function AnnouncementDetails({
           <dt>Priority</dt>
           <dd>{PRIORITY_LABEL[a.priority]}</dd>
         </div>
+        <div>
+          <dt>Who can see it</dt>
+          <dd>
+            {a.audience === 'everyone'
+              ? 'Every member'
+              : a.audience_positions.map((p) => p.name).join(', ')}
+            {!a.is_for_me && <span className="table__muted"> (not addressed to you)</span>}
+          </dd>
+        </div>
+        {a.pinned && (
+          <div>
+            <dt>Pinned</dt>
+            <dd>{a.pinned_at ? `Since ${formatDate(a.pinned_at)}` : 'Yes'}</dd>
+          </div>
+        )}
         <div>
           <dt>{a.status === 'expired' ? 'Hidden since' : 'Hidden after'}</dt>
           <dd>{a.expires_at ? formatLongDate(a.expires_at) : 'Never'}</dd>

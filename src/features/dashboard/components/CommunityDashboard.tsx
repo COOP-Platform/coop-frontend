@@ -7,6 +7,7 @@ import {
   IconCommunity,
   IconIdBadge,
   IconMail,
+  IconPencil,
   IconUserCog,
   IconUserPlus,
   LoadingState,
@@ -14,6 +15,11 @@ import {
   StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
+import { useCommunity } from '@/features/communities';
+import {
+  PROFILE_PERMISSION,
+  missingProfileFields,
+} from '@/features/communities/components/settings/profile';
 import { effectiveStatus, useInvitations, useMemberDirectory } from '@/features/members';
 import { useCommittee, usePositions } from '@/features/positions';
 import type { Position } from '@/features/positions';
@@ -21,6 +27,8 @@ import { errorMessage } from '@/lib/api/errors';
 import { isPlainMemberPosition } from '@/lib/position-tone';
 
 import { buildActivity } from '../activity';
+import { AppSections } from './AppSections';
+import { CommunityOverview } from './CommunityOverview';
 import { NeedsAttention } from './NeedsAttention';
 import { RemoveVacantDialog } from './RemoveVacantDialog';
 import { RecentActivity } from './RecentActivity';
@@ -34,6 +42,8 @@ export function CommunityDashboard() {
   const { membership, communityId, can } = useWorkspace();
   const canInvite = can('member.invite');
   const canViewPositions = can('position.view');
+  const canEditProfile = can(PROFILE_PERMISSION);
+  const community = useCommunity(communityId);
 
   const directory = useMemberDirectory();
   const positions = usePositions(communityId, canViewPositions);
@@ -55,6 +65,11 @@ export function CommunityDashboard() {
   // administered is refused by the API anyway.
   const dismissable = vacantSeats.filter((p) => !p.is_admin);
   const pending = (invitations.data ?? []).filter((i) => effectiveStatus(i) === 'pending');
+  const activeCount = members.filter((m) => m.status === 'active').length;
+  const incompleteProfile =
+    canEditProfile && community.data
+      ? missingProfileFields(community.data).map((field) => field.label)
+      : [];
 
   return (
     <div className="page">
@@ -81,6 +96,16 @@ export function CommunityDashboard() {
                 Invite Member
               </Button>
             )}
+            {(canEditProfile || can('community.settings.manage')) && (
+              <Button
+                variant="tint"
+                inline
+                icon={<IconPencil />}
+                onClick={() => void navigate({ to: '/community/settings', search: { edit: true } })}
+              >
+                Edit Profile
+              </Button>
+            )}
             {canViewPositions && (
               <Button
                 inline
@@ -94,10 +119,19 @@ export function CommunityDashboard() {
         }
       />
 
+      <CommunityOverview
+        community={community.data}
+        fallbackName={membership?.community.name ?? ''}
+        fallbackType={membership?.community.type ?? ''}
+        memberCount={activeCount}
+        membership={membership}
+        canEdit={canEditProfile}
+      />
+
       <div className="stat-grid">
         <StatCard
           label="Members"
-          value={members.filter((m) => m.status === 'active').length}
+          value={activeCount}
           caption="Active members registered"
           icon={<IconCommunity />}
           tone="brand"
@@ -125,6 +159,7 @@ export function CommunityDashboard() {
       </div>
 
       <NeedsAttention
+        incompleteProfile={incompleteProfile}
         pendingInvitations={pending}
         vacantSeats={vacantSeats}
         membersWithoutPosition={
@@ -148,6 +183,8 @@ export function CommunityDashboard() {
         positions={removingVacant}
         onClose={() => setRemovingVacant(null)}
       />
+
+      <AppSections can={can} />
 
       <RecentActivity
         entries={buildActivity(members, invitations.data ?? [], canInvite).slice(0, 5)}

@@ -11,6 +11,12 @@ import { apiFetch } from '@/lib/api/client';
  * holding announcement.update, .publish or .delete) also sees every draft and
  * expired ones; someone who can only create sees their own drafts. Both drafts
  * and published announcements can be edited. Deleting is a soft delete.
+ *
+ * Audience: `everyone`, or `positions` (only holders of the chosen positions
+ * see it; to anyone else it does not exist). The committee still sees every
+ * announcement, with `is_for_me` false for those addressed to others, and the
+ * unread count only counts what is for the caller. Pinned announcements head
+ * the feed.
  */
 
 export type AnnouncementPriority = 'normal' | 'important' | 'urgent';
@@ -21,6 +27,7 @@ export const PRIORITY_LABEL: Record<AnnouncementPriority, string> = {
   urgent: 'Urgent',
 };
 export type AnnouncementStatus = 'draft' | 'published' | 'expired';
+export type AnnouncementAudience = 'everyone' | 'positions';
 /** What `?status=` accepts on the list. `expired` and `all` are committee-only. */
 export type AnnouncementFilter = 'published' | 'draft' | 'expired' | 'all';
 
@@ -34,6 +41,14 @@ export interface Announcement {
   expires_at: string | null;
   /** The caller has marked it read. */
   is_read: boolean;
+  audience: AnnouncementAudience;
+  /** The positions it is addressed to; empty for everyone. */
+  audience_positions: { id: string; name: string }[];
+  /** Addressed to the caller. False only for the committee, on others' announcements. */
+  is_for_me: boolean;
+  /** Pinned announcements head the feed. */
+  pinned: boolean;
+  pinned_at: string | null;
   created_by: { membership_id: string; full_name: string };
   created_at: string;
   updated_at: string;
@@ -98,6 +113,12 @@ export interface AnnouncementFields {
   priority: AnnouncementPriority;
   /** ISO date-time, or null for "never". Must be in the future. */
   expires_at: string | null;
+  /** Defaults to everyone. `positions` needs `position_ids`. */
+  audience?: AnnouncementAudience;
+  /** Positions of this community, with `audience: 'positions'`. Replaces the list. */
+  position_ids?: string[];
+  /** Pin to the top of the feed, or unpin. */
+  pinned?: boolean;
 }
 
 function useAnnouncementMutation<V extends { communityId: string }, R>(

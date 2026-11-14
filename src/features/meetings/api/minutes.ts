@@ -77,6 +77,13 @@ export interface ActionItem {
   due_date: string | null;
   done: boolean;
   done_at: string | null;
+  /** Who marked it done; null while open, or when it was ticked in the draft. */
+  done_by: MinutesMemberRef | null;
+  /**
+   * The caller may mark it done or open again, even on final minutes: its
+   * assignee, or someone with meeting.minutes.write or meeting.update.
+   */
+  can_mark_done: boolean;
 }
 
 export interface MinutesDetail {
@@ -250,6 +257,30 @@ export function useUpdateMinutes() {
 export function useFinaliseMinutes() {
   return useMinutesWrite(({ communityId, meetingId }: { communityId: string; meetingId: string }) =>
     apiFetch<MinutesDetail>(`${base(communityId)}${meetingId}/finalize/`, { method: 'POST' }),
+  );
+}
+
+/**
+ * Mark one action item done (or open again). Works on final minutes too:
+ * finalising fixes what was agreed, not whether it has been done since.
+ */
+export function useSetActionItemDone() {
+  return useMinutesWrite(
+    ({
+      communityId,
+      meetingId,
+      itemId,
+      done,
+    }: {
+      communityId: string;
+      meetingId: string;
+      itemId: string;
+      done: boolean;
+    }) =>
+      apiFetch<MinutesDetail>(`${base(communityId)}${meetingId}/action-items/${itemId}/`, {
+        method: 'PATCH',
+        body: { done },
+      }),
   );
 }
 

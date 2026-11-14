@@ -14,7 +14,7 @@ function LoginPage() {
     <AuthLayout
       footer={
         <>
-          Don&apos;t have an account? <Link to="/register">Sign up</Link>
+          Don&apos;t have an account? <Link to="/register">Create your account</Link>
         </>
       }
     >

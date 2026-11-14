@@ -328,48 +328,50 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
       />
 
       <h3 className="details__subhead">Lines</h3>
-      <table className="table table--compact budget-lines">
-        <thead>
-          <tr>
-            <th scope="col">Line</th>
-            <th scope="col" className="statement-table__num">
-              Planned
-            </th>
-            <th scope="col" className="statement-table__num">
-              Spent
-            </th>
-            <th scope="col" className="statement-table__num">
-              Left
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {b.lines.map((line) => (
-            <tr key={line.id}>
-              <td>{line.title}</td>
-              <td className="statement-table__num">{formatAmount(line.planned_minor)}</td>
-              <td className="statement-table__num">{formatAmount(line.spent_minor)}</td>
-              <td className="statement-table__num">{formatAmount(line.left_to_spend_minor)}</td>
-            </tr>
-          ))}
-          {b.unallocated_spent_minor > 0 && (
+      <div className="table-scroll">
+        <table className="table table--compact budget-lines">
+          <thead>
             <tr>
-              <td className="table__muted">Spent on no particular line</td>
-              <td />
-              <td className="statement-table__num">{formatAmount(b.unallocated_spent_minor)}</td>
-              <td />
+              <th scope="col">Line</th>
+              <th scope="col" className="statement-table__num">
+                Planned
+              </th>
+              <th scope="col" className="statement-table__num">
+                Spent
+              </th>
+              <th scope="col" className="statement-table__num">
+                Left
+              </th>
             </tr>
-          )}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row">Total</th>
-            <td className="statement-table__num">{formatAmount(b.planned_minor)}</td>
-            <td className="statement-table__num">{formatAmount(b.spent_minor)}</td>
-            <td className="statement-table__num">{formatAmount(b.left_to_spend_minor)}</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody>
+            {b.lines.map((line) => (
+              <tr key={line.id}>
+                <td>{line.title}</td>
+                <td className="statement-table__num">{formatAmount(line.planned_minor)}</td>
+                <td className="statement-table__num">{formatAmount(line.spent_minor)}</td>
+                <td className="statement-table__num">{formatAmount(line.left_to_spend_minor)}</td>
+              </tr>
+            ))}
+            {b.unallocated_spent_minor > 0 && (
+              <tr>
+                <td className="table__muted">Spent on no particular line</td>
+                <td />
+                <td className="statement-table__num">{formatAmount(b.unallocated_spent_minor)}</td>
+                <td />
+              </tr>
+            )}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Total</th>
+              <td className="statement-table__num">{formatAmount(b.planned_minor)}</td>
+              <td className="statement-table__num">{formatAmount(b.spent_minor)}</td>
+              <td className="statement-table__num">{formatAmount(b.left_to_spend_minor)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
 
       <h3 className="details__subhead">Dedicated contributions for it</h3>
       {b.campaigns.length === 0 ? (

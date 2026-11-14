@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import { apiDownload, apiFetch } from '@/lib/api/client';
 
@@ -113,6 +113,11 @@ export interface MemberAttendance {
   apology: number;
   absent: number;
   percent: number;
+  /**
+   * The member's mark at each locked meeting they were on, in meeting order.
+   * A locked meeting missing here: they were not on its roll-call.
+   */
+  marks: { meeting_id: string; status: AttendanceMark }[];
 }
 
 export interface AttendanceReport {
@@ -137,13 +142,6 @@ interface ReportByType {
   attendance: AttendanceReport;
 }
 
-/** The part of a meeting's roll-call the register grid needs. */
-export interface RollCall {
-  meeting_id: string;
-  locked: boolean;
-  records: { member: ReportMember; status: AttendanceMark | null }[];
-}
-
 function periodQuery(year: number, month: number | null): string {
   return `year=${year}${month === null ? '' : `&month=${month}`}`;
 }
@@ -160,22 +158,6 @@ export function useMeetingReport<T extends MeetingReportType>(
       apiFetch<ReportByType[T]>(
         `/communities/${communityId}/meetings/reports/?type=${type}&${periodQuery(year, month)}`,
       ),
-  });
-}
-
-/*
- * The JSON report gives each member's totals but not their mark at each
- * meeting -- only the register PDF prints that grid. So the screen reads the
- * roll-call of every locked meeting of the period (the same ones the PDF
- * prints), one request each.
- */
-export function useRollCalls(communityId: string, meetingIds: string[]) {
-  return useQueries({
-    queries: meetingIds.map((meetingId) => ({
-      queryKey: ['meetings', communityId, 'reports', 'roll-call', meetingId],
-      queryFn: () =>
-        apiFetch<RollCall>(`/communities/${communityId}/meetings/${meetingId}/attendance/`),
-    })),
   });
 }
 

@@ -25,7 +25,7 @@ import { errorMessage } from '@/lib/api/errors';
 import { formatLongDate } from '@/lib/format/date';
 
 import { eventTypeLabel, formatEventWhen, useCancelEvent, useEvent } from '../api/events';
-import type { CommunityEvent } from '../api/events';
+import type { CommunityEventDetail } from '../api/events';
 import { EventBudget } from './EventBudget';
 import { EventFormDialog, HIDDEN_EXPLAINER } from './EventFormDialog';
 import { EventResponses, EventRsvp } from './EventRsvp';
@@ -236,6 +236,8 @@ function EventDetails({
           <h3 className="details__subhead">Your answer</h3>
           <EventRsvp key={event.my_rsvp?.responded_at ?? 'none'} event={event} withGuests />
         </section>
+
+        <EventResponses event={event} />
 
         <EventBudget event={event} />
 

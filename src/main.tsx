@@ -9,6 +9,7 @@ import './styles/global.css';
 import './styles/app.css';
 // Account and community setup screens; builds on the shell rules in app.css.
 import './styles/setup.css';
+import './styles/finance-arrears.css';
 // The Meetings & Events app, one file per area.
 import './styles/meetings-meetings.css';
 import './styles/meetings-minutes.css';

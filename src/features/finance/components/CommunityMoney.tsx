@@ -7,15 +7,17 @@ import { useWorkspace } from '@/features/auth';
 import { THIS_MONTH } from '../month';
 import { usePendingForMe } from '../review-rights';
 import { AccountsPage } from './AccountsPage';
+import { CommunityArrearsSection } from './Arrears';
 import { CashBox } from './CashBox';
 import { AllPayments, MonthOverview, ReviewQueue } from './MemberContributions';
 
-export type MoneyTab = 'month' | 'review' | 'payments' | 'pocket' | 'accounts';
+export type MoneyTab = 'month' | 'review' | 'arrears' | 'payments' | 'pocket' | 'accounts';
 
 /**
  * Community Money, one message per section:
  * - This month: how the month's contributions are going.
  * - To review: the payments waiting for the Treasurer (reviewers only).
+ * - Ibirarane: who still owes for past months (whoever confirms payments).
  * - All payments: every payment members recorded.
  * - Community pocket: all the money the community has and where it came from.
  */
@@ -29,6 +31,8 @@ export function CommunityMoney({
   const navigate = useNavigate();
   const { can } = useWorkspace();
   const pending = usePendingForMe();
+  // Who is behind is the Treasurer's to see, like reminders.
+  const canSeeArrears = can('finance.contribution.confirm');
   // Shared so switching between This month and All payments keeps the month.
   const [month, setMonth] = useState(THIS_MONTH);
 
@@ -42,12 +46,16 @@ export function CommunityMoney({
           },
         ]
       : []),
+    ...(canSeeArrears ? [{ value: 'arrears' as const, label: 'Ibirarane' }] : []),
     { value: 'payments', label: 'All payments' },
     { value: 'pocket', label: 'Community pocket' },
     { value: 'accounts', label: 'Bank & MoMo' },
   ];
   // A non-reviewer who follows a ?tab=review link lands on This month.
-  const current = tab === 'review' && !pending.isReviewer ? 'month' : tab;
+  const current =
+    (tab === 'review' && !pending.isReviewer) || (tab === 'arrears' && !canSeeArrears)
+      ? 'month'
+      : tab;
 
   return (
     <div className="page">
@@ -74,6 +82,7 @@ export function CommunityMoney({
 
       {current === 'month' && <MonthOverview month={month} onMonthChange={setMonth} />}
       {current === 'review' && <ReviewQueue />}
+      {current === 'arrears' && <CommunityArrearsSection />}
       {current === 'payments' && <AllPayments month={month} onMonthChange={setMonth} />}
       {current === 'pocket' && <CashBox />}
       {current === 'accounts' && <AccountsPage embedded />}

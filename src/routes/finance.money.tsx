@@ -8,7 +8,7 @@ interface MoneySearch {
   tab?: Exclude<MoneyTab, 'month'>;
 }
 
-const TABS: readonly string[] = ['review', 'payments', 'pocket', 'accounts'];
+const TABS: readonly string[] = ['review', 'arrears', 'payments', 'pocket', 'accounts'];
 
 export const Route = createFileRoute('/finance/money')({
   validateSearch: (raw: Record<string, unknown>): MoneySearch => ({

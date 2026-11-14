@@ -88,6 +88,27 @@ export interface CommunityEvent {
   updated_at: string;
 }
 
+/** One member's answer, as the event detail lists it. */
+export interface EventRsvpEntry {
+  membership_id: string;
+  full_name: string;
+  response: RsvpResponse;
+  guests: number;
+  responded_at: string;
+}
+
+/**
+ * The event detail: the list's fields plus who answered. Only active members
+ * the event is not hidden from are listed. The organiser and event managers
+ * (event.update, event.cancel, event.visibility.manage) see apologies too;
+ * everyone else sees only who is coming.
+ */
+export interface CommunityEventDetail extends CommunityEvent {
+  responses: EventRsvpEntry[];
+  /** True when `responses` includes apologies (the caller manages the event). */
+  responses_include_apologies: boolean;
+}
+
 interface EventPage {
   items: CommunityEvent[];
   total: number;
@@ -112,7 +133,7 @@ export function useEvent(communityId: string | undefined, eventId: string | unde
   return useQuery({
     queryKey: [...eventsKey(communityId ?? ''), 'detail', eventId ?? ''],
     queryFn: () =>
-      apiFetch<CommunityEvent>(`/communities/${communityId ?? ''}/events/${eventId ?? ''}/`),
+      apiFetch<CommunityEventDetail>(`/communities/${communityId ?? ''}/events/${eventId ?? ''}/`),
     enabled: communityId !== undefined && eventId !== undefined,
     // A 404 (hidden or gone) will not change on a retry.
     retry: false,

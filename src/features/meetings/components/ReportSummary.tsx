@@ -91,16 +91,18 @@ export function ReportSummary({
               Meetings by status
             </h2>
           </header>
-          <table className="table table--compact">
-            <tbody>
-              <CountRow label="Completed" value={m.completed} />
-              <CountRow label="Upcoming or in progress" value={m.upcoming} />
-              <CountRow label="Cancelled" value={m.cancelled} />
-            </tbody>
-            <tfoot>
-              <CountRow label="Total" value={m.total} />
-            </tfoot>
-          </table>
+          <div className="table-scroll">
+            <table className="table table--compact">
+              <tbody>
+                <CountRow label="Completed" value={m.completed} />
+                <CountRow label="Upcoming or in progress" value={m.upcoming} />
+                <CountRow label="Cancelled" value={m.cancelled} />
+              </tbody>
+              <tfoot>
+                <CountRow label="Total" value={m.total} />
+              </tfoot>
+            </table>
+          </div>
         </section>
         <section className="card table-card" aria-labelledby="summary-type">
           <header className="table-card__head">
@@ -108,13 +110,15 @@ export function ReportSummary({
               Meetings by type
             </h2>
           </header>
-          <table className="table table--compact">
-            <tbody>
-              {TYPES.map((type) => (
-                <CountRow key={type} label={MEETING_TYPE_LABEL[type]} value={m.by_type[type]} />
-              ))}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="table table--compact">
+              <tbody>
+                {TYPES.map((type) => (
+                  <CountRow key={type} label={MEETING_TYPE_LABEL[type]} value={m.by_type[type]} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
 

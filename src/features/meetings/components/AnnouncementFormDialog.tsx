@@ -13,11 +13,17 @@ import {
   Textarea,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
+import { usePositions } from '@/features/positions';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 
 import { PRIORITY_LABEL, useCreateAnnouncement, useUpdateAnnouncement } from '../api/announcements';
-import type { Announcement, AnnouncementFields, AnnouncementPriority } from '../api/announcements';
+import type {
+  Announcement,
+  AnnouncementAudience,
+  AnnouncementFields,
+  AnnouncementPriority,
+} from '../api/announcements';
 
 const PRIORITIES: AnnouncementPriority[] = ['normal', 'important', 'urgent'];
 
@@ -36,7 +42,12 @@ interface Errors {
   body?: string;
   priority?: string;
   expires_at?: string;
+  position_ids?: string;
   form?: string;
+}
+
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id));
 }
 
 /**
@@ -65,7 +76,7 @@ export function AnnouncementFormDialog({
       subtitle={
         editing
           ? 'Changes show straight away for anyone who can see it.'
-          : 'Share news with every member. It stays a draft until it is published.'
+          : 'Share news with every member, or only some positions. It stays a draft until it is published.'
       }
       icon={
         <IconTile tone="brand" round>
@@ -102,6 +113,13 @@ function AnnouncementForm({
   );
   const [expiry, setExpiry] = useState(initialExpiry);
   const [publish, setPublish] = useState(false);
+  const initialPositions = (announcement?.audience_positions ?? []).map((p) => p.id);
+  const [audience, setAudience] = useState<AnnouncementAudience>(
+    announcement?.audience ?? 'everyone',
+  );
+  const [positionIds, setPositionIds] = useState<string[]>(initialPositions);
+  const [pinned, setPinned] = useState(announcement?.pinned ?? false);
+  const positions = usePositions(communityId, audience === 'positions');
   const [errors, setErrors] = useState<Errors>({});
   const busy = create.isPending || update.isPending;
 
@@ -112,6 +130,7 @@ function AnnouncementForm({
       body: f.body,
       priority: f.priority,
       expires_at: f.expires_at,
+      position_ids: f.position_ids ?? f.audience,
     };
     const anyField = Object.values(mapped).some(Boolean);
     setErrors({ ...mapped, form: anyField ? undefined : errorMessage(error) });
@@ -125,6 +144,8 @@ function AnnouncementForm({
     const expiryChanged = expiry !== initialExpiry;
     if (expiry !== '' && expiryChanged && new Date(expiry).getTime() <= Date.now())
       problems.expires_at = 'The expiry must be in the future.';
+    if (audience === 'positions' && positionIds.length === 0)
+      problems.position_ids = 'Choose at least one position, or send it to everyone.';
     setErrors(problems);
     if (Object.keys(problems).length > 0 || communityId === undefined) return;
 
@@ -138,6 +159,9 @@ function AnnouncementForm({
           body: body.trim(),
           priority,
           expires_at: expiresAt,
+          audience,
+          position_ids: audience === 'positions' ? positionIds : [],
+          pinned,
           publish: canPublish && publish,
         },
         {
@@ -161,6 +185,11 @@ function AnnouncementForm({
     if (body.trim() !== announcement.body) changes.body = body.trim();
     if (priority !== announcement.priority) changes.priority = priority;
     if (expiryChanged) changes.expires_at = expiresAt;
+    if (audience !== announcement.audience) changes.audience = audience;
+    if (audience === 'positions' && !sameIds(positionIds, initialPositions))
+      changes.position_ids = positionIds;
+    if (audience === 'everyone' && announcement.audience !== 'everyone') changes.position_ids = [];
+    if (pinned !== announcement.pinned) changes.pinned = pinned;
     if (Object.keys(changes).length === 0) {
       onClose();
       return;
@@ -213,9 +242,58 @@ function AnnouncementForm({
           error={errors.expires_at}
         />
       </div>
+      <Select
+        label="Who should see it"
+        value={audience}
+        onChange={(event) => setAudience(event.target.value as AnnouncementAudience)}
+        options={[
+          { value: 'everyone', label: 'Every member' },
+          { value: 'positions', label: 'Only members in chosen positions' },
+        ]}
+      />
+      {audience === 'positions' && (
+        <fieldset className="announcement-audience">
+          <legend className="announcement-audience__legend">Positions</legend>
+          {positions.isPending ? (
+            <p className="table__muted">Loading positions…</p>
+          ) : positions.isError ? (
+            <p className="form-error">{errorMessage(positions.error)}</p>
+          ) : (
+            <div className="announcement-audience__list">
+              {positions.data.map((position) => (
+                <Checkbox
+                  key={position.id}
+                  label={position.name}
+                  checked={positionIds.includes(position.id)}
+                  onChange={(event) =>
+                    setPositionIds((ids) =>
+                      event.target.checked
+                        ? [...ids, position.id]
+                        : ids.filter((id) => id !== position.id),
+                    )
+                  }
+                />
+              ))}
+            </div>
+          )}
+          <p className="table__muted">
+            Only members holding one of these positions will see it. The committee always can.
+          </p>
+          {errors.position_ids && <p className="form-error">{errors.position_ids}</p>}
+        </fieldset>
+      )}
+      <Checkbox
+        label="Pin it to the top of the announcements"
+        checked={pinned}
+        onChange={(event) => setPinned(event.target.checked)}
+      />
       {announcement === null && canPublish && (
         <Checkbox
-          label="Publish now, so every member sees it straight away"
+          label={
+            audience === 'positions'
+              ? 'Publish now, so the chosen positions see it straight away'
+              : 'Publish now, so every member sees it straight away'
+          }
           checked={publish}
           onChange={(event) => setPublish(event.target.checked)}
         />

@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
+import { requirePermission } from '@/features/auth';
 import { EventsPage } from '@/features/meetings/components/EventsPage';
 import type { EventsTab } from '@/features/meetings/components/EventsPage';
 
@@ -9,6 +10,8 @@ interface Search {
 }
 
 export const Route = createFileRoute('/meetings/events/')({
+  // Same permission as the sidebar entry (MEETINGS_APP); without it, the dashboard.
+  beforeLoad: requirePermission('event.view', '/meetings'),
   validateSearch: (raw: Record<string, unknown>): Search => ({
     tab: raw.tab === 'past' || raw.tab === 'cancelled' ? raw.tab : undefined,
   }),

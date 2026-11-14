@@ -8,8 +8,9 @@ import { ApiError, apiFetch } from '@/lib/api/client';
  * Every member reads meetings and roll-calls (meeting.view). The Secretary's
  * codes change them: meeting.create, meeting.update, meeting.cancel and
  * meeting.attendance.record. A meeting's `status` only moves to `completed`
- * when its minutes are finalised, so a meeting whose date has passed can still
- * read `scheduled`: the screens decide "upcoming" / "past" from the dates.
+ * when its minutes are finalised. From its start (or once the roll-call has
+ * begun) until then the API reports `in_progress`; the screens decide
+ * "upcoming" / "past" from the dates.
  */
 
 export type MeetingType = 'general' | 'committee' | 'emergency' | 'agm';
@@ -355,11 +356,18 @@ export function isOpen(meeting: Meeting): boolean {
 
 export type MeetingPhase = 'cancelled' | 'completed' | 'now' | 'scheduled' | 'held';
 
-/** What to tell members about where a meeting stands. */
+/**
+ * What to tell members about where a meeting stands.
+ *
+ * The API reports `in_progress` from the scheduled start (or earlier, once the
+ * roll-call has begun) until the minutes are final. Within its planned time
+ * that reads "Happening now"; after it, "Held" (the record is still being
+ * written).
+ */
 export function meetingPhase(meeting: Meeting, now: number = Date.now()): MeetingPhase {
   if (meeting.status === 'cancelled') return 'cancelled';
   if (meeting.status === 'completed') return 'completed';
-  if (!hasStarted(meeting, now)) return 'scheduled';
+  if (!hasStarted(meeting, now)) return meeting.status === 'in_progress' ? 'now' : 'scheduled';
   return meetingEnd(meeting).getTime() >= now ? 'now' : 'held';
 }
 

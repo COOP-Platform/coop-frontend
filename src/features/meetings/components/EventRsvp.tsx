@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-import { Button, IconUserCheck, IconUserOff, Input } from '@/components/ui';
+import { Avatar, Badge, Button, IconUserCheck, IconUserOff, Input } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 
 import { MAX_GUESTS, myRsvpLabel, useRsvp } from '../api/events';
-import type { CommunityEvent, RsvpResponse } from '../api/events';
+import type { CommunityEvent, CommunityEventDetail, RsvpResponse } from '../api/events';
 
 /**
  * The caller's answer to an event, with the two buttons to give or change it.
@@ -97,5 +97,71 @@ export function EventRsvp({
       </div>
       {rsvp.error && <p className="form-error">{errorMessage(rsvp.error)}</p>}
     </div>
+  );
+}
+
+/**
+ * Who answered, by name (event detail only). Members see who is coming; the
+ * organiser and event managers also see who sent apologies. Members the event
+ * is hidden from are never listed (the API leaves them out).
+ */
+export function EventResponses({ event }: { event: CommunityEventDetail }) {
+  const coming = event.responses.filter((r) => r.response === 'confirmed');
+  const apologies = event.responses.filter((r) => r.response === 'apology');
+  const showApologies = event.responses_include_apologies;
+
+  return (
+    <section className="card event-detail__answers" aria-labelledby="event-who">
+      <h2 id="event-who" className="section-title">
+        {showApologies ? 'Who answered' : 'Who is coming'}
+      </h2>
+      {event.responses.length === 0 ? (
+        <p className="table__muted">Nobody has answered yet.</p>
+      ) : (
+        <div className="event-answers">
+          <div>
+            <h3 className="details__subhead">
+              Coming <Badge tone="success">{coming.length}</Badge>
+            </h3>
+            {coming.length === 0 ? (
+              <p className="table__muted">Nobody has said they are coming yet.</p>
+            ) : (
+              <ul className="event-answer-list" role="list">
+                {coming.map((r) => (
+                  <li key={r.membership_id}>
+                    <Avatar name={r.full_name} size="sm" />
+                    <span>{r.full_name}</span>
+                    {r.guests > 0 && (
+                      <span className="table__muted">
+                        + {r.guests} guest{r.guests === 1 ? '' : 's'}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {showApologies && (
+            <div>
+              <h3 className="details__subhead">
+                Can&apos;t make it <Badge tone="neutral">{apologies.length}</Badge>
+              </h3>
+              {apologies.length === 0 ? (
+                <p className="table__muted">No apologies so far.</p>
+              ) : (
+                <ul className="event-answer-list" role="list">
+                  {apologies.map((r) => (
+                    <li key={r.membership_id}>
+                      <Avatar name={r.full_name} size="sm" />
+                      <span>{r.full_name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }

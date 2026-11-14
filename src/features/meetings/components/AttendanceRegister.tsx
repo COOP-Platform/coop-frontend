@@ -2,7 +2,7 @@ import { EmptyState, ErrorState, IconUsers, LoadingState } from '@/components/ui
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatShortDate } from '@/lib/format/date';
 
-import { periodLabel, useMeetingReport, useRollCalls } from '../api/reports';
+import { periodLabel, useMeetingReport } from '../api/reports';
 import type { AttendanceMark } from '../api/reports';
 
 /** The same letters as the register PDF. */
@@ -30,10 +30,6 @@ export function AttendanceRegister({
 }) {
   const report = useMeetingReport(communityId, 'attendance', year, month);
   const locked = (report.data?.rows ?? []).filter((row) => row.locked);
-  const rollCalls = useRollCalls(
-    communityId,
-    locked.map((row) => row.meeting.id),
-  );
 
   if (report.error) return <ErrorState message={errorMessage(report.error)} />;
   if (!report.data) return <LoadingState />;
@@ -55,19 +51,13 @@ export function AttendanceRegister({
     );
   }
 
-  const failed = rollCalls.find((query) => query.error);
-  if (failed) return <ErrorState message={errorMessage(failed.error)} />;
-  if (rollCalls.some((query) => !query.data)) return <LoadingState />;
-
-  // marks[meetingId][membershipId]
-  const marks = new Map<string, Map<string, AttendanceMark | null>>();
-  for (const query of rollCalls) {
-    if (!query.data) continue;
-    marks.set(
-      query.data.meeting_id,
-      new Map(query.data.records.map((record) => [record.member.membership_id, record.status])),
-    );
-  }
+  // marks[membershipId][meetingId], all from the one attendance report.
+  const marks = new Map<string, Map<string, AttendanceMark>>(
+    data.members.map((entry) => [
+      entry.member.membership_id,
+      new Map(entry.marks.map((mark) => [mark.meeting_id, mark.status])),
+    ]),
+  );
 
   return (
     <section className="card table-card" aria-labelledby="register-title">
@@ -128,7 +118,7 @@ export function AttendanceRegister({
                   {entry.member.full_name}
                 </th>
                 {locked.map((row) => {
-                  const mark = marks.get(row.meeting.id)?.get(entry.member.membership_id) ?? null;
+                  const mark = marks.get(entry.member.membership_id)?.get(row.meeting.id) ?? null;
                   return (
                     <td key={row.meeting.id} className="register-table__cell">
                       <span

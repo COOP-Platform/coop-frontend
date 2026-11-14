@@ -1,0 +1,56 @@
+/* Arrears (ibirarane): My Contributions and Community Money. */
+.arrears {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.arrears__translation {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.arrears__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+}
+
+.arrears__label {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.arrears__total {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.arrears__facts {
+  max-width: 28rem;
+  color: var(--color-text-muted);
+}
+
+.arrears__table td .badge {
+  margin-left: var(--space-2);
+}
+
+.arrears__left {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.arrears__year th {
+  padding-top: var(--space-4);
+  text-align: left;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}

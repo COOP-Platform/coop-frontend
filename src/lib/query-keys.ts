@@ -71,6 +71,11 @@ export const queryKeys = {
       ['finance', communityId, 'my-contributions', year] as const,
     contribution: (communityId: string, id: string) =>
       ['finance', communityId, 'contribution', id] as const,
+    /** Arrears (ibirarane): yours, everyone's, or one member's. */
+    myArrears: (communityId: string) => ['finance', communityId, 'arrears', 'me'] as const,
+    communityArrears: (communityId: string) => ['finance', communityId, 'arrears', 'all'] as const,
+    memberArrears: (communityId: string, membershipId: string) =>
+      ['finance', communityId, 'arrears', 'member', membershipId] as const,
   },
   users: {
     all: ['users'] as const,

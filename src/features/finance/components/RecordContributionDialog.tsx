@@ -43,6 +43,15 @@ interface RecordContributionDialogProps {
   /** The member's shares, for the amount a month costs them. */
   shares: MyContributions['shares'] | undefined;
   onRecorded: (contribution: Contribution) => void;
+  /** Start filled in, e.g. "pay this unpaid month" from the arrears list. */
+  initial?: RecordInitial;
+}
+
+export interface RecordInitial {
+  type: ContributionType;
+  /** `YYYY-MM`. */
+  period: string;
+  amountMinor: number;
 }
 
 /**
@@ -55,6 +64,7 @@ export function RecordContributionDialog({
   onClose,
   shares,
   onRecorded,
+  initial,
 }: RecordContributionDialogProps) {
   return (
     <Dialog
@@ -69,7 +79,14 @@ export function RecordContributionDialog({
       }
     >
       {/* Mounted only while open, so every opening starts from a clean form. */}
-      {open && <RecordContributionForm onClose={onClose} shares={shares} onRecorded={onRecorded} />}
+      {open && (
+        <RecordContributionForm
+          onClose={onClose}
+          shares={shares}
+          onRecorded={onRecorded}
+          initial={initial}
+        />
+      )}
     </Dialog>
   );
 }
@@ -78,6 +95,7 @@ function RecordContributionForm({
   onClose,
   shares,
   onRecorded,
+  initial,
 }: Omit<RecordContributionDialogProps, 'open'>) {
   const { communityId } = useWorkspace();
   const record = useRecordContribution();
@@ -86,10 +104,10 @@ function RecordContributionForm({
 
   const today = new Date();
   const monthly = shares?.owed_per_month_minor;
-  const [type, setType] = useState<ContributionType>('monthly');
+  const [type, setType] = useState<ContributionType>(initial?.type ?? 'monthly');
   const [campaignId, setCampaignId] = useState('');
-  const [period, setPeriod] = useState(toIsoMonth(today));
-  const [amount, setAmount] = useState(toInput(monthly));
+  const [period, setPeriod] = useState(initial?.period ?? toIsoMonth(today));
+  const [amount, setAmount] = useState(toInput(initial?.amountMinor ?? monthly));
   const [paidAt, setPaidAt] = useState(toIsoDate(today));
   const [method, setMethod] = useState<PaymentMethod>('mobile_money');
   const [reference, setReference] = useState('');

@@ -24,13 +24,16 @@ import { apiDownload } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
 
+import { toPeriod } from '../api/arrears';
 import { statementPath, useMyContributions } from '../api/my-contributions';
 import type { Contribution } from '../api/my-contributions';
 import { formatAmount } from '../format';
 import { METHOD_LABEL, NO_METHOD, STATUS_LABEL } from '../labels';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
+import { MyArrears } from './Arrears';
 import { RecordContributionDialog } from './RecordContributionDialog';
+import type { RecordInitial } from './RecordContributionDialog';
 
 const THIS_YEAR = new Date().getFullYear();
 /** Past years to pick from, newest first. The backend refuses years before 2020. */
@@ -52,6 +55,8 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
   const { communityId, can } = useWorkspace();
   const canRecord = can('finance.contribution.record');
   const [recording, setRecording] = useState(startRecording && canRecord);
+  // Set when the form is opened from an unpaid month ("Pay" in Ibirarane).
+  const [prefill, setPrefill] = useState<RecordInitial | undefined>(undefined);
   const [justRecorded, setJustRecorded] = useState<Contribution | null>(null);
   const [year, setYear] = useState(THIS_YEAR);
   const [selected, setSelected] = useState<Contribution | null>(null);
@@ -112,7 +117,14 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
               {preparing ? 'Preparing…' : 'Download Statement (PDF)'}
             </Button>
             {canRecord && (
-              <Button inline icon={<IconPlusCircle />} onClick={() => setRecording(true)}>
+              <Button
+                inline
+                icon={<IconPlusCircle />}
+                onClick={() => {
+                  setPrefill(undefined);
+                  setRecording(true);
+                }}
+              >
                 Record Contribution
               </Button>
             )}
@@ -180,6 +192,22 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
           emphasis={summary.outstanding_minor > 0}
         />
       </div>
+
+      <MyArrears
+        onPay={
+          canRecord
+            ? (month) => {
+                if (month.record_as === null) return;
+                setPrefill({
+                  type: month.record_as,
+                  period: toPeriod(month),
+                  amountMinor: month.remaining_minor,
+                });
+                setRecording(true);
+              }
+            : undefined
+        }
+      />
 
       <section className="card table-card" aria-labelledby="history-title">
         <header className="table-card__head">
@@ -290,6 +318,7 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
         open={recording}
         onClose={() => setRecording(false)}
         shares={shares}
+        initial={prefill}
         onRecorded={(contribution) => {
           setRecording(false);
           setJustRecorded(contribution);

@@ -9,7 +9,7 @@ interface MoneySearch {
   tab?: Exclude<MoneyTab, 'month'>;
 }
 
-const TABS: readonly string[] = ['review', 'payments', 'pocket', 'accounts'];
+const TABS: readonly string[] = ['review', 'arrears', 'payments', 'pocket', 'accounts'];
 
 export const Route = createFileRoute('/finance/money')({
   beforeLoad: requirePermission('finance.contribution.view', '/finance'),

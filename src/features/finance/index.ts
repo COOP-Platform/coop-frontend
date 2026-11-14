@@ -14,3 +14,11 @@ export { BudgetsPage } from './components/BudgetsPage';
 export { AccountsPage } from './components/AccountsPage';
 export { ReportsPage } from './components/ReportsPage';
 export { BudgetsSharesPage, ExpensesIncomePage, ReportsHubPage } from './components/FinanceHubs';
+// Reused by an event's page: its budget, contributions and pocket money.
+export { BudgetFormDialog, CampaignFormDialog, Meter } from './components/BudgetsPage';
+export { RecordContributionDialog } from './components/RecordContributionDialog';
+export { RecordExpenseDialog } from './components/RecordExpenseDialog';
+export { useBudgetDetail, useCampaigns } from './api/budgets';
+export type { BudgetDetail, Campaign } from './api/budgets';
+export { Money } from './components/Money';
+export { formatAmount } from './format';

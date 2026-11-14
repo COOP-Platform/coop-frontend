@@ -95,6 +95,8 @@ export interface BudgetLineInput {
 
 export interface BudgetInput {
   communityId: string;
+  /** On create only: the event this budget is for (one budget per event). */
+  event_id?: string;
   title?: string;
   description?: string | null;
   lines?: BudgetLineInput[];

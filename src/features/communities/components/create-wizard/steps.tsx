@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { IconImage, IconUploadCloud, Input, Select, Textarea } from '@/components/ui';
 import type { SelectOption } from '@/components/ui';
 
-import { COMMITTEE_OPTIONS, COMMUNITY_TYPES } from './community-types';
+import { COMMUNITY_TYPES } from './community-types';
 import { ImageDrop } from './ImageDrop';
 import { COVER_SPEC, LOGO_SPEC } from './images';
 import { CURRENCIES, DIAL_CODES, LANGUAGES, LIMITS, currentYear } from './model';
@@ -19,11 +19,6 @@ export interface StepProps {
 const TYPE_OPTIONS: readonly SelectOption[] = COMMUNITY_TYPES.map((type) => ({
   value: type.value,
   label: `${type.title} — ${type.description}`,
-}));
-
-const COMMITTEE_SELECT: readonly SelectOption[] = COMMITTEE_OPTIONS.map((option) => ({
-  value: option.value,
-  label: option.title,
 }));
 
 function Card({
@@ -73,14 +68,6 @@ export function BasicsStep({ form, errors, update }: StepProps) {
         onChange={(event) => update('type', event.target.value as WizardForm['type'])}
         error={errors.type}
         required
-      />
-
-      <Select
-        label="Leadership committee"
-        options={COMMITTEE_SELECT}
-        value={form.committee}
-        onChange={(event) => update('committee', event.target.value as WizardForm['committee'])}
-        error={errors.with_committee}
       />
 
       <Textarea

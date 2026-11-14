@@ -15,8 +15,11 @@ import { hasCommunity, meQueryOptions } from './api/auth';
 import type { CurrentUser } from './api/auth';
 import { activeMembership } from './api/workspace';
 
-/** Signed in, or off to /login. Returns the current user. */
-export async function requireUser(): Promise<CurrentUser> {
+/**
+ * Signed in, or off to /login. Returns the current user. The one guard that
+ * does not insist on a chosen password: the change-password page itself.
+ */
+export async function requireSession(): Promise<CurrentUser> {
   if (!isSignedIn()) {
     throw redirect({ to: '/login' });
   }
@@ -24,6 +27,21 @@ export async function requireUser(): Promise<CurrentUser> {
   // even once invalidated, and creating a community invalidates exactly this
   // — the new owner would be bounced back to onboarding by their old /me.
   return queryClient.fetchQuery(meQueryOptions);
+}
+
+/**
+ * Signed in, or off to /login. Returns the current user.
+ *
+ * An account flagged `must_change_password` goes to /account/password
+ * first (S1-16, S2-10). Invitees now choose their own password when accepting,
+ * so the API should never set the flag; this keeps it meaningful if it does.
+ */
+export async function requireUser(): Promise<CurrentUser> {
+  const me = await requireSession();
+  if (me.must_change_password) {
+    throw redirect({ to: '/account/password' });
+  }
+  return me;
 }
 
 /** For the Community app: no community yet means onboarding. */

@@ -95,6 +95,7 @@ export const FINANCE_APP: AppDefinition = {
       label: 'Budgets & Shares',
       icon: <IconFlag />,
       to: '/finance/planning',
+      permission: 'finance.report.view',
     },
     {
       label: 'Reports',

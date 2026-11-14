@@ -1,1 +1,84 @@
 /* Ticket close-out: access. */
+
+/* Change password (#4): the rules, shown before the user types. */
+.password-rules {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  padding-left: 1.25rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.closeout-success {
+  display: inline-flex;
+  color: var(--color-success);
+}
+
+.closeout-success svg {
+  width: 40px;
+  height: 40px;
+}
+
+/* Sign in (#3): the invited member's path, next to the form. */
+.login-form__invited {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-info-soft);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* Onboarding (#22): joining by invitation, next to Create Community. */
+.onboard-home__invited {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.onboard-home__invited svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  color: var(--color-brand);
+}
+
+.onboard-home__invited strong {
+  color: var(--color-text);
+}
+
+/* Members list (#9): the roster's four columns, contribution category included. */
+.table--roster .table--roster__member {
+  width: 38%;
+}
+
+.table--roster .table--roster__position {
+  width: 26%;
+}
+
+.table--roster .table--roster__category {
+  width: 20%;
+}
+
+.table--roster .table--roster__status {
+  width: 16%;
+}
+
+/* Delete position (#19): who loses it, by name. */
+.closeout-holders {
+  margin: 0 0 var(--space-3);
+  padding-left: 1.25rem;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}

@@ -4,6 +4,7 @@ export { LoginForm } from './components/LoginForm';
 export { SignUpForm } from './components/SignUpForm';
 export {
   requireUser,
+  requireSession,
   requireCommunity,
   requireNoCommunity,
   requirePermission,
@@ -11,6 +12,7 @@ export {
 } from './guards';
 export { ForgotPasswordForm } from './components/ForgotPasswordForm';
 export { ResetPasswordForm } from './components/ResetPasswordForm';
+export { ChangePasswordForm } from './components/ChangePasswordForm';
 export {
   useLogin,
   useRegister,

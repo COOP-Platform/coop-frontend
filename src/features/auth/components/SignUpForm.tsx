@@ -80,7 +80,7 @@ export function SignUpForm() {
   return (
     <form className="login-form" onSubmit={handleSubmit}>
       <div className="login-form__head">
-        <h1 className="login-form__title">Create an account</h1>
+        <h1 className="login-form__title">Create your account</h1>
         <p className="login-form__subtitle">Start organising your community in minutes.</p>
       </div>
 

@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
+import { requirePermission } from '@/features/auth';
 import { CommunityMoney, FinanceAccessGate } from '@/features/finance';
 import type { MoneyTab } from '@/features/finance';
 
@@ -11,6 +12,7 @@ interface MoneySearch {
 const TABS: readonly string[] = ['review', 'payments', 'pocket', 'accounts'];
 
 export const Route = createFileRoute('/finance/money')({
+  beforeLoad: requirePermission('finance.contribution.view', '/finance'),
   validateSearch: (raw: Record<string, unknown>): MoneySearch => ({
     tab:
       typeof raw.tab === 'string' && TABS.includes(raw.tab)

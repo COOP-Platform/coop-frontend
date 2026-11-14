@@ -1,9 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
 
+import { requirePermission } from '@/features/auth';
 import type { InvitationsSearch } from '@/features/members';
 import { InvitationsBoard, parseInvitationsSearch } from '@/features/members';
 
 export const Route = createFileRoute('/community/invitations/')({
+  // Without `member.invite` the sidebar hides Invitations; a typed URL lands
+  // on the dashboard instead of a page whose every request is refused.
+  beforeLoad: requirePermission('member.invite', '/community'),
   validateSearch: parseInvitationsSearch,
   component: InvitationsPage,
 });

@@ -3,7 +3,14 @@ import { useState } from 'react';
 
 import illustration from '@/assets/online-community.svg';
 import { SetupLayout } from '@/components/layout/SetupLayout';
-import { IconArrowRight, IconChevronDown, IconFlag, IconPalette, IconUsers } from '@/components/ui';
+import {
+  IconArrowRight,
+  IconChevronDown,
+  IconFlag,
+  IconMail,
+  IconPalette,
+  IconUsers,
+} from '@/components/ui';
 import { env } from '@/config/env';
 import { clearCommunityDraft, hasCommunityDraft } from '@/features/communities';
 
@@ -62,6 +69,14 @@ export function OnboardingWelcome() {
                 <IconChevronDown />
               </a>
             </div>
+
+            <p className="onboard-home__invited">
+              <IconMail aria-hidden="true" />
+              <span>
+                <strong>Got an invitation?</strong> Open the link in your invitation email to join
+                that community. You do not need to create one.
+              </span>
+            </p>
 
             {draft && (
               <p className="onboard-home__draft">

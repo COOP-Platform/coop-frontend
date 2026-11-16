@@ -19,15 +19,12 @@
   height: 40px;
 }
 
-/* Sign in (#3): the invited member's path, next to the form. */
+/* Sign in (#3): one quiet line for invited members, under the button. */
 .login-form__invited {
   margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-info-soft);
-  color: var(--color-text);
+  text-align: center;
+  color: var(--color-text-muted);
   font-size: var(--text-sm);
-  line-height: 1.5;
 }
 
 /* Onboarding (#22): joining by invitation, next to Create Community. */

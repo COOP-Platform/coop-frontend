@@ -18,7 +18,7 @@ import { useCommunityArrears, useMemberArrears, useMyArrears } from '../api/arre
 import type { ArrearsMonth, ArrearsRow, MemberArrears, Period } from '../api/arrears';
 import { formatAmount } from '../format';
 import { periodLabel } from '../labels';
-import { YEAR_OPTIONS } from '../year-options';
+import { THIS_YEAR, YEAR_OPTIONS } from '../year-options';
 import { Money } from './Money';
 
 /** What the "Status" filter on my unpaid months keeps. */
@@ -48,22 +48,20 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) {
   const { communityId } = useWorkspace();
   const arrears = useMyArrears(communityId);
-  const [year, setYear] = useState('all');
+  // Like My payments: one year at a time, this year first.
+  const [year, setYear] = useState(String(THIS_YEAR));
   const [state, setState] = useState<MonthState>('all');
 
   const data = arrears.data;
   const hasMonths = (data?.months.length ?? 0) > 0;
-  const filtering = year !== 'all' || state !== 'all';
+  const filtering = state !== 'all';
   // The same years as My payments' Period, plus any older year still owed, newest first.
   const periodOptions = [
-    { value: 'all', label: 'All years' },
-    ...[
-      ...YEAR_OPTIONS,
-      ...(data?.years ?? [])
-        .filter((y) => !YEAR_OPTIONS.some((o) => o.value === String(y.year)))
-        .map((y) => ({ value: String(y.year), label: String(y.year) })),
-    ].sort((a, b) => Number(b.value) - Number(a.value)),
-  ];
+    ...YEAR_OPTIONS,
+    ...(data?.years ?? [])
+      .filter((y) => !YEAR_OPTIONS.some((o) => o.value === String(y.year)))
+      .map((y) => ({ value: String(y.year), label: String(y.year) })),
+  ].sort((a, b) => Number(b.value) - Number(a.value));
   // A chosen year narrows everything, the "Still to pay" totals too; Status only the months.
   const inYear = data && scopeToYear(data, year);
   const shown: MemberArrears | undefined = inYear && {
@@ -101,14 +99,7 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
               />
             )}
             {filtering && (
-              <Button
-                inline
-                variant="tint"
-                onClick={() => {
-                  setYear('all');
-                  setState('all');
-                }}
-              >
+              <Button inline variant="tint" onClick={() => setState('all')}>
                 Clear filters
               </Button>
             )}
@@ -120,14 +111,7 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
       ) : arrears.error ? (
         <ErrorState title="Couldn't load your arrears" message={errorMessage(arrears.error)} />
       ) : (
-        shown && (
-          <ArrearsBody
-            data={shown}
-            onPay={onPay}
-            who="you"
-            scope={year === 'all' ? 'past months' : year}
-          />
-        )
+        shown && <ArrearsBody data={shown} onPay={onPay} who="you" scope={year} />
       )}
     </section>
   );
@@ -135,7 +119,6 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
 
 /** Only one year's months, with the totals worked out for that year. */
 function scopeToYear(data: MemberArrears, year: string): MemberArrears {
-  if (year === 'all') return data;
   const months = data.months.filter((m) => String(m.year) === year);
   return {
     ...data,

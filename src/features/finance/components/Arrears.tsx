@@ -9,6 +9,7 @@ import {
   IconCheckCircle,
   IconClock,
   LoadingState,
+  Select,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
@@ -18,6 +19,23 @@ import type { ArrearsMonth, ArrearsRow, MemberArrears, Period } from '../api/arr
 import { formatAmount } from '../format';
 import { periodLabel } from '../labels';
 import { Money } from './Money';
+
+/** What the "Status" filter on my unpaid months keeps. */
+type MonthState = 'all' | 'unpaid' | 'partly' | 'waiting';
+
+const MONTH_STATES: { value: MonthState; label: string }[] = [
+  { value: 'all', label: 'All unpaid months' },
+  { value: 'unpaid', label: 'Nothing paid yet' },
+  { value: 'partly', label: 'Partly paid' },
+  { value: 'waiting', label: 'Waiting for the Treasurer' },
+];
+
+function matchesState(month: ArrearsMonth, state: MonthState): boolean {
+  if (state === 'unpaid') return month.paid_minor === 0;
+  if (state === 'partly') return month.paid_minor > 0;
+  if (state === 'waiting') return month.pending_minor > 0;
+  return true;
+}
 
 const since = (p: Period | null) => (p ? periodLabel(p.year, p.month) : '—');
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -29,24 +47,72 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) {
   const { communityId } = useWorkspace();
   const arrears = useMyArrears(communityId);
+  const [year, setYear] = useState('all');
+  const [state, setState] = useState<MonthState>('all');
+
+  const data = arrears.data;
+  const hasMonths = (data?.months.length ?? 0) > 0;
+  const filtering = year !== 'all' || state !== 'all';
+  // The totals above the table stay for everything owed; the filters only narrow the months.
+  const shown: MemberArrears | undefined = data && {
+    ...data,
+    months: data.months.filter(
+      (m) => (year === 'all' || String(m.year) === year) && matchesState(m, state),
+    ),
+    years: data.years.filter((y) => year === 'all' || String(y.year) === year),
+  };
 
   return (
     <section className="card arrears" aria-labelledby="arrears-title">
-      <header className="table-card__head">
-        <h2 id="arrears-title" className="section-head__title">
-          Ibirarane <span className="arrears__translation">(arrears)</span>
-        </h2>
-        <p className="section-head__subtitle">
-          Months you still owe since you joined, oldest first. A payment for a month pays that
-          month; an arrears payment pays the oldest month first.
-        </p>
+      <header className="table-card__head my-contributions__head">
+        <div>
+          <h2 id="arrears-title" className="section-head__title">
+            Ibirarane <span className="arrears__translation">(arrears)</span>
+          </h2>
+          <p className="section-head__subtitle">
+            Months you still owe since you joined, oldest first. A payment for a month pays that
+            month; an arrears payment pays the oldest month first.
+          </p>
+        </div>
+
+        {data && hasMonths && (
+          <div className="my-contributions__filters">
+            <Select
+              label="Year"
+              value={year}
+              onChange={(event) => setYear(event.target.value)}
+              options={[
+                { value: 'all', label: 'All years' },
+                ...data.years.map((y) => ({ value: String(y.year), label: String(y.year) })),
+              ]}
+            />
+            <Select
+              label="Status"
+              value={state}
+              onChange={(event) => setState(event.target.value as MonthState)}
+              options={MONTH_STATES}
+            />
+            {filtering && (
+              <Button
+                inline
+                variant="tint"
+                onClick={() => {
+                  setYear('all');
+                  setState('all');
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
+        )}
       </header>
       {arrears.isPending ? (
         <LoadingState label="Working out what is left to pay…" />
       ) : arrears.error ? (
         <ErrorState title="Couldn't load your arrears" message={errorMessage(arrears.error)} />
       ) : (
-        <ArrearsBody data={arrears.data} onPay={onPay} who="you" />
+        shown && <ArrearsBody data={shown} onPay={onPay} who="you" />
       )}
     </section>
   );
@@ -121,6 +187,13 @@ function ArrearsBody({
             </tr>
           </thead>
           <tbody>
+            {data.months.length === 0 && (
+              <tr>
+                <td colSpan={onPay ? 5 : 4} className="table__muted">
+                  No months match these filters. Try another year or clear the filters.
+                </td>
+              </tr>
+            )}
             {data.years.map((year) => (
               <YearRows
                 key={year.year}

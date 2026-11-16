@@ -64,11 +64,6 @@ export function LoginForm() {
         <p className="login-form__subtitle">Sign in with your email and password.</p>
       </div>
 
-      <p className="login-form__invited">
-        <strong>Were you invited?</strong> Open the link in your invitation email first and choose
-        your password there. After that, sign in here with your email and that password.
-      </p>
-
       <Input
         label="Email"
         type="text"
@@ -124,6 +119,9 @@ export function LoginForm() {
       <Button type="submit" variant="primary" disabled={login.isPending}>
         {login.isPending ? 'Signing in…' : 'Sign in'}
       </Button>
+
+      {/* Invited members choose their password from the invitation email first. */}
+      <p className="login-form__invited">Invited? Open the link in your invitation email first.</p>
     </form>
   );
 }

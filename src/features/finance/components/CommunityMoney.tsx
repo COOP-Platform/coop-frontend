@@ -1,13 +1,6 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import {
-  Button,
-  IconPlusCircle,
-  IconUserCheck,
-  PageHeader,
-  SegmentedControl,
-} from '@/components/ui';
+import { Button, IconUserCheck, PageHeader, SegmentedControl } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 
 import { formatAmount } from '../format';
@@ -39,7 +32,6 @@ export function CommunityMoney({
   tab: MoneyTab;
   onTabChange: (tab: MoneyTab) => void;
 }) {
-  const navigate = useNavigate();
   const { can } = useWorkspace();
   const pending = usePendingForMe();
   // Who is behind is the Treasurer's to see, like reminders.
@@ -84,32 +76,18 @@ export function CommunityMoney({
         title="Community Money"
         subtitle="Member contributions, and all the money the community has and where it comes from."
         actions={
-          <>
-            {canRecordForMember && (
-              <Button
-                variant="secondary"
-                inline
-                icon={<IconUserCheck />}
-                onClick={() => {
-                  setNotice(null);
-                  setRecordingForMember(true);
-                }}
-              >
-                Record a payment for a member
-              </Button>
-            )}
-            {can('finance.contribution.record') && (
-              <Button
-                inline
-                icon={<IconPlusCircle />}
-                onClick={() =>
-                  void navigate({ to: '/finance/my-contributions', search: { record: true } })
-                }
-              >
-                Record Contribution
-              </Button>
-            )}
-          </>
+          canRecordForMember && (
+            <Button
+              inline
+              icon={<IconUserCheck />}
+              onClick={() => {
+                setNotice(null);
+                setRecordingForMember(true);
+              }}
+            >
+              Record a payment for a member
+            </Button>
+          )
         }
       />
 

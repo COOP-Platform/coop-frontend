@@ -2,6 +2,7 @@
 export { FinanceDashboard } from './components/FinanceDashboard';
 export { FinanceAccessGate } from './components/FinanceAccessGate';
 export { MyContributions } from './components/MyContributions';
+export type { MyContributionsView } from './components/MyContributions';
 export { PaymentReview } from './components/PaymentReview';
 export type { ReviewAction } from './components/PaymentReview';
 export { CommunityMoney } from './components/CommunityMoney';

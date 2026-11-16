@@ -56,3 +56,16 @@
     padding-inline: var(--space-4);
   }
 }
+
+/* My Contributions: status and type filters above the payment list. */
+.my-contributions__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+  padding: 0 var(--space-8) var(--space-4);
+}
+
+.my-contributions__filters > .field {
+  min-width: 11rem;
+}

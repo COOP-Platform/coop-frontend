@@ -1,17 +1,28 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import { Button, IconPlusCircle, PageHeader, SegmentedControl } from '@/components/ui';
+import {
+  Button,
+  IconPlusCircle,
+  IconUserCheck,
+  PageHeader,
+  SegmentedControl,
+} from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 
+import { formatAmount } from '../format';
 import { THIS_MONTH } from '../month';
+import { RecordContributionDialog } from './RecordContributionDialog';
+import { SuccessNotice } from './SuccessNotice';
 import { usePendingForMe } from '../review-rights';
 import { AccountsPage } from './AccountsPage';
 import { CommunityArrearsSection } from './Arrears';
 import { CashBox } from './CashBox';
+import { FinesSection } from './fines/FinesSection';
 import { AllPayments, MonthOverview, ReviewQueue } from './MemberContributions';
 
-export type MoneyTab = 'month' | 'review' | 'arrears' | 'payments' | 'pocket' | 'accounts';
+export type MoneyTab =
+  'month' | 'review' | 'arrears' | 'fines' | 'payments' | 'pocket' | 'accounts';
 
 /**
  * Community Money, one message per section:
@@ -33,8 +44,14 @@ export function CommunityMoney({
   const pending = usePendingForMe();
   // Who is behind is the Treasurer's to see, like reminders.
   const canSeeArrears = can('finance.contribution.confirm');
+  const canSeeFines = can('finance.fine.issue') || can('finance.fine.manage');
   // Shared so switching between This month and All payments keeps the month.
   const [month, setMonth] = useState(THIS_MONTH);
+  // The Treasurer records a payment a member made to them directly (the server needs both).
+  const canRecordForMember =
+    can('finance.contribution.record') && can('finance.contribution.record_for_member');
+  const [recordingForMember, setRecordingForMember] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const tabs: { value: MoneyTab; label: string }[] = [
     { value: 'month', label: 'This month' },
@@ -47,13 +64,16 @@ export function CommunityMoney({
         ]
       : []),
     ...(canSeeArrears ? [{ value: 'arrears' as const, label: 'Ibirarane' }] : []),
+    ...(canSeeFines ? [{ value: 'fines' as const, label: 'Fines' }] : []),
     { value: 'payments', label: 'All payments' },
     { value: 'pocket', label: 'Community pocket' },
     { value: 'accounts', label: 'Bank & MoMo' },
   ];
   // A non-reviewer who follows a ?tab=review link lands on This month.
   const current =
-    (tab === 'review' && !pending.isReviewer) || (tab === 'arrears' && !canSeeArrears)
+    (tab === 'review' && !pending.isReviewer) ||
+    (tab === 'arrears' && !canSeeArrears) ||
+    (tab === 'fines' && !canSeeFines)
       ? 'month'
       : tab;
 
@@ -64,25 +84,58 @@ export function CommunityMoney({
         title="Community Money"
         subtitle="Member contributions, and all the money the community has and where it comes from."
         actions={
-          can('finance.contribution.record') && (
-            <Button
-              inline
-              icon={<IconPlusCircle />}
-              onClick={() =>
-                void navigate({ to: '/finance/my-contributions', search: { record: true } })
-              }
-            >
-              Record Contribution
-            </Button>
-          )
+          <>
+            {canRecordForMember && (
+              <Button
+                variant="secondary"
+                inline
+                icon={<IconUserCheck />}
+                onClick={() => {
+                  setNotice(null);
+                  setRecordingForMember(true);
+                }}
+              >
+                Record a payment for a member
+              </Button>
+            )}
+            {can('finance.contribution.record') && (
+              <Button
+                inline
+                icon={<IconPlusCircle />}
+                onClick={() =>
+                  void navigate({ to: '/finance/my-contributions', search: { record: true } })
+                }
+              >
+                Record Contribution
+              </Button>
+            )}
+          </>
         }
       />
+
+      {notice && <SuccessNotice text={notice} />}
+
+      {canRecordForMember && (
+        <RecordContributionDialog
+          open={recordingForMember}
+          forMember
+          shares={undefined}
+          onClose={() => setRecordingForMember(false)}
+          onRecorded={(contribution) => {
+            setRecordingForMember(false);
+            setNotice(
+              `${formatAmount(contribution.amount_minor)} ${contribution.currency} recorded for ${contribution.member.full_name}. It stays pending until someone else confirms it.`,
+            );
+          }}
+        />
+      )}
 
       <SegmentedControl label="Section" options={tabs} value={current} onChange={onTabChange} />
 
       {current === 'month' && <MonthOverview month={month} onMonthChange={setMonth} />}
       {current === 'review' && <ReviewQueue />}
       {current === 'arrears' && <CommunityArrearsSection />}
+      {current === 'fines' && <FinesSection />}
       {current === 'payments' && <AllPayments month={month} onMonthChange={setMonth} />}
       {current === 'pocket' && <CashBox />}
       {current === 'accounts' && <AccountsPage embedded />}

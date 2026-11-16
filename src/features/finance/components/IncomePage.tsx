@@ -6,12 +6,14 @@ import {
   Drawer,
   EmptyState,
   ErrorState,
+  IconBan,
+  IconCheckCircle,
   IconEye,
   IconHistory,
   IconPiggyBank,
   IconSearch,
   IconWallet,
-  IconFile,
+  IconClipboardClock,
   LoadingState,
   SegmentedControl,
   StatCard,
@@ -20,8 +22,14 @@ import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatLongDate } from '@/lib/format/date';
 
-import { useIncomeDetail, useIncomeList, useReverseIncome } from '../api/income';
-import type { Income, IncomeSource } from '../api/income';
+import {
+  useApproveIncome,
+  useIncomeDetail,
+  useIncomeList,
+  useRejectIncome,
+  useReverseIncome,
+} from '../api/income';
+import type { Income, IncomeSource, IncomeStatus } from '../api/income';
 import { formatAmount } from '../format';
 import { INCOME_SOURCE, INCOME_STATUS, METHOD_LABEL, NO_METHOD } from '../labels';
 import { THIS_MONTH, monthName } from '../month';
@@ -44,10 +52,20 @@ const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+type StatusFilter = 'all' | IncomeStatus;
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'Waiting' },
+  { value: 'recorded', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'reversed', label: 'Reversed' },
+];
+
 /**
- * Money in that is not a member's contribution (backend S3-35). Counts in the
- * wallet as soon as it is recorded; every member reads it; a mistake is
- * reversed with a reason, never edited or deleted.
+ * Money in that is not a member's contribution (backend S3-35). It waits for
+ * someone other than the recorder to approve it, then counts in the wallet;
+ * every member reads it; a mistake is reversed with a reason, never edited or
+ * deleted.
  */
 export function IncomePage({
   startRecording = false,
@@ -62,6 +80,7 @@ export function IncomePage({
 
   const [month, setMonth] = useState(THIS_MONTH);
   const [source, setSource] = useState<SourceFilter>('all');
+  const [status, setStatus] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Income | null>(null);
@@ -71,6 +90,7 @@ export function IncomePage({
   const list = useIncomeList(communityId, {
     month,
     source: source === 'all' ? undefined : source,
+    status: status === 'all' ? undefined : status,
     search: search.trim() || undefined,
     page,
     page_size: PAGE_SIZE,
@@ -115,16 +135,17 @@ export function IncomePage({
         <StatCard
           label="Income"
           value={<Money minor={summary.total_income_minor} currency={summary.currency} />}
-          caption={`Counted in the wallet, ${label}`}
+          caption={`${summary.count} approved, counted in the wallet, ${label}`}
           icon={<IconWallet />}
           tone="brand"
         />
         <StatCard
-          label="Entries"
-          value={summary.count}
-          caption="Recorded and counting"
-          icon={<IconFile />}
-          tone="info"
+          label="Waiting for approval"
+          value={<Money minor={summary.pending_minor} currency={summary.currency} />}
+          caption={`${summary.pending_count} not counted yet`}
+          icon={<IconClipboardClock />}
+          tone="warning"
+          emphasis={summary.pending_count > 0}
         />
         <StatCard
           label="Reversed"
@@ -157,6 +178,15 @@ export function IncomePage({
         </div>
         <div className="toolbar__controls">
           <SegmentedControl
+            label="Filter by status"
+            options={STATUS_OPTIONS}
+            value={status}
+            onChange={(value) => {
+              setStatus(value);
+              setPage(1);
+            }}
+          />
+          <SegmentedControl
             label="Filter by source"
             options={SOURCE_OPTIONS}
             value={source}
@@ -183,7 +213,7 @@ export function IncomePage({
             icon={<IconPiggyBank width={28} height={28} />}
             title={`No income in ${label}`}
             message={
-              source === 'all' && !search
+              source === 'all' && status === 'all' && !search
                 ? 'Donations, event revenue and interest the Treasurer records will show here.'
                 : 'Nothing matches these filters.'
             }
@@ -294,7 +324,9 @@ export function IncomePage({
         onRecorded={(income) => {
           setRecording(false);
           setNotice(
-            `${income.title} (${formatAmount(income.amount_minor)} ${income.currency}) recorded and counted in the wallet.`,
+            income.status === 'pending'
+              ? `${income.title} (${formatAmount(income.amount_minor)} ${income.currency}) recorded. It is waiting for approval: it counts in the wallet once someone else approves it.`
+              : `${income.title} (${formatAmount(income.amount_minor)} ${income.currency}) recorded and counted in the wallet.`,
           );
         }}
       />
@@ -355,6 +387,22 @@ function IncomeDetails({ income, onDone }: { income: Income; onDone: (m: string)
             {row.recorded_by.full_name} · {formatDate(row.created_at)}
           </dd>
         </div>
+        {row.approved_by && row.approved_at && (
+          <div>
+            <dt>Approved by</dt>
+            <dd>
+              {row.approved_by.full_name} · {formatDate(row.approved_at)}
+            </dd>
+          </div>
+        )}
+        {row.rejected_by && row.rejected_at && (
+          <div>
+            <dt>Rejected by</dt>
+            <dd>
+              {row.rejected_by.full_name} · {formatDate(row.rejected_at)}
+            </dd>
+          </div>
+        )}
         {row.reversed_by && row.reversed_at && (
           <div>
             <dt>Reversed by</dt>
@@ -380,11 +428,23 @@ function IncomeDetails({ income, onDone }: { income: Income; onDone: (m: string)
       </dl>
 
       {row.memo && <p className="details__note">{row.memo}</p>}
+      {row.rejection_reason && (
+        <p className="details__note" role="note">
+          <strong>Rejected:</strong> {row.rejection_reason}
+        </p>
+      )}
       {row.reversal_reason && (
         <p className="details__note" role="note">
           <strong>Reversed:</strong> {row.reversal_reason}
         </p>
       )}
+      {detail.error && (
+        <p className="table__warn" role="alert">
+          {errorMessage(detail.error)}
+        </p>
+      )}
+
+      <IncomeApproval row={row} onDone={onDone} />
 
       {row.status === 'recorded' && can('finance.income.reverse') && communityId && (
         <div className="review-actions">
@@ -416,5 +476,70 @@ function IncomeDetails({ income, onDone }: { income: Income; onDone: (m: string)
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Approve or reject pending income, from its details. The server says who may
+ * (`can_approve`): never the person who recorded it.
+ */
+function IncomeApproval({ row, onDone }: { row: Income; onDone: (m: string) => void }) {
+  const { communityId, can, membership } = useWorkspace();
+  const approve = useApproveIncome();
+  const reject = useRejectIncome();
+  const [rejecting, setRejecting] = useState(false);
+
+  if (row.status !== 'pending' || communityId === undefined) return null;
+  const amount = `${formatAmount(row.amount_minor)} ${row.currency}`;
+  const ids = { communityId, incomeId: row.id };
+
+  if (!row.can_approve) {
+    if (!can('finance.income.approve')) return null;
+    return row.recorded_by.membership_id === membership?.id ? (
+      <p className="details__note">You recorded this, so someone else has to approve it.</p>
+    ) : null;
+  }
+
+  return (
+    <div className="review-actions">
+      <Button
+        inline
+        icon={<IconCheckCircle />}
+        disabled={approve.isPending}
+        onClick={() =>
+          approve.mutate(ids, {
+            onSuccess: () =>
+              onDone(`${row.title} (${amount}) approved. It now counts in the wallet.`),
+          })
+        }
+      >
+        {approve.isPending ? 'Approving…' : 'Approve'}
+      </Button>
+      <Button variant="secondary" inline icon={<IconBan />} onClick={() => setRejecting(true)}>
+        Reject
+      </Button>
+      {approve.error && (
+        <p className="table__warn" role="alert">
+          {errorMessage(approve.error)}
+        </p>
+      )}
+      <ReasonPrompt
+        open={rejecting}
+        title="Reject income"
+        subtitle="It never counts. The reason stays on the record."
+        icon={<IconBan />}
+        about={`${row.title} · ${amount}`}
+        placeholder="e.g. The money never arrived, or the amount is wrong."
+        confirmLabel="Reject income"
+        busy={reject.isPending}
+        onClose={() => setRejecting(false)}
+        onSubmit={(reason) =>
+          reject.mutateAsync({ ...ids, reason }).then(() => {
+            setRejecting(false);
+            onDone(`${row.title} (${amount}) rejected.`);
+          })
+        }
+      />
+    </div>
   );
 }

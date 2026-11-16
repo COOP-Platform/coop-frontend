@@ -76,6 +76,21 @@ export const queryKeys = {
     communityArrears: (communityId: string) => ['finance', communityId, 'arrears', 'all'] as const,
     memberArrears: (communityId: string, membershipId: string) =>
       ['finance', communityId, 'arrears', 'member', membershipId] as const,
+    /** Financial years: open or closed, with what each closed year came to. */
+    years: (communityId: string) => ['finance', communityId, 'years'] as const,
+    /** Fines: the rules, the issued list, what the rules suggest, and yours. */
+    fineRules: (communityId: string) => ['finance', communityId, 'fines', 'rules'] as const,
+    fines: (communityId: string, filters: Record<string, unknown>) =>
+      ['finance', communityId, 'fines', 'list', filters] as const,
+    fineSuggestions: (communityId: string) =>
+      ['finance', communityId, 'fines', 'suggestions'] as const,
+    myFines: (communityId: string) => ['finance', communityId, 'fines', 'me'] as const,
+  },
+  /** The signed-in user's own notifications, across communities. */
+  notifications: {
+    all: ['notifications'] as const,
+    list: (filters: Record<string, unknown>) => ['notifications', 'list', filters] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
   },
   users: {
     all: ['users'] as const,

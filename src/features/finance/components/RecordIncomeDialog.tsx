@@ -30,8 +30,8 @@ interface Errors {
 }
 
 /**
- * Money in that is not a member's contribution. No approval: it counts in the
- * wallet as soon as it is saved, and is corrected only by a reversal.
+ * Money in that is not a member's contribution. It waits for someone else to
+ * approve it before it counts, and is corrected only by a reversal.
  */
 export function RecordIncomeDialog({
   open,
@@ -47,7 +47,7 @@ export function RecordIncomeDialog({
       open={open}
       onClose={onClose}
       title="Record Income"
-      subtitle="Donations, event revenue, interest: money in that is not a member's contribution. It counts straight away."
+      subtitle="Donations, event revenue, interest: money in that is not a member's contribution. It counts once someone else approves it."
       icon={
         <IconTile tone="brand" round>
           <IconPiggyBank />

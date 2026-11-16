@@ -161,6 +161,11 @@ export interface RecordContributionInput {
   amount_minor: number;
   contribution_type: ContributionType;
   campaign_id?: string;
+  /**
+   * Someone else's payment, recorded for them (needs
+   * finance.contribution.record_for_member). The recorder cannot confirm it.
+   */
+  membership_id?: string;
   /** ISO date, not in the future. */
   paid_at: string;
   period_year?: number;

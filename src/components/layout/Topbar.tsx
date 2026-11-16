@@ -15,6 +15,7 @@ import { APPS } from '@/config/apps';
 import { env } from '@/config/env';
 import { selectCommunity, useWorkspace } from '@/features/auth';
 import { effectiveStatus, useInvitations } from '@/features/members';
+import { NotificationsMenu, useUnreadNotificationCount } from '@/features/notifications';
 import { clearSession } from '@/lib/auth/session';
 import { formatRelative } from '@/lib/format/date';
 import { queryClient } from '@/lib/query-client';
@@ -37,32 +38,11 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
   const invitations = useInvitations(communityId, canInvite);
   const pending = (invitations.data ?? []).filter((i) => effectiveStatus(i) === 'pending');
 
-  /*
-   * A member who does not send invitations gets notes about themselves only,
-   * never about the community at large. There is no notifications endpoint,
-   * so these come from their own membership in /auth/me.
-   */
-  const personal: { id: string; title: string; detail: string; urgent: boolean }[] = [];
-  if (!canInvite && membership) {
-    if (membership.status === 'suspended') {
-      personal.push({
-        id: 'suspended',
-        title: 'Your membership is suspended',
-        detail: 'You cannot use this community until an administrator reinstates you.',
-        urgent: true,
-      });
-    }
-    const held = membership.positions.filter((p) => p.name !== 'Member');
-    if (held.length > 0) {
-      personal.push({
-        id: 'positions',
-        title: `You hold ${held.map((p) => p.name).join(', ')}`,
-        detail: 'Your positions in this community.',
-        urgent: false,
-      });
-    }
-  }
-  const alertCount = canInvite ? pending.length : personal.filter((n) => n.urgent).length;
+  // The bell counts unread notifications (polled every minute while the tab
+  // is visible). Invitations awaiting an answer are listed under them for
+  // those who send invitations, but are not notifications and are not counted.
+  const unreadCount = useUnreadNotificationCount(me !== undefined).data ?? 0;
+  const suspended = membership?.status === 'suspended';
 
   function handleLogout() {
     clearSession();
@@ -197,30 +177,38 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
       </div>
 
       <div className="topbar__end">
-        {/*
-          No notifications endpoint. Those who invite see invitations awaiting
-          an answer; everyone else sees only notes about themselves.
-        */}
         <Dropdown
           chevron={false}
           align="end"
-          label={alertCount > 0 ? `Notifications, ${alertCount} new` : 'Notifications'}
+          label={
+            unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications, none unread'
+          }
           triggerClassName="topbar__icon-btn topbar__bell"
           trigger={
             <>
               <IconBell width={22} height={22} />
-              {alertCount > 0 && <span className="topbar__dot" aria-hidden="true" />}
+              {unreadCount > 0 && (
+                <span className="topbar__count" aria-hidden="true">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </>
           }
         >
-          {(close) =>
-            canInvite ? (
-              <div className="menu menu--wide">
-                <p className="menu__heading">Awaiting response</p>
-                {pending.length === 0 ? (
-                  <p className="menu__note menu__item-meta">Nothing needs your attention.</p>
-                ) : (
-                  pending.slice(0, 4).map((invitation) => (
+          {(close) => (
+            <NotificationsMenu close={close}>
+              {suspended && (
+                <div className="menu__note notif-menu__extra">
+                  <span className="menu__item-title">Your membership is suspended</span>
+                  <span className="menu__item-meta">
+                    You cannot use this community until an administrator reinstates you.
+                  </span>
+                </div>
+              )}
+              {canInvite && pending.length > 0 && (
+                <div className="notif-menu__extra">
+                  <p className="menu__heading">Invitations awaiting response</p>
+                  {pending.slice(0, 3).map((invitation) => (
                     <div key={invitation.id} className="menu__note">
                       <span className="menu__item-title">{invitation.full_name}</span>
                       <span className="menu__item-meta">
@@ -228,28 +216,18 @@ export function Topbar({ app, onMenuClick }: TopbarProps) {
                         {formatRelative(invitation.expires_at)}
                       </span>
                     </div>
-                  ))
-                )}
-                <Link to="/community/invitations" className="menu__footer-link" onClick={close}>
-                  View invitations
-                </Link>
-              </div>
-            ) : (
-              <div className="menu menu--wide">
-                <p className="menu__heading">For you</p>
-                {personal.length === 0 ? (
-                  <p className="menu__note menu__item-meta">Nothing new for you.</p>
-                ) : (
-                  personal.map((note) => (
-                    <div key={note.id} className="menu__note">
-                      <span className="menu__item-title">{note.title}</span>
-                      <span className="menu__item-meta">{note.detail}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            )
-          }
+                  ))}
+                  <Link
+                    to="/community/invitations"
+                    className="menu__item notif-menu__inline-link"
+                    onClick={close}
+                  >
+                    View invitations
+                  </Link>
+                </div>
+              )}
+            </NotificationsMenu>
+          )}
         </Dropdown>
 
         <span className="topbar__divider" aria-hidden="true" />

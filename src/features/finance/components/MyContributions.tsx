@@ -32,6 +32,8 @@ import { METHOD_LABEL, NO_METHOD, STATUS_LABEL } from '../labels';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
 import { MyArrears } from './Arrears';
+import { leftToRecord } from './fines/fine-text';
+import { MyFines } from './fines/MyFines';
 import { RecordContributionDialog } from './RecordContributionDialog';
 import type { RecordInitial } from './RecordContributionDialog';
 
@@ -203,6 +205,17 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
                   period: toPeriod(month),
                   amountMinor: month.remaining_minor,
                 });
+                setRecording(true);
+              }
+            : undefined
+        }
+      />
+
+      <MyFines
+        onPay={
+          canRecord
+            ? (fine) => {
+                setPrefill({ type: 'fine', fineId: fine.id, amountMinor: leftToRecord(fine) });
                 setRecording(true);
               }
             : undefined

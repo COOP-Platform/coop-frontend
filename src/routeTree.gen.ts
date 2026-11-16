@@ -15,6 +15,7 @@ import { Route as FinanceRouteImport } from './routes/finance';
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as MeetingsRouteImport } from './routes/meetings';
+import { Route as NotificationsRouteImport } from './routes/notifications';
 import { Route as PlatformRouteImport } from './routes/platform';
 import { Route as RegisterRouteImport } from './routes/register';
 import { Route as ResetPasswordRouteImport } from './routes/reset-password';
@@ -86,6 +87,11 @@ const LoginRoute = LoginRouteImport.update({
 const MeetingsRoute = MeetingsRouteImport.update({
   id: '/meetings',
   path: '/meetings',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any);
 const PlatformRoute = PlatformRouteImport.update({
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/meetings': typeof MeetingsRouteWithChildren;
+  '/notifications': typeof NotificationsRoute;
   '/platform': typeof PlatformRouteWithChildren;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
@@ -358,6 +365,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute;
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
+  '/notifications': typeof NotificationsRoute;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
@@ -408,6 +416,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute;
   '/login': typeof LoginRoute;
   '/meetings': typeof MeetingsRouteWithChildren;
+  '/notifications': typeof NotificationsRoute;
   '/platform': typeof PlatformRouteWithChildren;
   '/register': typeof RegisterRoute;
   '/reset-password': typeof ResetPasswordRoute;
@@ -460,6 +469,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/meetings'
+    | '/notifications'
     | '/platform'
     | '/register'
     | '/reset-password'
@@ -507,6 +517,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
+    | '/notifications'
     | '/register'
     | '/reset-password'
     | '/status'
@@ -556,6 +567,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/meetings'
+    | '/notifications'
     | '/platform'
     | '/register'
     | '/reset-password'
@@ -607,6 +619,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute;
   LoginRoute: typeof LoginRoute;
   MeetingsRoute: typeof MeetingsRouteWithChildren;
+  NotificationsRoute: typeof NotificationsRoute;
   PlatformRoute: typeof PlatformRouteWithChildren;
   RegisterRoute: typeof RegisterRoute;
   ResetPasswordRoute: typeof ResetPasswordRoute;
@@ -660,6 +673,13 @@ declare module '@tanstack/react-router' {
       path: '/meetings';
       fullPath: '/meetings';
       preLoaderRoute: typeof MeetingsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/notifications': {
+      id: '/notifications';
+      path: '/notifications';
+      fullPath: '/notifications';
+      preLoaderRoute: typeof NotificationsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/platform': {
@@ -1071,6 +1091,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   MeetingsRoute: MeetingsRouteWithChildren,
+  NotificationsRoute: NotificationsRoute,
   PlatformRoute: PlatformRouteWithChildren,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,

@@ -3,17 +3,20 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { apiFetch } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query-keys';
 
-import { toQuery } from './expenses';
+import { toQuery, useFinanceWrite } from './expenses';
 import type { MemberRef, PaymentMethod } from './types';
 
 /*
  * Income (backend S3-35, finance/income.py): money in that is not a member's
- * contribution. No approval step: it counts in the wallet as soon as it is
- * recorded. Never edited; a mistake is reversed with a reason.
+ * contribution. New income starts `pending` and counts for nothing until
+ * someone other than the recorder, holding finance.income.approve, approves
+ * it (status `recorded`) or rejects it with a reason. Never edited; approved
+ * income that was a mistake is reversed with a reason.
  */
 
 export type IncomeSource = 'donation' | 'event_revenue' | 'interest' | 'other';
-export type IncomeStatus = 'recorded' | 'reversed';
+/** `recorded` is approved income (or income from before approval existed): it counts. */
+export type IncomeStatus = 'pending' | 'recorded' | 'rejected' | 'reversed';
 
 export interface Income {
   id: string;
@@ -29,6 +32,13 @@ export interface Income {
   status: IncomeStatus;
   has_receipt: boolean;
   recorded_by: MemberRef;
+  approved_by: MemberRef | null;
+  approved_at: string | null;
+  rejected_by: MemberRef | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  /** You may approve or reject it: pending, you hold the right, and you did not record it. */
+  can_approve: boolean;
   reversed_by: MemberRef | null;
   reversed_at: string | null;
   reversal_reason: string | null;
@@ -56,10 +66,14 @@ export interface IncomeList {
   page_size: number;
   summary: {
     currency: string;
-    /** Recorded (not reversed) income the filters match. */
+    /** Approved (counted) income the filters match. */
     total_income_minor: number;
+    /** Approved rows. */
     count: number;
     reversed_count: number;
+    /** Waiting for approval: does not count yet. */
+    pending_minor: number;
+    pending_count: number;
   };
 }
 
@@ -134,4 +148,28 @@ export function useReverseIncome() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.finance.all(communityId) });
     },
   });
+}
+
+interface IncomeAction {
+  communityId: string;
+  incomeId: string;
+}
+
+/** Someone else's pending income starts counting. 403 `own_income` on your own. */
+export function useApproveIncome() {
+  return useFinanceWrite(({ communityId, incomeId }: IncomeAction) =>
+    apiFetch<IncomeDetail>(`/communities/${communityId}/income/${incomeId}/approve/`, {
+      method: 'POST',
+    }),
+  );
+}
+
+/** It never counts; the reason stays on the record. */
+export function useRejectIncome() {
+  return useFinanceWrite(({ communityId, incomeId, reason }: IncomeAction & { reason: string }) =>
+    apiFetch<IncomeDetail>(`/communities/${communityId}/income/${incomeId}/reject/`, {
+      method: 'POST',
+      body: { reason },
+    }),
+  );
 }

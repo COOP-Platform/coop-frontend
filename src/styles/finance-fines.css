@@ -1,0 +1,58 @@
+/* Fines: My Contributions ("My fines") and the Community Money "Fines" tab. */
+.fines__head {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.fines__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-8) var(--space-4);
+}
+
+.fines__notice {
+  padding: 0 var(--space-8) var(--space-4);
+}
+
+.fines__note {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.fines__check-col {
+  width: 2.5rem;
+}
+
+.fines__foot {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.fines__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.fines__danger {
+  color: var(--color-danger);
+}
+
+.fines__row--off td {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .fines__filters,
+  .fines__notice {
+    padding-inline: var(--space-4);
+  }
+}

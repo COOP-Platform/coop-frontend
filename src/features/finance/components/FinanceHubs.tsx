@@ -7,12 +7,13 @@ import { ExpensesPage } from './ExpensesPage';
 import { IncomePage } from './IncomePage';
 import { ReportsPage } from './ReportsPage';
 import { SharesPage } from './SharesPage';
+import { YearsPanel } from './years/YearsPanel';
 
 /*
  * The Finance sidebar groups related pages into one link with tabs:
  *   Expenses & Income  -> Expenses · Income
  *   Budgets & Shares   -> Budgets · Dedicated contributions · Shares
- *   Reports            -> Cash flow statement · By category
+ *   Reports            -> Cash flow statement · By category · Years
  * Each tab is the page it replaced, shown embedded (its header becomes a
  * section bar), and has its own address through ?tab=.
  */
@@ -113,11 +114,12 @@ export function BudgetsSharesPage({
 // Reports
 // ---------------------------------------------------------------------------
 
-export type ReportsTab = 'statement' | 'categories';
+export type ReportsTab = 'statement' | 'categories' | 'years';
 
 const REPORT_TABS: { value: ReportsTab; label: string }[] = [
   { value: 'statement', label: 'Cash flow statement' },
   { value: 'categories', label: 'By category' },
+  { value: 'years', label: 'Years' },
 ];
 
 export function ReportsHubPage({
@@ -132,10 +134,12 @@ export function ReportsHubPage({
       <PageHeader
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Reports"
-        subtitle="The cash flow statement, and where contributions, income and expenses came from and went."
+        subtitle="The cash flow statement, where contributions, income and expenses came from and went, and each year's close."
       />
       <Tabs options={REPORT_TABS} value={tab} onChange={onTabChange} />
-      {tab === 'statement' ? <CashFlowStatement embedded /> : <ReportsPage embedded />}
+      {tab === 'statement' && <CashFlowStatement embedded />}
+      {tab === 'categories' && <ReportsPage embedded />}
+      {tab === 'years' && <YearsPanel embedded />}
     </div>
   );
 }

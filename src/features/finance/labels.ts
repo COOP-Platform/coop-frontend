@@ -68,7 +68,9 @@ export const EXPENSE_STATUS: Record<ExpenseStatus, { label: string; tone: BadgeT
 };
 
 export const INCOME_STATUS: Record<IncomeStatus, { label: string; tone: BadgeTone }> = {
-  recorded: { label: 'Recorded', tone: 'success' },
+  pending: { label: 'Waiting for approval', tone: 'warning' },
+  recorded: { label: 'Approved', tone: 'success' },
+  rejected: { label: 'Rejected', tone: 'danger' },
   reversed: { label: 'Reversed', tone: 'neutral' },
 };
 

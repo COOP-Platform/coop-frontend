@@ -3,11 +3,14 @@ import { useState } from 'react';
 
 import { Button, Dialog, IconPlusCircle, IconTile, Input, Select } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
+import { useMemberships } from '@/features/members';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 
+import { useMyFines } from '../api/fines';
 import { useOpenCampaigns, useRecordContribution } from '../api/my-contributions';
 import type { Contribution, MyContributions } from '../api/my-contributions';
+import { useShareCategories } from '../api/shares';
 import type { ContributionType, PaymentMethod } from '../api/types';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { FilePicker } from './FilePicker';
@@ -26,8 +29,10 @@ const toInput = (minor: number | null | undefined) =>
   minor ? String(minor / MINOR_PER_MAJOR) : '';
 
 interface Errors {
+  membership_id?: string;
   contribution_type?: string;
   campaign_id?: string;
+  fine_id?: string;
   period?: string;
   amount?: string;
   paid_at?: string;
@@ -45,6 +50,11 @@ interface RecordContributionDialogProps {
   onRecorded: (contribution: Contribution) => void;
   /** Start filled in, e.g. "pay this unpaid month" from the arrears list. */
   initial?: RecordInitial;
+  /**
+   * Opened to record someone else's payment (needs
+   * finance.contribution.record_for_member): "Who paid?" starts unchosen.
+   */
+  forMember?: boolean;
 }
 
 export interface RecordInitial {
@@ -54,6 +64,8 @@ export interface RecordInitial {
   amountMinor?: number;
   /** For a dedicated payment: the contribution it goes to. */
   campaignId?: string;
+  /** For a fine payment: the fine it pays. */
+  fineId?: string;
 }
 
 /**
@@ -67,13 +79,18 @@ export function RecordContributionDialog({
   shares,
   onRecorded,
   initial,
+  forMember = false,
 }: RecordContributionDialogProps) {
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title="Record Contribution"
-      subtitle="Tell the Treasurer about a payment you made. It stays pending until they confirm it."
+      title={forMember ? 'Record a payment for a member' : 'Record Contribution'}
+      subtitle={
+        forMember
+          ? 'A member paid you or the community directly. It stays pending until someone else confirms it.'
+          : 'Tell the Treasurer about a payment you made. It stays pending until they confirm it.'
+      }
       icon={
         <IconTile tone="brand" round>
           <IconPlusCircle />
@@ -87,6 +104,7 @@ export function RecordContributionDialog({
           shares={shares}
           onRecorded={onRecorded}
           initial={initial}
+          forMember={forMember}
         />
       )}
     </Dialog>
@@ -98,16 +116,42 @@ function RecordContributionForm({
   shares,
   onRecorded,
   initial,
+  forMember = false,
 }: Omit<RecordContributionDialogProps, 'open'>) {
-  const { communityId } = useWorkspace();
+  const { communityId, can, membership } = useWorkspace();
   const record = useRecordContribution();
   const campaigns = useOpenCampaigns(communityId, true);
   const openCampaigns = campaigns.data?.items ?? [];
 
+  // "Who paid?": the Treasurer may record a payment on a member's behalf (needs both rights).
+  const canPickMember =
+    can('finance.contribution.record') && can('finance.contribution.record_for_member');
+  const members = useMemberships(canPickMember ? communityId : undefined, 'active');
+  const categories = useShareCategories(canPickMember ? communityId : undefined);
+  const [who, setWho] = useState<string>(canPickMember && forMember ? '' : 'me');
+  const forOther = who !== 'me';
+  const others = (members.data ?? []).filter((m) => m.id !== membership?.id);
+  const payer = others.find((m) => m.id === who);
+  /** What a member's shares come to a month, when their category is known. */
+  const owedPerMonth = (memberId: string | undefined) => {
+    const m = (members.data ?? []).find((row) => row.id === memberId);
+    const category = categories.data?.items.find((c) => c.id === m?.member_category);
+    return m && category ? category.share_price_minor * (m.shares ?? 1) : undefined;
+  };
+
+  // Fines still to pay, for "which fine is this for?" (your own fines only).
+  const myFines = useMyFines(communityId);
+  const openFines = (forOther ? [] : (myFines.data?.items ?? [])).filter(
+    (f) => f.status === 'issued' && f.outstanding_minor > 0,
+  );
+
   const today = new Date();
-  const monthly = shares?.owed_per_month_minor;
+  const monthly = forOther
+    ? owedPerMonth(who)
+    : (shares?.owed_per_month_minor ?? owedPerMonth(membership?.id));
   const [type, setType] = useState<ContributionType>(initial?.type ?? 'monthly');
   const [campaignId, setCampaignId] = useState(initial?.campaignId ?? '');
+  const [fineId, setFineId] = useState(initial?.fineId ?? '');
   const [period, setPeriod] = useState(initial?.period ?? toIsoMonth(today));
   const [amount, setAmount] = useState(toInput(initial?.amountMinor ?? monthly));
   const [paidAt, setPaidAt] = useState(toIsoDate(today));
@@ -134,21 +178,54 @@ function RecordContributionForm({
     } else if (next === 'dedicated') {
       const first = openCampaigns[0];
       setCampaignId(first?.id ?? '');
-      setAmount(toInput(first?.my_share.outstanding_minor ?? first?.my_share.owed_minor));
+      setAmount(
+        forOther ? '' : toInput(first?.my_share.outstanding_minor ?? first?.my_share.owed_minor),
+      );
+    } else if (next === 'fine' && openFines.length > 0) {
+      changeFine(openFines[0]?.id ?? '');
     } else {
       setAmount('');
     }
   }
 
+  function changeFine(id: string) {
+    setFineId(id);
+    const fine = openFines.find((f) => f.id === id);
+    setAmount(toInput(fine ? Math.max(fine.outstanding_minor - fine.pending_minor, 0) : 0));
+  }
+
   function changeCampaign(id: string) {
     setCampaignId(id);
     const campaign = openCampaigns.find((c) => c.id === id);
-    setAmount(toInput(campaign?.my_share.outstanding_minor ?? campaign?.my_share.owed_minor));
+    // What is left to pay is yours; for another member, leave the amount to the recorder.
+    setAmount(
+      forOther
+        ? ''
+        : toInput(campaign?.my_share.outstanding_minor ?? campaign?.my_share.owed_minor),
+    );
+  }
+
+  /** A different payer starts the form again: no arrears or fine prefill carries over. */
+  function changeWho(next: string) {
+    setWho(next);
+    setErrors({});
+    setType('monthly');
+    setPeriod(toIsoMonth(today));
+    setCampaignId('');
+    setFineId('');
+    setAmount(
+      toInput(
+        next === 'me'
+          ? (shares?.owed_per_month_minor ?? owedPerMonth(membership?.id))
+          : owedPerMonth(next),
+      ),
+    );
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const problems: Errors = {};
+    if (who === '') problems.membership_id = 'Choose who paid.';
     const amountMinor = Math.round(Number(amount) * MINOR_PER_MAJOR);
     if (amount.trim() === '' || !Number.isFinite(amountMinor) || amountMinor <= 0)
       problems.amount = 'Enter the amount you paid, more than 0.';
@@ -160,6 +237,8 @@ function RecordContributionForm({
       problems.period = 'Arrears pay for a past month. Choose an earlier month.';
     if (type === 'dedicated' && campaignId === '')
       problems.campaign_id = 'Choose the dedicated contribution you paid into.';
+    if (type === 'fine' && openFines.length > 0 && fineId === '')
+      problems.fine_id = 'Choose the fine you paid.';
     setErrors(problems);
     if (Object.keys(problems).length > 0 || communityId === undefined) return;
 
@@ -167,9 +246,11 @@ function RecordContributionForm({
     record.mutate(
       {
         communityId,
+        ...(forOther ? { membership_id: who } : {}),
         amount_minor: amountMinor,
         contribution_type: type,
         campaign_id: type === 'dedicated' ? campaignId : undefined,
+        ...(type === 'fine' && openFines.some((f) => f.id === fineId) ? { fine_id: fineId } : {}),
         paid_at: paidAt,
         period_year: hasPeriod ? year : undefined,
         period_month: hasPeriod ? month : undefined,
@@ -193,8 +274,10 @@ function RecordContributionForm({
           }
           const f = error instanceof ApiError ? error.fieldErrors : {};
           const mapped: Errors = {
+            membership_id: f.membership_id,
             contribution_type: f.contribution_type,
             campaign_id: f.campaign_id,
+            fine_id: f.fine_id,
             period: f.period_month ?? f.period_year,
             amount: f.amount_minor,
             paid_at: f.paid_at,
@@ -210,9 +293,33 @@ function RecordContributionForm({
   }
 
   const selectedCampaign = openCampaigns.find((c) => c.id === campaignId);
+  const selectedFine = openFines.find((f) => f.id === fineId);
 
   return (
     <form className="dialog__form" onSubmit={handleSubmit} noValidate>
+      {canPickMember && (
+        <Select
+          label="Who paid?"
+          value={who}
+          placeholder={who === '' ? 'Choose the member who paid' : undefined}
+          onChange={(event) => changeWho(event.target.value)}
+          options={[
+            { value: 'me', label: 'Me' },
+            ...others
+              .map((m) => ({ value: m.id, label: m.full_name ?? m.email ?? 'Member' }))
+              .sort((a, b) => a.label.localeCompare(b.label)),
+          ]}
+          hint={
+            forOther && who !== ''
+              ? 'You recorded it, so someone else must confirm it.'
+              : members.isPending
+                ? 'Loading members…'
+                : undefined
+          }
+          error={errors.membership_id}
+        />
+      )}
+
       <Select
         label="What is this payment for?"
         value={type}
@@ -233,6 +340,25 @@ function RecordContributionForm({
               : undefined
           }
           error={errors.campaign_id}
+        />
+      )}
+
+      {type === 'fine' && openFines.length > 0 && (
+        <Select
+          label="Which fine?"
+          value={fineId}
+          placeholder="Choose the fine you paid"
+          onChange={(event) => changeFine(event.target.value)}
+          options={openFines.map((f) => ({
+            value: f.id,
+            label: `${f.reason} · ${formatAmount(f.outstanding_minor)} ${f.currency} left`,
+          }))}
+          hint={
+            selectedFine && selectedFine.pending_minor > 0
+              ? `${formatAmount(selectedFine.pending_minor)} ${selectedFine.currency} for it is already waiting for the Treasurer.`
+              : undefined
+          }
+          error={errors.fine_id}
         />
       )}
 
@@ -258,7 +384,9 @@ function RecordContributionForm({
         onChange={(event) => setAmount(event.target.value)}
         hint={
           hasPeriod && monthly
-            ? `Your ${shares?.count ?? 1} share${shares?.count === 1 ? '' : 's'} come to ${formatAmount(monthly)} RWF a month.`
+            ? forOther
+              ? `${payer?.full_name ?? 'Their'}${payer?.full_name ? "'s" : ''} ${payer?.shares ?? 1} share${payer?.shares === 1 ? '' : 's'} come to ${formatAmount(monthly)} RWF a month.`
+              : `Your ${shares?.count ?? 1} share${shares?.count === 1 ? '' : 's'} come to ${formatAmount(monthly)} RWF a month.`
             : undefined
         }
         error={errors.amount}

@@ -1,0 +1,102 @@
+/* Year-end close: the Years tab of Finance > Reports. */
+.years {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.years__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.years__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.years__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.years__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-attention-bg);
+  color: var(--color-text);
+}
+
+.years__warning > svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: var(--color-warning-fill);
+}
+
+.years__figures {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.years__totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.years__totals > div {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.years__totals dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.years__totals dd {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.years__breakdown > summary {
+  cursor: pointer;
+  color: var(--color-brand-text);
+  font-weight: 600;
+}
+
+.years__breakdown .table {
+  margin-top: var(--space-2);
+}
+
+.years__amount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.years__pending-list {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+
+@media (max-width: 40rem) {
+  .years__card {
+    padding: var(--space-4);
+  }
+}

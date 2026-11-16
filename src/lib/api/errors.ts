@@ -6,12 +6,33 @@ function requiredPermission(error: ApiError): string | undefined {
   return typeof detail?.required_permission === 'string' ? detail.required_permission : undefined;
 }
 
+/** The server's own sentence, unless it sent none and we only have the status line. */
+function serverSentence(error: ApiError): string | undefined {
+  return error.message.startsWith('Request failed:') ? undefined : error.message;
+}
+
+/** Friendly words for backend codes that need no server sentence to explain. */
+const CODE_MESSAGES: Record<string, string> = {
+  last_admin:
+    'This would leave nobody able to manage the community. Give someone else an admin position first.',
+};
+
+/** Codes whose server sentence is best (it names the year or item), with a fallback. */
+const CODE_FALLBACKS: Record<string, string> = {
+  year_closed:
+    'That financial year is closed, so nothing dated in it can be added, changed or reversed. Ask the Treasurer to reopen the year if this must change.',
+  own_income: 'You recorded this income, so someone else has to approve or reject it.',
+  year_not_over: 'That year is not over yet. A year can be closed once it has ended.',
+};
+
 /** A sentence to show the user for any failed request. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.code === 'last_admin') {
-      return 'This would leave nobody able to manage the community. Give someone else an admin position first.';
-    }
+    const code = error.code ?? '';
+    const known = Object.hasOwn(CODE_MESSAGES, code) ? CODE_MESSAGES[code] : undefined;
+    if (known !== undefined) return known;
+    const fallback = Object.hasOwn(CODE_FALLBACKS, code) ? CODE_FALLBACKS[code] : undefined;
+    if (fallback !== undefined) return serverSentence(error) ?? fallback;
     if (error.status === 403) {
       const permission = requiredPermission(error);
       return permission

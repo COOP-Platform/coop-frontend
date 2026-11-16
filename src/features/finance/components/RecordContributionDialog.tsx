@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 
 import { useMyFines } from '../api/fines';
+import { FINES_ENABLED } from '../features';
 import { useOpenCampaigns, useRecordContribution } from '../api/my-contributions';
 import type { Contribution, MyContributions } from '../api/my-contributions';
 import { useShareCategories } from '../api/shares';
@@ -17,7 +18,13 @@ import { FilePicker } from './FilePicker';
 import { METHOD_LABEL, TYPE_LABEL } from '../labels';
 
 /** Types a member records for themselves, in the order they are asked most. */
-const TYPE_ORDER: ContributionType[] = ['monthly', 'arrears', 'dedicated', 'one_off', 'fine'];
+const TYPE_ORDER: ContributionType[] = [
+  'monthly',
+  'arrears',
+  'dedicated',
+  'one_off',
+  ...(FINES_ENABLED ? (['fine'] as const) : []),
+];
 const METHOD_ORDER: PaymentMethod[] = ['mobile_money', 'bank_transfer', 'cash'];
 
 const pad = (n: number) => String(n).padStart(2, '0');

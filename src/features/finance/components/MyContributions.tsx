@@ -33,6 +33,7 @@ import type { ContributionStatus, ContributionType } from '../api/types';
 import { FINES_ENABLED } from '../features';
 import { formatAmount } from '../format';
 import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL } from '../labels';
+import { THIS_YEAR, YEAR_OPTIONS } from '../year-options';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
 import { MyArrears } from './Arrears';
@@ -40,17 +41,6 @@ import { leftToRecord } from './fines/fine-text';
 import { MyFines } from './fines/MyFines';
 import { RecordContributionDialog } from './RecordContributionDialog';
 import type { RecordInitial } from './RecordContributionDialog';
-
-const THIS_YEAR = new Date().getFullYear();
-/** Past years to pick from, newest first. The backend refuses years before 2020. */
-const PAST_YEARS = Math.min(4, THIS_YEAR - 2020);
-const YEAR_OPTIONS = Array.from({ length: PAST_YEARS + 1 }, (_, i) => {
-  const value = THIS_YEAR - i;
-  return {
-    value: String(value),
-    label: value === THIS_YEAR ? `This Year (${value})` : String(value),
-  };
-});
 
 /** The one section the page shows at a time. */
 export type MyContributionsView = 'payments' | 'arrears' | 'fines';

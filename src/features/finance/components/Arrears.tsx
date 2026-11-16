@@ -18,6 +18,7 @@ import { useCommunityArrears, useMemberArrears, useMyArrears } from '../api/arre
 import type { ArrearsMonth, ArrearsRow, MemberArrears, Period } from '../api/arrears';
 import { formatAmount } from '../format';
 import { periodLabel } from '../labels';
+import { YEAR_OPTIONS } from '../year-options';
 import { Money } from './Money';
 
 /** What the "Status" filter on my unpaid months keeps. */
@@ -53,13 +54,21 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
   const data = arrears.data;
   const hasMonths = (data?.months.length ?? 0) > 0;
   const filtering = year !== 'all' || state !== 'all';
-  // The totals above the table stay for everything owed; the filters only narrow the months.
-  const shown: MemberArrears | undefined = data && {
-    ...data,
-    months: data.months.filter(
-      (m) => (year === 'all' || String(m.year) === year) && matchesState(m, state),
-    ),
-    years: data.years.filter((y) => year === 'all' || String(y.year) === year),
+  // The same years as My payments' Period, plus any older year still owed, newest first.
+  const periodOptions = [
+    { value: 'all', label: 'All years' },
+    ...[
+      ...YEAR_OPTIONS,
+      ...(data?.years ?? [])
+        .filter((y) => !YEAR_OPTIONS.some((o) => o.value === String(y.year)))
+        .map((y) => ({ value: String(y.year), label: String(y.year) })),
+    ].sort((a, b) => Number(b.value) - Number(a.value)),
+  ];
+  // A chosen year narrows everything, the "Still to pay" totals too; Status only the months.
+  const inYear = data && scopeToYear(data, year);
+  const shown: MemberArrears | undefined = inYear && {
+    ...inYear,
+    months: inYear.months.filter((m) => matchesState(m, state)),
   };
 
   return (
@@ -75,23 +84,22 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
           </p>
         </div>
 
-        {data && hasMonths && (
+        {data && (
           <div className="my-contributions__filters">
             <Select
-              label="Year"
+              label="Period"
               value={year}
               onChange={(event) => setYear(event.target.value)}
-              options={[
-                { value: 'all', label: 'All years' },
-                ...data.years.map((y) => ({ value: String(y.year), label: String(y.year) })),
-              ]}
+              options={periodOptions}
             />
-            <Select
-              label="Status"
-              value={state}
-              onChange={(event) => setState(event.target.value as MonthState)}
-              options={MONTH_STATES}
-            />
+            {hasMonths && (
+              <Select
+                label="Status"
+                value={state}
+                onChange={(event) => setState(event.target.value as MonthState)}
+                options={MONTH_STATES}
+              />
+            )}
             {filtering && (
               <Button
                 inline
@@ -112,21 +120,46 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
       ) : arrears.error ? (
         <ErrorState title="Couldn't load your arrears" message={errorMessage(arrears.error)} />
       ) : (
-        shown && <ArrearsBody data={shown} onPay={onPay} who="you" />
+        shown && (
+          <ArrearsBody
+            data={shown}
+            onPay={onPay}
+            who="you"
+            scope={year === 'all' ? 'past months' : year}
+          />
+        )
       )}
     </section>
   );
+}
+
+/** Only one year's months, with the totals worked out for that year. */
+function scopeToYear(data: MemberArrears, year: string): MemberArrears {
+  if (year === 'all') return data;
+  const months = data.months.filter((m) => String(m.year) === year);
+  return {
+    ...data,
+    months,
+    years: data.years.filter((y) => String(y.year) === year),
+    total_minor: months.reduce((sum, m) => sum + m.remaining_minor, 0),
+    pending_minor: months.reduce((sum, m) => sum + m.pending_minor, 0),
+    months_behind: months.length,
+    oldest: months[0] ? { year: months[0].year, month: months[0].month } : null,
+  };
 }
 
 function ArrearsBody({
   data,
   onPay,
   who,
+  scope = 'past months',
 }: {
   data: MemberArrears;
   onPay?: (month: ArrearsMonth) => void;
   /** "you" on your own page, the member's first name for the Treasurer. */
   who: string;
+  /** What "owes nothing for …" is about: past months, or one year. */
+  scope?: string;
 }) {
   if (data.total_minor === 0) {
     return (
@@ -135,7 +168,7 @@ function ArrearsBody({
         <div>
           <p className="notice__title">Nta birarane: up to date</p>
           <p className="notice__text">
-            {who === 'you' ? 'You owe' : `${who} owes`} nothing for past months.
+            {who === 'you' ? 'You owe' : `${who} owes`} nothing for {scope}.
             {data.pending_minor > 0 &&
               ` ${formatAmount(data.pending_minor)} ${data.currency} is waiting for the Treasurer to confirm.`}
           </p>

@@ -164,12 +164,6 @@ export function MyContributions({
         } · ${formatAmount(shares.owed_per_month_minor)} ${currency} a month`}
         actions={
           <>
-            <Select
-              label="Period"
-              value={String(year)}
-              onChange={(event) => setYear(Number(event.target.value))}
-              options={YEAR_OPTIONS}
-            />
             <Button
               inline
               variant="secondary"
@@ -286,45 +280,57 @@ export function MyContributions({
 
       {current === 'payments' && (
         <section className="card table-card" aria-labelledby="history-title">
-          <header className="table-card__head">
-            <h2 id="history-title" className="section-head__title">
-              Contribution History
-            </h2>
-            <p className="section-head__subtitle">
-              Every payment recorded for you in {year}, with its review status.
-            </p>
-          </header>
+          <header className="table-card__head my-contributions__head">
+            <div>
+              <h2 id="history-title" className="section-head__title">
+                Contribution History
+              </h2>
+              <p className="section-head__subtitle">
+                Every payment recorded for you in {year}, with its review status.
+              </p>
+            </div>
 
-          {(items ?? []).length > 0 && (
             <div className="my-contributions__filters">
               <Select
-                label="Status"
-                value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value as ContributionStatus | 'all')
-                }
-                options={STATUS_FILTERS}
+                label="Period"
+                value={String(year)}
+                onChange={(event) => setYear(Number(event.target.value))}
+                options={YEAR_OPTIONS}
               />
-              <Select
-                label="Type"
-                value={typeFilter}
-                onChange={(event) => setTypeFilter(event.target.value as ContributionType | 'all')}
-                options={typeFilters}
-              />
-              {filtering && (
-                <Button
-                  inline
-                  variant="tint"
-                  onClick={() => {
-                    setStatusFilter('all');
-                    setTypeFilter('all');
-                  }}
-                >
-                  Clear filters
-                </Button>
+              {(items ?? []).length > 0 && (
+                <>
+                  <Select
+                    label="Status"
+                    value={statusFilter}
+                    onChange={(event) =>
+                      setStatusFilter(event.target.value as ContributionStatus | 'all')
+                    }
+                    options={STATUS_FILTERS}
+                  />
+                  <Select
+                    label="Type"
+                    value={typeFilter}
+                    onChange={(event) =>
+                      setTypeFilter(event.target.value as ContributionType | 'all')
+                    }
+                    options={typeFilters}
+                  />
+                  {filtering && (
+                    <Button
+                      inline
+                      variant="tint"
+                      onClick={() => {
+                        setStatusFilter('all');
+                        setTypeFilter('all');
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </>
               )}
             </div>
-          )}
+          </header>
 
           {(items ?? []).length === 0 ? (
             <EmptyState

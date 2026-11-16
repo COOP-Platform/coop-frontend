@@ -70,9 +70,8 @@ export function ExpensesPage({
   embedded?: boolean;
 }) {
   const searchId = useId();
-  const { communityId, can, membership } = useWorkspace();
+  const { communityId, can } = useWorkspace();
   const canRecord = can('finance.expense.record');
-  const canApprove = can('finance.expense.approve');
 
   const [month, setMonth] = useState(THIS_MONTH);
   const [status, setStatus] = useState<StatusFilter>('all');
@@ -91,12 +90,7 @@ export function ExpensesPage({
     page_size: PAGE_SIZE,
   };
   const list = useExpenses(communityId, filters);
-  const queue = useExpenses(canApprove ? communityId : undefined, {
-    status: 'pending',
-    page_size: 100,
-  });
 
-  const isOwn = (row: Expense) => row.recorded_by.membership_id === membership?.id;
   function done(message: string) {
     setNotice(message);
     setSelected(null);
@@ -108,7 +102,6 @@ export function ExpensesPage({
   const { items, total, summary } = list.data;
   const currency = summary.currency;
   const label = monthName(month);
-  const waiting = (queue.data?.items ?? []).filter((row) => !isOwn(row));
 
   return (
     <div className="page">
@@ -182,60 +175,6 @@ export function ExpensesPage({
           tone="brand"
         />
       </div>
-
-      {canApprove && waiting.length > 0 && (
-        <section className="card table-card" aria-labelledby="exp-queue-title">
-          <header className="table-card__head">
-            <h2 id="exp-queue-title" className="section-head__title">
-              Waiting for your approval <Badge tone="warning">{waiting.length}</Badge>
-            </h2>
-            <p className="section-head__subtitle">
-              Recorded by someone else. Check the receipt, then approve or reject.
-            </p>
-          </header>
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th scope="col">Expense</th>
-                  <th scope="col">Amount</th>
-                  <th scope="col">Recorded by</th>
-                  <th scope="col" className="table__action-col">
-                    Decision
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {waiting.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="table__row--clickable"
-                    onClick={(event) => {
-                      if (!(event.target as HTMLElement).closest('button')) setSelected(row);
-                    }}
-                  >
-                    <td>
-                      <ExpenseCell row={row} />
-                    </td>
-                    <td>
-                      <span className="table__stack">
-                        <span className="table__amount">
-                          <Money minor={row.amount_minor} currency={row.currency} />
-                        </span>
-                        <span className="table__muted">Paid {formatDate(row.spent_at)}</span>
-                      </span>
-                    </td>
-                    <td>{row.recorded_by.full_name}</td>
-                    <td className="table__action-col">
-                      <ExpenseActions row={row} compact onDone={done} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
 
       <div className="toolbar card">
         <div className="search-field">

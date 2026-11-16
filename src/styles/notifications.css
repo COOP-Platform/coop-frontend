@@ -1,0 +1,257 @@
+/*
+ * In-app notifications: the top bar bell's count and panel, and the
+ * /notifications page. Builds on the shell and menu rules in app.css.
+ */
+
+/* ---------- Bell count ---------- */
+
+.topbar__count {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.05rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid var(--color-surface);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-warning-fill);
+  padding: 0 0.25rem;
+  box-sizing: content-box;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.125rem;
+  text-align: center;
+  color: var(--color-brand-contrast);
+}
+
+/* ---------- Bell panel ---------- */
+
+.notif-menu {
+  width: min(24rem, calc(100vw - 2 * var(--space-4)));
+}
+
+.notif-menu__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.notif-menu__action {
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-brand-text);
+}
+
+.notif-menu__action:hover:not(:disabled) {
+  background-color: var(--color-surface-muted);
+}
+
+.notif-menu__action:disabled {
+  cursor: progress;
+  color: var(--color-text-subtle);
+}
+
+.notif-menu__list {
+  display: flex;
+  max-height: min(26rem, 60vh);
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notif-menu__error {
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+.notif-menu__extra {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-1);
+}
+
+.notif-menu__inline-link {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-brand-text);
+}
+
+/* ---------- One notification ---------- */
+
+.notif-item {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  color: var(--color-text);
+}
+
+.notif-item:hover {
+  background-color: var(--color-surface-muted);
+}
+
+.notif-item__dot {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.4rem;
+  border-radius: 50%;
+}
+
+.notif-item--unread .notif-item__dot {
+  background-color: var(--color-brand);
+}
+
+.notif-item__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.notif-item__title {
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.notif-item--unread .notif-item__title {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.notif-item__text {
+  overflow-wrap: anywhere;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.notif-item--menu .notif-item__text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.notif-item--page .notif-item__text {
+  font-size: var(--text-sm);
+}
+
+.notif-item__meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+.notif-item__community {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* ---------- /notifications page ---------- */
+
+.notif-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.notif-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.notif-page__count {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.notif-page__error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+.notif-page__card {
+  padding: var(--space-2);
+}
+
+.notif-page__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notif-page__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.notif-page__row + .notif-page__row {
+  border-top: 1px solid var(--color-border);
+}
+
+.notif-page__row .notif-item {
+  padding-block: var(--space-3);
+}
+
+.notif-page__mark {
+  flex-shrink: 0;
+  margin: var(--space-2) var(--space-2) 0 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface-muted);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-brand-text);
+}
+
+.notif-page__mark:disabled {
+  cursor: progress;
+  color: var(--color-text-subtle);
+}
+
+.notif-page__pager {
+  justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .topbar .notif-menu {
+    width: auto;
+  }
+
+  .notif-page__row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .notif-page__mark {
+    margin: 0 0 var(--space-3) calc(var(--space-3) + 0.5rem + var(--space-2));
+  }
+}

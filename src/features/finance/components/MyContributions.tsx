@@ -30,6 +30,7 @@ import { useMyFines } from '../api/fines';
 import { statementPath, useMyContributions } from '../api/my-contributions';
 import type { Contribution } from '../api/my-contributions';
 import type { ContributionStatus, ContributionType } from '../api/types';
+import { FINES_ENABLED } from '../features';
 import { formatAmount } from '../format';
 import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL } from '../labels';
 import { ContributionDrawerContent } from './ContributionDrawer';
@@ -95,7 +96,7 @@ export function MyContributions({
   const finesToPay = (fines.data?.items ?? []).filter(
     (fine) => fine.status === 'issued' && fine.outstanding_minor > 0,
   ).length;
-  const hasFines = (fines.data?.items.length ?? 0) > 0;
+  const hasFines = FINES_ENABLED && (fines.data?.items.length ?? 0) > 0;
   const current: MyContributionsView = view === 'fines' && !hasFines ? 'payments' : view;
   const sections: { value: MyContributionsView; label: string }[] = [
     { value: 'payments', label: 'My payments' },

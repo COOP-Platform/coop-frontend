@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button, IconUserCheck, PageHeader, SegmentedControl } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 
+import { FINES_ENABLED } from '../features';
 import { formatAmount } from '../format';
 import { THIS_MONTH } from '../month';
 import { RecordContributionDialog } from './RecordContributionDialog';
@@ -36,7 +37,7 @@ export function CommunityMoney({
   const pending = usePendingForMe();
   // Who is behind is the Treasurer's to see, like reminders.
   const canSeeArrears = can('finance.contribution.confirm');
-  const canSeeFines = can('finance.fine.issue') || can('finance.fine.manage');
+  const canSeeFines = FINES_ENABLED && (can('finance.fine.issue') || can('finance.fine.manage'));
   // Shared so switching between This month and All payments keeps the month.
   const [month, setMonth] = useState(THIS_MONTH);
   // The Treasurer records a payment a member made to them directly (the server needs both).

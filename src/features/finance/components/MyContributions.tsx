@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   Badge,
@@ -15,6 +15,7 @@ import {
   IconWallet,
   LoadingState,
   PageHeader,
+  SegmentedControl,
   Select,
   StatCard,
 } from '@/components/ui';
@@ -24,11 +25,13 @@ import { apiDownload } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
 
-import { toPeriod } from '../api/arrears';
+import { toPeriod, useMyArrears } from '../api/arrears';
+import { useMyFines } from '../api/fines';
 import { statementPath, useMyContributions } from '../api/my-contributions';
 import type { Contribution } from '../api/my-contributions';
+import type { ContributionStatus, ContributionType } from '../api/types';
 import { formatAmount } from '../format';
-import { METHOD_LABEL, NO_METHOD, STATUS_LABEL } from '../labels';
+import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL } from '../labels';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
 import { MyArrears } from './Arrears';
@@ -48,12 +51,29 @@ const YEAR_OPTIONS = Array.from({ length: PAST_YEARS + 1 }, (_, i) => {
   };
 });
 
+/** The one section the page shows at a time. */
+export type MyContributionsView = 'payments' | 'arrears' | 'fines';
+
+const STATUS_FILTERS: { value: ContributionStatus | 'all'; label: string }[] = [
+  { value: 'all', label: 'All statuses' },
+  ...(Object.keys(STATUS_LABEL) as ContributionStatus[]).map((value) => ({
+    value,
+    label: STATUS_LABEL[value].label,
+  })),
+];
+
 interface MyContributionsProps {
   /** Open the Record Contribution form on arrival (from the dashboard's button). */
   startRecording?: boolean;
+  view?: MyContributionsView;
+  onViewChange?: (view: MyContributionsView) => void;
 }
 
-export function MyContributions({ startRecording = false }: MyContributionsProps) {
+export function MyContributions({
+  startRecording = false,
+  view = 'payments',
+  onViewChange,
+}: MyContributionsProps) {
   const { communityId, can } = useWorkspace();
   const canRecord = can('finance.contribution.record');
   const [recording, setRecording] = useState(startRecording && canRecord);
@@ -64,8 +84,49 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
   const [selected, setSelected] = useState<Contribution | null>(null);
   const [statementError, setStatementError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<ContributionStatus | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<ContributionType | 'all'>('all');
 
   const { data, isPending, error } = useMyContributions(communityId, year);
+  // Only for the counts on the section switch; each section reads the same cached data.
+  const arrears = useMyArrears(communityId);
+  const fines = useMyFines(communityId);
+  const monthsBehind = arrears.data?.months_behind ?? 0;
+  const finesToPay = (fines.data?.items ?? []).filter(
+    (fine) => fine.status === 'issued' && fine.outstanding_minor > 0,
+  ).length;
+  const hasFines = (fines.data?.items.length ?? 0) > 0;
+  const current: MyContributionsView = view === 'fines' && !hasFines ? 'payments' : view;
+  const sections: { value: MyContributionsView; label: string }[] = [
+    { value: 'payments', label: 'My payments' },
+    { value: 'arrears', label: monthsBehind > 0 ? `Ibirarane (${monthsBehind})` : 'Ibirarane' },
+    ...(hasFines
+      ? [{ value: 'fines' as const, label: finesToPay > 0 ? `Fines (${finesToPay})` : 'Fines' }]
+      : []),
+  ];
+
+  const items = data?.items;
+  // Only the types this member actually has, so a type filter never comes up empty.
+  const typeFilters = useMemo(() => {
+    const present = new Set((items ?? []).map((item) => item.contribution_type));
+    return [
+      { value: 'all', label: 'All types' },
+      ...(Object.keys(TYPE_LABEL) as ContributionType[])
+        .filter((value) => present.has(value))
+        .map((value) => ({ value, label: TYPE_LABEL[value] })),
+    ];
+  }, [items]);
+  const shown = (items ?? []).filter(
+    (item) =>
+      (statusFilter === 'all' || item.status === statusFilter) &&
+      (typeFilter === 'all' || item.contribution_type === typeFilter),
+  );
+  const filtering = statusFilter !== 'all' || typeFilter !== 'all';
+
+  function openRecord(initial: RecordInitial | undefined) {
+    setPrefill(initial);
+    setRecording(true);
+  }
 
   // "Contact your treasurer" names whoever holds that seat, when there is one.
   const committee = useCommittee(communityId);
@@ -90,7 +151,7 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
   if (data === undefined) {
     return isPending ? <LoadingState /> : <ErrorState message={errorMessage(error)} />;
   }
-  const { summary, shares, items } = data;
+  const { summary, shares } = data;
   const currency = summary.currency;
 
   return (
@@ -119,14 +180,7 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
               {preparing ? 'Preparing…' : 'Download Statement (PDF)'}
             </Button>
             {canRecord && (
-              <Button
-                inline
-                icon={<IconPlusCircle />}
-                onClick={() => {
-                  setPrefill(undefined);
-                  setRecording(true);
-                }}
-              >
+              <Button inline icon={<IconPlusCircle />} onClick={() => openRecord(undefined)}>
                 Record Contribution
               </Button>
             )}
@@ -195,125 +249,174 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
         />
       </div>
 
-      <MyArrears
-        onPay={
-          canRecord
-            ? (month) => {
-                if (month.record_as === null) return;
-                setPrefill({
-                  type: month.record_as,
-                  period: toPeriod(month),
-                  amountMinor: month.remaining_minor,
-                });
-                setRecording(true);
-              }
-            : undefined
-        }
+      <SegmentedControl
+        label="Show"
+        options={sections}
+        value={current}
+        onChange={(next) => onViewChange?.(next)}
       />
 
-      <MyFines
-        onPay={
-          canRecord
-            ? (fine) => {
-                setPrefill({ type: 'fine', fineId: fine.id, amountMinor: leftToRecord(fine) });
-                setRecording(true);
-              }
-            : undefined
-        }
-      />
+      {current === 'arrears' && (
+        <MyArrears
+          onPay={
+            canRecord
+              ? (month) => {
+                  if (month.record_as === null) return;
+                  openRecord({
+                    type: month.record_as,
+                    period: toPeriod(month),
+                    amountMinor: month.remaining_minor,
+                  });
+                }
+              : undefined
+          }
+        />
+      )}
 
-      <section className="card table-card" aria-labelledby="history-title">
-        <header className="table-card__head">
-          <h2 id="history-title" className="section-head__title">
-            Contribution History
-          </h2>
-          <p className="section-head__subtitle">
-            Every payment recorded for you, with its review status.
-          </p>
-        </header>
+      {current === 'fines' && (
+        <MyFines
+          onPay={
+            canRecord
+              ? (fine) =>
+                  openRecord({ type: 'fine', fineId: fine.id, amountMinor: leftToRecord(fine) })
+              : undefined
+          }
+        />
+      )}
 
-        {items.length === 0 ? (
-          <EmptyState
-            icon={<IconWallet width={28} height={28} />}
-            title={`No contributions in ${year}`}
-            message="Payments you record and the Treasurer confirms will show here."
-          />
-        ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Amount</th>
-                  <th scope="col">Payment type</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" className="table__action-col">
-                    Details
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => {
-                  const status = STATUS_LABEL[item.status];
-                  const method = item.payment_method
-                    ? METHOD_LABEL[item.payment_method]
-                    : NO_METHOD;
-                  return (
-                    <tr
-                      key={item.id}
-                      className={
-                        item.id === selected?.id
-                          ? 'table__row--clickable is-selected'
-                          : 'table__row--clickable'
-                      }
-                      // The whole row opens the details; the button keeps its own click.
-                      onClick={(event) => {
-                        if (!(event.target as HTMLElement).closest('button')) setSelected(item);
-                      }}
-                    >
-                      <td>{formatDate(item.paid_at)}</td>
-                      <td className="table__amount">
-                        <Money minor={item.amount_minor} currency={item.currency} />
-                      </td>
-                      <td>
-                        <span className="channel">
-                          <span
-                            className={`channel-dot channel-dot--${method.tone}`}
-                            aria-hidden="true"
-                          />
-                          {method.label}
-                        </span>
-                      </td>
-                      <td>
-                        <Badge tone={status.tone}>{status.label}</Badge>
-                      </td>
-                      <td className="table__action-col">
-                        <button
-                          type="button"
-                          className="link-action"
-                          aria-haspopup="dialog"
-                          onClick={() => setSelected(item)}
-                        >
-                          <IconEye width={16} height={16} aria-hidden="true" />
-                          View details
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {current === 'payments' && (
+        <section className="card table-card" aria-labelledby="history-title">
+          <header className="table-card__head">
+            <h2 id="history-title" className="section-head__title">
+              Contribution History
+            </h2>
+            <p className="section-head__subtitle">
+              Every payment recorded for you in {year}, with its review status.
+            </p>
+          </header>
 
-        <footer className="table-card__foot">
-          <IconInfoCircle width={18} height={18} aria-hidden="true" />
-          <span>
-            Need assistance or correction? Contact your community treasurer
-            {treasurer ? ` (${treasurer})` : ''}.
-          </span>
-        </footer>
-      </section>
+          {(items ?? []).length > 0 && (
+            <div className="my-contributions__filters">
+              <Select
+                label="Status"
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as ContributionStatus | 'all')
+                }
+                options={STATUS_FILTERS}
+              />
+              <Select
+                label="Type"
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.target.value as ContributionType | 'all')}
+                options={typeFilters}
+              />
+              {filtering && (
+                <Button
+                  inline
+                  variant="tint"
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setTypeFilter('all');
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          )}
+
+          {(items ?? []).length === 0 ? (
+            <EmptyState
+              icon={<IconWallet width={28} height={28} />}
+              title={`No contributions in ${year}`}
+              message="Payments you record and the Treasurer confirms will show here."
+            />
+          ) : shown.length === 0 ? (
+            <EmptyState
+              icon={<IconWallet width={28} height={28} />}
+              title="No payments match these filters"
+              message="Try another status or type, or clear the filters."
+            />
+          ) : (
+            <div className="table-scroll">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">For</th>
+                    <th scope="col">Method</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" className="table__action-col">
+                      Details
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((item) => {
+                    const status = STATUS_LABEL[item.status];
+                    const method = item.payment_method
+                      ? METHOD_LABEL[item.payment_method]
+                      : NO_METHOD;
+                    return (
+                      <tr
+                        key={item.id}
+                        className={
+                          item.id === selected?.id
+                            ? 'table__row--clickable is-selected'
+                            : 'table__row--clickable'
+                        }
+                        // The whole row opens the details; the button keeps its own click.
+                        onClick={(event) => {
+                          if (!(event.target as HTMLElement).closest('button')) setSelected(item);
+                        }}
+                      >
+                        <td>{formatDate(item.paid_at)}</td>
+                        <td className="table__amount">
+                          <Money minor={item.amount_minor} currency={item.currency} />
+                        </td>
+                        <td>{TYPE_LABEL[item.contribution_type]}</td>
+                        <td>
+                          <span className="channel">
+                            <span
+                              className={`channel-dot channel-dot--${method.tone}`}
+                              aria-hidden="true"
+                            />
+                            {method.label}
+                          </span>
+                        </td>
+                        <td>
+                          <Badge tone={status.tone}>{status.label}</Badge>
+                        </td>
+                        <td className="table__action-col">
+                          <button
+                            type="button"
+                            className="link-action"
+                            aria-haspopup="dialog"
+                            onClick={() => setSelected(item)}
+                          >
+                            <IconEye width={16} height={16} aria-hidden="true" />
+                            View details
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <footer className="table-card__foot">
+            <IconInfoCircle width={18} height={18} aria-hidden="true" />
+            <span>
+              Need assistance or correction? Contact your community treasurer
+              {treasurer ? ` (${treasurer})` : ''}.
+            </span>
+          </footer>
+        </section>
+      )}
 
       <Drawer
         open={selected !== null}
@@ -336,6 +439,10 @@ export function MyContributions({ startRecording = false }: MyContributionsProps
           setRecording(false);
           setJustRecorded(contribution);
           setYear(contribution.period_year);
+          // Show the new payment in the list, where the notice above points.
+          setStatusFilter('all');
+          setTypeFilter('all');
+          onViewChange?.('payments');
         }}
       />
     </div>

@@ -22,4 +22,4 @@ export { RecordExpenseDialog } from './components/RecordExpenseDialog';
 export { useBudgetDetail, useCampaigns } from './api/budgets';
 export type { BudgetDetail, Campaign } from './api/budgets';
 export { Money } from './components/Money';
-export { formatAmount } from './format';
+export { chargeText, formatAmount } from './format';

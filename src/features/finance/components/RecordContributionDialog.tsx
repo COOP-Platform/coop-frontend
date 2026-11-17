@@ -21,14 +21,19 @@ import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { FilePicker } from './FilePicker';
 import { METHOD_LABEL, TYPE_LABEL, periodLabel } from '../labels';
 
-/** Types a member records for themselves, in the order they are asked most. */
+/**
+ * What a payment can be for: the monthly contribution (which settles any
+ * ibirarane first, on its own) or an event's contribution while one is open.
+ */
 const TYPE_ORDER: ContributionType[] = [
   'monthly',
-  'arrears',
   'dedicated',
-  'one_off',
   ...(FINES_ENABLED ? (['fine'] as const) : []),
 ];
+
+/** A month's "Pay" from the Ibirarane list is a monthly payment for that month. */
+const startType = (type: ContributionType | undefined): ContributionType =>
+  type === undefined || type === 'arrears' ? 'monthly' : type;
 const METHOD_ORDER: PaymentMethod[] = ['mobile_money', 'bank_transfer', 'cash'];
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -205,7 +210,7 @@ function RecordContributionForm({
   const monthly = forOther
     ? owedPerMonth(who)
     : (shares?.owed_per_month_minor ?? owedPerMonth(membership?.id));
-  const [type, setType] = useState<ContributionType>(initial?.type ?? 'monthly');
+  const [type, setType] = useState<ContributionType>(startType(initial?.type));
   const [campaignId, setCampaignId] = useState(initial?.campaignId ?? '');
   const [fineId, setFineId] = useState(initial?.fineId ?? '');
   const [period, setPeriod] = useState(initial?.period ?? toIsoMonth(today));
@@ -224,7 +229,7 @@ function RecordContributionForm({
   const typeOptions = TYPE_ORDER.filter((t) => t !== 'dedicated' || openCampaigns.length > 0).map(
     (t) => ({
       value: t,
-      label: t === 'dedicated' ? 'An event or dedicated contribution' : TYPE_LABEL[t],
+      label: t === 'dedicated' ? 'Event contribution' : TYPE_LABEL[t],
     }),
   );
 
@@ -413,17 +418,20 @@ function RecordContributionForm({
         />
       )}
 
-      <Select
-        label="What is this payment for?"
-        value={type}
-        onChange={(event) => changeType(event.target.value as ContributionType)}
-        options={typeOptions}
-        error={errors.contribution_type}
-      />
+      {/* Only a choice while an event collects money; otherwise it is the monthly contribution. */}
+      {typeOptions.length > 1 && (
+        <Select
+          label="What is this payment for?"
+          value={type}
+          onChange={(event) => changeType(event.target.value as ContributionType)}
+          options={typeOptions}
+          error={errors.contribution_type}
+        />
+      )}
 
       {type === 'dedicated' && (
         <Select
-          label="Which event or contribution?"
+          label="Which event?"
           value={campaignId}
           onChange={(event) => changeCampaign(event.target.value)}
           options={openCampaigns.map((c) => ({ value: c.id, label: c.title }))}

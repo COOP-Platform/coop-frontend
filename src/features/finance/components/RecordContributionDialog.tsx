@@ -8,16 +8,18 @@ import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 
 import { useChannels } from '../api/accounts';
+import { useMemberArrears, useMyArrears } from '../api/arrears';
+import type { ArrearsMonth } from '../api/arrears';
 import type { Account } from '../api/accounts';
 import { useMyFines } from '../api/fines';
 import { FINES_ENABLED } from '../features';
 import { useOpenCampaigns, useRecordContribution } from '../api/my-contributions';
-import type { Contribution, MyContributions } from '../api/my-contributions';
+import type { ContributionDetail, MyContributions } from '../api/my-contributions';
 import { useShareCategories } from '../api/shares';
 import type { ContributionType, PaymentMethod } from '../api/types';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { FilePicker } from './FilePicker';
-import { METHOD_LABEL, TYPE_LABEL } from '../labels';
+import { METHOD_LABEL, TYPE_LABEL, periodLabel } from '../labels';
 
 /** Types a member records for themselves, in the order they are asked most. */
 const TYPE_ORDER: ContributionType[] = [
@@ -49,6 +51,38 @@ function suggestChannel(channels: Account[], method: PaymentMethod): string {
   return channels.find((c) => c.kind === KIND_FOR_METHOD[method])?.id ?? '';
 }
 
+interface Piece {
+  year: number;
+  month: number;
+  amount: number;
+}
+
+/**
+ * Where a monthly payment goes, as the backend splits it (settle_arrears):
+ * the oldest unpaid months first (what is left after anything pending), then
+ * the month chosen. A preview only; the server decides.
+ */
+function planPayment(months: readonly ArrearsMonth[], amount: number, period: string): Piece[] {
+  const [year = 0, month = 0] = period.split('-').map(Number);
+  const pieces: Piece[] = [];
+  let left = amount;
+  for (const m of months) {
+    if (left <= 0) break;
+    const free = m.remaining_minor - m.pending_minor;
+    const after = m.year > year || (m.year === year && m.month > month);
+    if (free <= 0 || m.record_as === null || after) continue;
+    const piece = Math.min(left, free);
+    pieces.push({ year: m.year, month: m.month, amount: piece });
+    left -= piece;
+  }
+  if (left > 0) {
+    const mine = pieces.find((p) => p.year === year && p.month === month);
+    if (mine) mine.amount += left;
+    else pieces.push({ year, month, amount: left });
+  }
+  return pieces;
+}
+
 interface Errors {
   account_id?: string;
   membership_id?: string;
@@ -69,7 +103,7 @@ interface RecordContributionDialogProps {
   onClose: () => void;
   /** The member's shares, for the amount a month costs them. */
   shares: MyContributions['shares'] | undefined;
-  onRecorded: (contribution: Contribution) => void;
+  onRecorded: (contribution: ContributionDetail) => void;
   /** Start filled in, e.g. "pay this unpaid month" from the arrears list. */
   initial?: RecordInitial;
   /**
@@ -188,8 +222,38 @@ function RecordContributionForm({
 
   const hasPeriod = type === 'monthly' || type === 'arrears';
   const typeOptions = TYPE_ORDER.filter((t) => t !== 'dedicated' || openCampaigns.length > 0).map(
-    (t) => ({ value: t, label: TYPE_LABEL[t] }),
+    (t) => ({
+      value: t,
+      label: t === 'dedicated' ? 'An event or dedicated contribution' : TYPE_LABEL[t],
+    }),
   );
+
+  // Ibirarane first: a monthly payment pays the oldest unpaid months before
+  // the month chosen. Another member's months need the right to see them.
+  const myArrears = useMyArrears(forOther ? undefined : communityId);
+  const seeTheirs = forOther && who !== '' && can('finance.contribution.confirm');
+  const theirArrears = useMemberArrears(
+    seeTheirs ? communityId : undefined,
+    seeTheirs ? who : undefined,
+  );
+  const unpaid = (forOther ? theirArrears.data : myArrears.data)?.months ?? [];
+  const settles = type === 'monthly';
+  const [periodYear = 0, periodMonth = 0] = period.split('-').map(Number);
+  const isChosen = (m: ArrearsMonth) => m.year === periodYear && m.month === periodMonth;
+  const isBefore = (m: ArrearsMonth) =>
+    m.year < periodYear || (m.year === periodYear && m.month < periodMonth);
+  const freeOn = (m: ArrearsMonth) =>
+    m.record_as === null ? 0 : Math.max(0, m.remaining_minor - m.pending_minor);
+  // Ibirarane: what is still owed for the months before the one chosen.
+  const owedUpToPeriod = unpaid.filter(isBefore).reduce((sum, m) => sum + freeOn(m), 0);
+  const chosenMonth = unpaid.find(isChosen);
+  // Everything owed: the ibirarane plus what the chosen month still needs.
+  const payAllMinor = owedUpToPeriod + (chosenMonth ? freeOn(chosenMonth) : (monthly ?? 0));
+  const amountMinor = Math.round(Number(amount) * MINOR_PER_MAJOR);
+  const plan =
+    settles && owedUpToPeriod > 0 && amountMinor > 0
+      ? planPayment(unpaid, amountMinor, period)
+      : [];
 
   function changeType(next: ContributionType) {
     setType(next);
@@ -252,7 +316,6 @@ function RecordContributionForm({
     event.preventDefault();
     const problems: Errors = {};
     if (who === '') problems.membership_id = 'Choose who paid.';
-    const amountMinor = Math.round(Number(amount) * MINOR_PER_MAJOR);
     if (amount.trim() === '' || !Number.isFinite(amountMinor) || amountMinor <= 0)
       problems.amount = 'Enter the amount you paid, more than 0.';
     if (paidAt === '') problems.paid_at = 'Enter the day you paid.';
@@ -281,6 +344,7 @@ function RecordContributionForm({
         paid_at: paidAt,
         period_year: hasPeriod ? year : undefined,
         period_month: hasPeriod ? month : undefined,
+        settle_arrears: settles ? true : undefined,
         payment_method: method,
         payment_reference: reference.trim() || undefined,
         account_id: channel || undefined,
@@ -359,7 +423,7 @@ function RecordContributionForm({
 
       {type === 'dedicated' && (
         <Select
-          label="Dedicated contribution"
+          label="Which event or contribution?"
           value={campaignId}
           onChange={(event) => changeCampaign(event.target.value)}
           options={openCampaigns.map((c) => ({ value: c.id, label: c.title }))}
@@ -421,6 +485,33 @@ function RecordContributionForm({
         error={errors.amount}
         required
       />
+
+      {settles && owedUpToPeriod > 0 && (
+        <div className="notice notice--info arrears-first" role="status">
+          <div>
+            <p className="notice__title">
+              Ibirarane first: {formatAmount(owedUpToPeriod)} RWF still owed
+            </p>
+            {plan.length > 0 && (
+              <ul className="arrears-first__list" role="list">
+                {plan.map((p) => (
+                  <li key={`${p.year}-${p.month}`}>
+                    <span>{periodLabel(p.year, p.month)}</span>
+                    <span>{formatAmount(p.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              className="link-action"
+              onClick={() => setAmount(toInput(payAllMinor))}
+            >
+              Pay everything owed
+            </button>
+          </div>
+        </div>
+      )}
 
       <Input
         label="Date paid"

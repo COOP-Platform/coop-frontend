@@ -75,6 +75,17 @@ export interface ContributionDetail extends Contribution {
   /** Null (not empty) when you may not open the proof files. */
   proofs: ContributionProof[] | null;
   history: ContributionHistoryEntry[];
+  /**
+   * Only right after recording: every row the payment was recorded as,
+   * oldest first (several when it settled ibirarane first).
+   */
+  split?: {
+    id: string;
+    contribution_type: ContributionType;
+    period_year: number;
+    period_month: number | null;
+    amount_minor: number;
+  }[];
 }
 
 /** `GET /communities/{id}/contributions/me/?year=` */
@@ -181,6 +192,8 @@ export interface RecordContributionInput {
   payment_reference?: string;
   /** The active account the money went into. */
   account_id?: string;
+  /** Monthly only: pay the oldest unpaid months first, one row per month. */
+  settle_arrears?: boolean;
   /** JPG, PNG or PDF, 5 MB or smaller. */
   proof?: File;
 }

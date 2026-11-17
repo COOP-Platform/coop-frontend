@@ -16,10 +16,7 @@ export function SectionHeader({ embedded = false, ...props }: SectionHeaderProps
   if (!embedded) return <PageHeader {...props} />;
   return (
     <div className="section-bar">
-      <div>
-        <h2 className="section-title">{props.title}</h2>
-        {props.subtitle && <p className="table__muted">{props.subtitle}</p>}
-      </div>
+      <h2 className="section-title">{props.title}</h2>
       {props.actions && <div className="section-bar__actions">{props.actions}</div>}
     </div>
   );

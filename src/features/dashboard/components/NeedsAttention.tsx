@@ -4,12 +4,12 @@ import type { ReactNode } from 'react';
 import {
   Button,
   IconAlertTriangle,
-  IconBellAlert,
   IconMail,
   IconPencil,
   IconTile,
   IconUserOff,
   IconUsers,
+  SectionCard,
 } from '@/components/ui';
 import type { DirectoryMember, Invitation } from '@/features/members';
 import { listInWords } from '@/features/communities/components/settings/profile';
@@ -71,8 +71,8 @@ export function NeedsAttention({
     items.push({
       id: 'profile',
       icon: <IconPencil />,
-      title: 'Finish your community profile',
-      detail: `Still missing: ${listInWords(incompleteProfile)}. Members read it to learn who you are.`,
+      title: 'Finish the community profile',
+      detail: `Missing: ${listInWords(incompleteProfile)}`,
       action: {
         label: 'Complete Profile',
         onClick: () => void navigate({ to: '/community/settings', search: { edit: true } }),
@@ -85,7 +85,7 @@ export function NeedsAttention({
       id: 'unsent',
       icon: <IconAlertTriangle />,
       title: `${plural(unsent.length, 'invitation email', 'invitation emails')} did not send`,
-      detail: 'Resend so the invitee receives their link',
+      detail: 'Resend the link',
       action: canInvite ? { label: 'Review Invitations', onClick: toInvitations } : undefined,
     });
   }
@@ -95,7 +95,7 @@ export function NeedsAttention({
       id: 'expiring',
       icon: <IconMail />,
       title: `${plural(expiring.length, 'invitation expires', 'invitations expire')} within ${EXPIRY_WARNING_DAYS} days`,
-      detail: 'Recipients have not yet confirmed entry',
+      detail: 'Not yet accepted',
       action: canInvite ? { label: 'Review Invitations', onClick: toInvitations } : undefined,
     });
   }
@@ -105,7 +105,7 @@ export function NeedsAttention({
       id: 'no-position',
       icon: <IconUsers />,
       title: `${plural(membersWithoutPosition.length, 'member has', 'members have')} no position`,
-      detail: 'Without one they cannot open any community screen',
+      detail: 'They cannot open community screens',
       action: canAssign
         ? {
             label: 'Assign Position',
@@ -120,7 +120,7 @@ export function NeedsAttention({
       id: 'vacant',
       icon: <IconUserOff />,
       title: `${plural(vacantSeats.length, 'position', 'positions')} unassigned`,
-      detail: `${vacantSeats.map((p) => p.name).join(', ')} ${vacantSeats.length === 1 ? 'seat is' : 'seats are'} currently open`,
+      detail: vacantSeats.map((p) => p.name).join(', '),
       action: canAssign
         ? { label: 'Assign Position', onClick: () => void navigate({ to: '/community/positions' }) }
         : undefined,
@@ -131,25 +131,19 @@ export function NeedsAttention({
   if (items.length === 0) return null;
 
   return (
-    <section className="attention" aria-labelledby="attention-title">
-      <h2 id="attention-title" className="attention__title">
-        <span className="attention__title-icon" aria-hidden="true">
-          <IconBellAlert />
-        </span>
-        Needs Attention
-      </h2>
-      <ul className="attention__list" role="list">
+    <SectionCard title="Needs attention" flush>
+      <ul className="dash-list" role="list">
         {items.map((item) => (
-          <li key={item.id} className="attention__item">
-            <IconTile tone="warning" round>
+          <li key={item.id} className="dash-list__item">
+            <IconTile tone="warning" round size="sm">
               {item.icon}
             </IconTile>
-            <div className="attention__body">
-              <p className="attention__item-title">{item.title}</p>
-              <p className="attention__item-detail">{item.detail}</p>
+            <div className="dash-list__body">
+              <p className="dash-list__title">{item.title}</p>
+              <p className="dash-list__sub">{item.detail}</p>
             </div>
             {(item.action || item.secondary) && (
-              <div className="attention__actions">
+              <div className="dash-list__actions">
                 {item.secondary && (
                   <Button variant="secondary" size="sm" inline onClick={item.secondary.onClick}>
                     {item.secondary.label}
@@ -165,6 +159,6 @@ export function NeedsAttention({
           </li>
         ))}
       </ul>
-    </section>
+    </SectionCard>
   );
 }

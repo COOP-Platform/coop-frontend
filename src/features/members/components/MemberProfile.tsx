@@ -31,7 +31,7 @@ import {
   useRevokePosition,
 } from '@/features/positions';
 import { errorMessage } from '@/lib/api/errors';
-import { formatLongDate, formatMonthYear } from '@/lib/format/date';
+import { formatLongDate } from '@/lib/format/date';
 import { PositionIcon } from '@/lib/positions';
 
 import type { DirectoryMember } from '../api/directory';
@@ -59,26 +59,14 @@ export function MemberPanel({ memberId }: { memberId: string }) {
 
   // Non-admins see their own profile only; the list is all they get of others.
   if (membership !== undefined && !membership.is_admin && memberId !== membership.id) {
-    return (
-      <EmptyState
-        icon={<IconUser width={28} height={28} />}
-        title="Profiles are private"
-        message="You can see the member list and your own profile."
-      />
-    );
+    return <EmptyState icon={<IconUser width={28} height={28} />} title="Profiles are private" />;
   }
 
   if (directory.isPending) return <LoadingState label="Loading member…" />;
   if (directory.error) return <ErrorState message={errorMessage(directory.error)} />;
 
   if (!member) {
-    return (
-      <EmptyState
-        icon={<IconUsers width={28} height={28} />}
-        title="Member not found"
-        message="They may have left or been removed from the community."
-      />
-    );
+    return <EmptyState icon={<IconUsers width={28} height={28} />} title="Member not found" />;
   }
 
   return <Profile member={member} />;
@@ -109,7 +97,6 @@ function Profile({ member }: { member: DirectoryMember }) {
         <div className="member-panel__identity">
           <ProfilePhoto communityId={communityId ?? ''} name={member.fullName} profile={details} />
           <div>
-            <p className="section-head__eyebrow">Member</p>
             <div className="position-panel__title-row">
               <h2 className="section-head__title">
                 {member.fullName}
@@ -131,10 +118,7 @@ function Profile({ member }: { member: DirectoryMember }) {
               {member.isAdmin && <Badge tone="brand">Admin</Badge>}
               {member.isFounder && <Badge tone="info">Founder</Badge>}
             </div>
-            <p className="section-head__subtitle">
-              {member.email ?? 'No email on record'}
-              {member.joinDate && ` · Member since ${formatMonthYear(member.joinDate)}`}
-            </p>
+            <p className="section-head__subtitle">{member.email ?? 'No email on record'}</p>
           </div>
         </div>
       </header>
@@ -214,7 +198,7 @@ function Profile({ member }: { member: DirectoryMember }) {
           Positions
         </h3>
         {!member.positionsKnown ? (
-          <p className="table__muted">You need the position.view permission to see positions.</p>
+          <p className="table__muted">Not visible to you.</p>
         ) : (
           <ul className="panel-chips" role="list">
             {member.positions.map((position) => (
@@ -243,11 +227,7 @@ function Profile({ member }: { member: DirectoryMember }) {
           </ul>
         )}
         {revoke.error && <p className="form-error">{errorMessage(revoke.error)}</p>}
-        {member.status === 'suspended' && (
-          <p className="table__muted">
-            Suspended: their positions stay, but grant nothing until they are reinstated.
-          </p>
-        )}
+        {member.status === 'suspended' && <p className="table__muted">Paused while suspended.</p>}
       </section>
 
       <section className="panel-section" aria-labelledby="member-membership-title">
@@ -363,52 +343,44 @@ function AboutSection({
       ) : !profile ? (
         <p className="form-error">{errorMessage(error)}</p>
       ) : (
-        <>
-          <dl className="panel-facts">
+        <dl className="panel-facts">
+          <div>
+            <dt>Family relationship</dt>
+            <dd>
+              {profile.family_relationship ?? <span className="table__muted">Not given</span>}
+            </dd>
+          </div>
+          {profile.private_visible && (
             <div>
-              <dt>Family relationship</dt>
+              <dt>Emergency contact</dt>
               <dd>
-                {profile.family_relationship ?? <span className="table__muted">Not given</span>}
+                {profile.emergency_contact_name || profile.emergency_contact_phone ? (
+                  <>
+                    {profile.emergency_contact_name}
+                    {profile.emergency_contact_phone && (
+                      <>
+                        {profile.emergency_contact_name && <br />}
+                        <a href={`tel:${profile.emergency_contact_phone}`}>
+                          {profile.emergency_contact_phone}
+                        </a>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <span className="table__muted">
+                    {profile.is_you ? 'Not added yet' : 'Not given'}
+                  </span>
+                )}
               </dd>
             </div>
-            {profile.private_visible && (
-              <div>
-                <dt>Emergency contact</dt>
-                <dd>
-                  {profile.emergency_contact_name || profile.emergency_contact_phone ? (
-                    <>
-                      {profile.emergency_contact_name}
-                      {profile.emergency_contact_phone && (
-                        <>
-                          {profile.emergency_contact_name && <br />}
-                          <a href={`tel:${profile.emergency_contact_phone}`}>
-                            {profile.emergency_contact_phone}
-                          </a>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <span className="table__muted">
-                      {profile.is_you ? 'Not added yet — use Edit my profile' : 'Not given'}
-                    </span>
-                  )}
-                </dd>
-              </div>
-            )}
-            {profile.private_visible && profile.notes && !profile.is_you && (
-              <div className="panel-facts__wide">
-                <dt>Notes</dt>
-                <dd className="profile-notes">{profile.notes}</dd>
-              </div>
-            )}
-          </dl>
-          {!profile.private_visible && (
-            <p className="table__muted">
-              Emergency contact details are only shown to the member and to people who manage
-              members.
-            </p>
           )}
-        </>
+          {profile.private_visible && profile.notes && !profile.is_you && (
+            <div className="panel-facts__wide">
+              <dt>Notes</dt>
+              <dd className="profile-notes">{profile.notes}</dd>
+            </div>
+          )}
+        </dl>
       )}
     </section>
   );
@@ -441,7 +413,7 @@ function AssignPositionDialog({
       open={open}
       onClose={close}
       title="Assign Position"
-      subtitle={`Adds a position to ${member.fullName}. Their current positions stay.`}
+      subtitle="Current positions stay."
       icon={
         <IconTile tone="brand" round>
           <IconIdBadge />
@@ -469,9 +441,7 @@ function AssignPositionDialog({
       {positions.isPending ? (
         <p className="dialog__text dialog__text--muted">Loading positions…</p>
       ) : available.length === 0 ? (
-        <p className="dialog__text dialog__text--muted">
-          They already hold every position this community has.
-        </p>
+        <p className="dialog__text dialog__text--muted">They hold every position.</p>
       ) : (
         <fieldset className="choice-list">
           <legend className="visually-hidden">Position</legend>
@@ -493,7 +463,7 @@ function AssignPositionDialog({
                   {p.is_admin && ' · Admin'}
                 </span>
                 <span className="choice__meta">
-                  {p.description ?? `${p.permissions.length} permissions`} · {p.holder_count}{' '}
+                  {p.permissions.length} permissions · {p.holder_count}{' '}
                   {p.holder_count === 1 ? 'holder' : 'holders'}
                 </span>
               </span>
@@ -509,22 +479,22 @@ function AssignPositionDialog({
 const STATUS_COPY = {
   suspend: {
     title: 'Suspend Member',
-    body: 'They keep their positions but can do nothing here until reinstated.',
+    body: 'They keep their positions but can do nothing until reinstated.',
     confirm: 'Suspend Member',
   },
   reinstate: {
     title: 'Reinstate Member',
-    body: 'Their existing positions become effective again immediately.',
+    body: 'Their positions take effect again.',
     confirm: 'Reinstate Member',
   },
   remove: {
     title: 'Remove Member',
-    body: 'Ends their membership here and drops their positions. Contributions and history stay, and they can be invited back later.',
+    body: 'Ends their membership and drops their positions. History stays; they can be invited back.',
     confirm: 'Remove Member',
   },
   leave: {
     title: 'Leave Community',
-    body: 'Ends your membership here. Your other communities are untouched.',
+    body: 'Ends your membership here. Other communities are untouched.',
     confirm: 'Leave Community',
   },
 } as const;
@@ -577,8 +547,7 @@ function StatusDialog({
     <Dialog
       open={action !== null}
       onClose={close}
-      title="Confirmation Protocol"
-      subtitle={copy.title}
+      title={copy.title}
       icon={
         <IconTile tone={action === 'reinstate' ? 'brand' : 'danger'} round>
           <IconGavel />
@@ -601,16 +570,13 @@ function StatusDialog({
     >
       <p className="dialog__text">
         {action === 'leave' ? (
-          <>Are you sure you want to leave this community?</>
+          copy.body
         ) : (
           <>
-            Are you sure you want to alter the operational status of{' '}
-            <strong>{member.fullName}</strong>? This step produces an immutable log entry in the
-            cooperative minutes.
+            <strong>{member.fullName}</strong>: {copy.body} This is logged.
           </>
         )}
       </p>
-      <p className="dialog__text dialog__text--muted">{copy.body}</p>
       {mutation.error && <p className="form-error">{errorMessage(mutation.error)}</p>}
     </Dialog>
   );

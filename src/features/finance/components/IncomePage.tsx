@@ -15,8 +15,10 @@ import {
   IconWallet,
   IconClipboardClock,
   LoadingState,
-  SegmentedControl,
+  SectionCard,
+  Select,
   StatCard,
+  TableFooter,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
@@ -36,7 +38,7 @@ import { THIS_MONTH, monthName } from '../month';
 import { CashBoxLine } from './CashBox';
 import { Money } from './Money';
 import { MonthPicker } from './MonthPicker';
-import { Pager, ReasonPrompt } from './ReasonPrompt';
+import { ReasonPrompt } from './ReasonPrompt';
 import { RecordIncomeDialog } from './RecordIncomeDialog';
 import { SuccessNotice } from './SuccessNotice';
 import { SectionHeader } from './SectionHeader';
@@ -45,7 +47,7 @@ const PAGE_SIZE = 20;
 
 type SourceFilter = 'all' | IncomeSource;
 const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All sources' },
   { value: 'donation', label: 'Donations' },
   { value: 'event_revenue', label: 'Events' },
   { value: 'interest', label: 'Interest' },
@@ -54,7 +56,7 @@ const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
 
 type StatusFilter = 'all' | IncomeStatus;
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All statuses' },
   { value: 'pending', label: 'Waiting' },
   { value: 'recorded', label: 'Approved' },
   { value: 'rejected', label: 'Rejected' },
@@ -106,9 +108,7 @@ export function IncomePage({
     <div className="page">
       <SectionHeader
         embedded={embedded}
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Income"
-        subtitle="Donations, event revenue and interest: money in that is not a member's contribution."
         actions={
           <>
             <MonthPicker
@@ -131,18 +131,24 @@ export function IncomePage({
 
       <CashBoxLine />
 
-      <div className="stat-grid stat-grid--three">
+      <div className="stat-grid">
         <StatCard
           label="Income"
           value={<Money minor={summary.total_income_minor} currency={summary.currency} />}
-          caption={`${summary.count} approved, counted in the wallet, ${label}`}
+          caption={`${summary.count} approved`}
           icon={<IconWallet />}
           tone="brand"
         />
         <StatCard
           label="Waiting for approval"
           value={<Money minor={summary.pending_minor} currency={summary.currency} />}
-          caption={`${summary.pending_count} not counted yet`}
+          caption={
+            summary.pending_count > 0 ? (
+              <b className="caption-warn">{summary.pending_count} pending</b>
+            ) : (
+              'None pending'
+            )
+          }
           icon={<IconClipboardClock />}
           tone="warning"
           emphasis={summary.pending_count > 0}
@@ -150,71 +156,76 @@ export function IncomePage({
         <StatCard
           label="Reversed"
           value={summary.reversed_count}
-          caption="Taken back out, kept on record"
+          caption="Kept on record"
           icon={<IconHistory />}
-          tone="warning"
+          tone="neutral"
         />
       </div>
 
-      <div className="toolbar card">
-        <div className="search-field">
-          <label htmlFor={searchId} className="visually-hidden">
-            Search income
-          </label>
-          <span className="search-field__icon" aria-hidden="true">
-            <IconSearch />
-          </span>
-          <input
-            id={searchId}
-            type="search"
-            className="search-field__input"
-            placeholder="Search title, giver or reference..."
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setPage(1);
-            }}
+      <SectionCard
+        title={`Income in ${label}`}
+        actions={
+          <>
+            <div className="search-field">
+              <label htmlFor={searchId} className="visually-hidden">
+                Search income
+              </label>
+              <span className="search-field__icon" aria-hidden="true">
+                <IconSearch />
+              </span>
+              <input
+                id={searchId}
+                type="search"
+                className="search-field__input"
+                placeholder="Search…"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <Select
+              label="Status"
+              labelHidden
+              options={STATUS_OPTIONS}
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as StatusFilter);
+                setPage(1);
+              }}
+            />
+            <Select
+              label="Source"
+              labelHidden
+              options={SOURCE_OPTIONS}
+              value={source}
+              onChange={(event) => {
+                setSource(event.target.value as SourceFilter);
+                setPage(1);
+              }}
+            />
+          </>
+        }
+        flush
+        footer={
+          <TableFooter
+            from={total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}
+            to={(page - 1) * PAGE_SIZE + items.length}
+            total={total}
+            page={page}
+            pageCount={Math.max(1, Math.ceil(total / PAGE_SIZE))}
+            onPage={setPage}
           />
-        </div>
-        <div className="toolbar__controls">
-          <SegmentedControl
-            label="Filter by status"
-            options={STATUS_OPTIONS}
-            value={status}
-            onChange={(value) => {
-              setStatus(value);
-              setPage(1);
-            }}
-          />
-          <SegmentedControl
-            label="Filter by source"
-            options={SOURCE_OPTIONS}
-            value={source}
-            onChange={(value) => {
-              setSource(value);
-              setPage(1);
-            }}
-          />
-        </div>
-      </div>
-
-      <section className="card table-card" aria-labelledby="income-title">
-        <header className="table-card__head">
-          <h2 id="income-title" className="section-head__title">
-            Income in {label}
-          </h2>
-          <p className="section-head__subtitle">
-            Every member can read these; open one for details.
-          </p>
-        </header>
-
+        }
+      >
         {items.length === 0 ? (
           <EmptyState
             icon={<IconPiggyBank width={28} height={28} />}
             title={`No income in ${label}`}
             message={
               source === 'all' && status === 'all' && !search
-                ? 'Donations, event revenue and interest the Treasurer records will show here.'
+                ? undefined
                 : 'Nothing matches these filters.'
             }
           />
@@ -225,17 +236,19 @@ export function IncomePage({
                 <tr>
                   <th scope="col">Income</th>
                   <th scope="col">From</th>
-                  <th scope="col">Amount</th>
+                  <th scope="col">Date</th>
+                  <th scope="col" className="num">
+                    Amount
+                  </th>
                   <th scope="col">Status</th>
                   <th scope="col" className="table__action-col">
-                    Details
+                    <span className="visually-hidden">Details</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((row) => {
                   const badge = INCOME_STATUS[row.status];
-                  const method = row.payment_method ? METHOD_LABEL[row.payment_method] : NO_METHOD;
                   return (
                     <tr
                       key={row.id}
@@ -254,19 +267,10 @@ export function IncomePage({
                           <span className="table__muted">{INCOME_SOURCE[row.source]}</span>
                         </span>
                       </td>
-                      <td>
-                        <span className="table__stack">
-                          <span>{row.received_from ?? '—'}</span>
-                          <span className="table__muted">{method.label}</span>
-                        </span>
-                      </td>
-                      <td>
-                        <span className="table__stack">
-                          <span className="table__amount">
-                            <Money minor={row.amount_minor} currency={row.currency} />
-                          </span>
-                          <span className="table__muted">{formatDate(row.received_on)}</span>
-                        </span>
+                      <td>{row.received_from ?? '—'}</td>
+                      <td>{formatDate(row.received_on)}</td>
+                      <td className="num table__amount">
+                        <Money minor={row.amount_minor} currency={row.currency} />
                       </td>
                       <td>
                         <Badge tone={badge.tone}>{badge.label}</Badge>
@@ -279,7 +283,7 @@ export function IncomePage({
                           onClick={() => setSelected(row)}
                         >
                           <IconEye width={16} height={16} aria-hidden="true" />
-                          View details
+                          View
                         </button>
                       </td>
                     </tr>
@@ -289,18 +293,7 @@ export function IncomePage({
             </table>
           </div>
         )}
-
-        <footer className="table-footer">
-          <p className="table-footer__summary">
-            Showing <strong>{items.length}</strong> of <strong>{total}</strong> entries
-          </p>
-          <Pager
-            page={page}
-            pageCount={Math.max(1, Math.ceil(total / PAGE_SIZE))}
-            onChange={setPage}
-          />
-        </footer>
-      </section>
+      </SectionCard>
 
       <Drawer
         open={selected !== null}
@@ -325,7 +318,7 @@ export function IncomePage({
           setRecording(false);
           setNotice(
             income.status === 'pending'
-              ? `${income.title} (${formatAmount(income.amount_minor)} ${income.currency}) recorded. It is waiting for approval: it counts in the wallet once someone else approves it.`
+              ? `${income.title} (${formatAmount(income.amount_minor)} ${income.currency}) recorded. It counts once someone else approves it.`
               : `${income.title} (${formatAmount(income.amount_minor)} ${income.currency}) recorded and counted in the wallet.`,
           );
         }}
@@ -459,7 +452,7 @@ function IncomeDetails({ income, onDone }: { income: Income; onDone: (m: string)
           <ReasonPrompt
             open={reversing}
             title="Reverse income"
-            subtitle="It stops counting in every total; the record stays. Record it again if a detail was wrong."
+            subtitle="Taken out of every total; the record stays."
             icon={<IconHistory />}
             about={`${row.title} · ${amount}`}
             placeholder="e.g. Recorded twice."

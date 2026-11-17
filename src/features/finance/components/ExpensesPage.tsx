@@ -18,8 +18,10 @@ import {
   IconSearch,
   IconSend,
   LoadingState,
-  SegmentedControl,
+  SectionCard,
+  Select,
   StatCard,
+  TableFooter,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
@@ -40,7 +42,7 @@ import { THIS_MONTH, monthName } from '../month';
 import { CashBoxLine } from './CashBox';
 import { Money } from './Money';
 import { MonthPicker } from './MonthPicker';
-import { Pager, ReasonPrompt } from './ReasonPrompt';
+import { ReasonPrompt } from './ReasonPrompt';
 import { EditExpenseDialog } from './EditExpenseDialog';
 import { RecordExpenseDialog } from './RecordExpenseDialog';
 import { SuccessNotice } from './SuccessNotice';
@@ -50,7 +52,7 @@ const PAGE_SIZE = 20;
 
 type StatusFilter = 'all' | ExpenseStatus;
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All statuses' },
   { value: 'pending', label: 'Pending' },
   { value: 'approved', label: 'Approved' },
   { value: 'rejected', label: 'Rejected' },
@@ -107,9 +109,7 @@ export function ExpensesPage({
     <div className="page">
       <SectionHeader
         embedded={embedded}
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Expenses"
-        subtitle="Money paid out of the community, approved before it counts."
         actions={
           <>
             <MonthPicker
@@ -151,18 +151,24 @@ export function ExpensesPage({
         </p>
       )}
 
-      <div className="stat-grid stat-grid--three">
+      <div className="stat-grid">
         <StatCard
           label="Spent"
           value={<Money minor={summary.total_expenses_minor} currency={currency} />}
-          caption={`${summary.approved_count} approved expense${summary.approved_count === 1 ? '' : 's'} in ${label}`}
+          caption={`${summary.approved_count} approved`}
           icon={<IconBadgeCheck />}
           tone="info"
         />
         <StatCard
           label="Awaiting approval"
           value={<Money minor={summary.pending_minor} currency={currency} />}
-          caption={`${summary.pending_count} not yet counted`}
+          caption={
+            summary.pending_count > 0 ? (
+              <b className="caption-warn">{summary.pending_count} pending</b>
+            ) : (
+              'None pending'
+            )
+          }
           icon={<IconClipboardClock />}
           tone="warning"
           emphasis={summary.pending_count > 0}
@@ -170,64 +176,64 @@ export function ExpensesPage({
         <StatCard
           label="Recorded"
           value={summary.count}
-          caption={`Expenses of any status in ${label}`}
+          caption={label}
           icon={<IconFile />}
           tone="brand"
         />
       </div>
 
-      <div className="toolbar card">
-        <div className="search-field">
-          <label htmlFor={searchId} className="visually-hidden">
-            Search expenses
-          </label>
-          <span className="search-field__icon" aria-hidden="true">
-            <IconSearch />
-          </span>
-          <input
-            id={searchId}
-            type="search"
-            className="search-field__input"
-            placeholder="Search title, payee, reference or category..."
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setPage(1);
-            }}
+      <SectionCard
+        title={`Expenses in ${label}`}
+        actions={
+          <>
+            <div className="search-field">
+              <label htmlFor={searchId} className="visually-hidden">
+                Search expenses
+              </label>
+              <span className="search-field__icon" aria-hidden="true">
+                <IconSearch />
+              </span>
+              <input
+                id={searchId}
+                type="search"
+                className="search-field__input"
+                placeholder="Search…"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <Select
+              label="Status"
+              labelHidden
+              options={STATUS_OPTIONS}
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as StatusFilter);
+                setPage(1);
+              }}
+            />
+          </>
+        }
+        flush
+        footer={
+          <TableFooter
+            from={total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}
+            to={(page - 1) * PAGE_SIZE + items.length}
+            total={total}
+            page={page}
+            pageCount={Math.max(1, Math.ceil(total / PAGE_SIZE))}
+            onPage={setPage}
           />
-        </div>
-        <div className="toolbar__controls">
-          <SegmentedControl
-            label="Filter by status"
-            options={STATUS_OPTIONS}
-            value={status}
-            onChange={(value) => {
-              setStatus(value);
-              setPage(1);
-            }}
-          />
-        </div>
-      </div>
-
-      <section className="card table-card" aria-labelledby="exp-all-title">
-        <header className="table-card__head">
-          <h2 id="exp-all-title" className="section-head__title">
-            Expenses in {label}
-          </h2>
-          <p className="section-head__subtitle">
-            Every member can read these; open one for details.
-          </p>
-        </header>
-
+        }
+      >
         {items.length === 0 ? (
           <EmptyState
             icon={<IconSend width={28} height={28} />}
             title={`No expenses in ${label}`}
-            message={
-              status === 'all' && !search
-                ? 'Expenses the Treasurer records will show here.'
-                : 'Nothing matches these filters.'
-            }
+            message={status === 'all' && !search ? undefined : 'Nothing matches these filters.'}
           />
         ) : (
           <div className="table-scroll">
@@ -236,17 +242,19 @@ export function ExpensesPage({
                 <tr>
                   <th scope="col">Expense</th>
                   <th scope="col">Paid to</th>
-                  <th scope="col">Amount</th>
+                  <th scope="col">Date</th>
+                  <th scope="col" className="num">
+                    Amount
+                  </th>
                   <th scope="col">Status</th>
                   <th scope="col" className="table__action-col">
-                    Details
+                    <span className="visually-hidden">Details</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((row) => {
                   const badge = EXPENSE_STATUS[row.status];
-                  const method = row.payment_method ? METHOD_LABEL[row.payment_method] : NO_METHOD;
                   return (
                     <tr
                       key={row.id}
@@ -262,19 +270,10 @@ export function ExpensesPage({
                       <td>
                         <ExpenseCell row={row} />
                       </td>
-                      <td>
-                        <span className="table__stack">
-                          <span>{row.payee ?? '—'}</span>
-                          <span className="table__muted">{method.label}</span>
-                        </span>
-                      </td>
-                      <td>
-                        <span className="table__stack">
-                          <span className="table__amount">
-                            <Money minor={row.amount_minor} currency={row.currency} />
-                          </span>
-                          <span className="table__muted">{formatDate(row.spent_at)}</span>
-                        </span>
+                      <td>{row.payee ?? '—'}</td>
+                      <td>{formatDate(row.spent_at)}</td>
+                      <td className="num table__amount">
+                        <Money minor={row.amount_minor} currency={row.currency} />
                       </td>
                       <td>
                         <Badge tone={badge.tone}>{badge.label}</Badge>
@@ -287,7 +286,7 @@ export function ExpensesPage({
                           onClick={() => setSelected(row)}
                         >
                           <IconEye width={16} height={16} aria-hidden="true" />
-                          View details
+                          View
                         </button>
                       </td>
                     </tr>
@@ -297,18 +296,7 @@ export function ExpensesPage({
             </table>
           </div>
         )}
-
-        <footer className="table-footer">
-          <p className="table-footer__summary">
-            Showing <strong>{items.length}</strong> of <strong>{total}</strong> expenses
-          </p>
-          <Pager
-            page={page}
-            pageCount={Math.max(1, Math.ceil(total / PAGE_SIZE))}
-            onChange={setPage}
-          />
-        </footer>
-      </section>
+      </SectionCard>
 
       <Drawer
         open={selected !== null}
@@ -324,7 +312,7 @@ export function ExpensesPage({
         onRecorded={(expense) => {
           setRecording(false);
           setNotice(
-            `${expense.description} (${formatAmount(expense.amount_minor)} ${expense.currency}) recorded. It counts once another approver approves it.`,
+            `${expense.description} (${formatAmount(expense.amount_minor)} ${expense.currency}) recorded. It counts once someone else approves it.`,
           );
         }}
       />
@@ -386,7 +374,7 @@ function ExpenseActions({
       <ReasonPrompt
         open={prompt === 'reverse'}
         title="Reverse expense"
-        subtitle="It is taken back out of every total; the record stays. Record it again if the amount was wrong."
+        subtitle="Taken out of every total; the record stays."
         icon={<IconHistory />}
         about={`${row.description} · ${amount}`}
         placeholder="e.g. The payment was refunded."

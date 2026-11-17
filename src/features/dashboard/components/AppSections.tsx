@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { LinkProps } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
-import { Badge, IconArrowRight, IconTile, IconUserCog } from '@/components/ui';
+import { IconArrowRight, IconTile, IconUserCog } from '@/components/ui';
 import { APPS, FINANCE_APP, MEETINGS_APP } from '@/config/apps';
 import type { AppDefinition } from '@/config/apps';
 
@@ -31,7 +31,6 @@ const MANAGE_PEOPLE = [
 interface Section {
   id: string;
   title: string;
-  description: string;
   icon: ReactNode;
   to: LinkProps['to'];
   cta: string;
@@ -44,7 +43,6 @@ export function AppSections({ can }: { can: (permission: string) => boolean }) {
     sections.push({
       id: 'people',
       title: 'Members & positions',
-      description: 'Invite people, keep member records and decide who holds which position.',
       icon: <IconUserCog />,
       to: can('position.view') ? '/community/positions' : '/community/members',
       cta: 'Manage',
@@ -55,7 +53,6 @@ export function AppSections({ can }: { can: (permission: string) => boolean }) {
       sections.push({
         id: app.id,
         title: app.name,
-        description: app.description,
         icon: app.icon,
         to: app.to,
         cta: `Open ${app.name}`,
@@ -75,12 +72,11 @@ export function AppSections({ can }: { can: (permission: string) => boolean }) {
           <ul className="dash-cards" role="list">
             {sections.map((section) => (
               <li key={section.id} className="card dash-card">
-                <IconTile tone="brand" size="lg">
+                <IconTile tone="brand" round>
                   {section.icon}
                 </IconTile>
                 <div className="dash-card__body">
                   <h3 className="dash-card__title">{section.title}</h3>
-                  <p className="dash-card__text">{section.description}</p>
                 </div>
                 <Link to={section.to} className="dash-link">
                   {section.cta}
@@ -100,12 +96,11 @@ export function AppSections({ can }: { can: (permission: string) => boolean }) {
           <ul className="dash-cards dash-cards--small" role="list">
             {planned.map((app) => (
               <li key={app.id} className="card dash-card dash-card--planned">
-                <IconTile tone="neutral">{app.icon}</IconTile>
+                <IconTile tone="neutral" round>
+                  {app.icon}
+                </IconTile>
                 <div className="dash-card__body">
-                  <h3 className="dash-card__title">
-                    {app.name} <Badge tone="neutral">Coming later</Badge>
-                  </h3>
-                  <p className="dash-card__text">{app.description}</p>
+                  <h3 className="dash-card__title">{app.name}</h3>
                 </div>
               </li>
             ))}

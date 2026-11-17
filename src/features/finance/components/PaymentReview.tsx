@@ -73,7 +73,7 @@ export function PaymentReview({ token, action: initialAction }: PaymentReviewPro
   if (token === undefined) {
     return (
       <Message title="This link is incomplete" action={signIn}>
-        Open the button in the email again, or sign in and review the payment in COOP.
+        Open the email button again, or sign in to review it.
       </Message>
     );
   }
@@ -98,10 +98,8 @@ export function PaymentReview({ token, action: initialAction }: PaymentReviewPro
     const approved = decided.status === 'confirmed';
     return (
       <Message title={approved ? 'Payment approved' : 'Payment rejected'} action={signIn}>
-        {formatAmount(decided.amount_minor)} {decided.currency} from {decided.member.full_name} is
-        now {approved ? 'confirmed and counts in the totals' : 'rejected'}.{' '}
-        {decided.member.full_name} has been emailed
-        {approved ? ' and can download the receipt.' : ' the reason.'}
+        {decided.currency} {formatAmount(decided.amount_minor)} from {decided.member.full_name} is{' '}
+        {approved ? 'confirmed' : 'rejected'}. {decided.member.full_name} has been emailed.
       </Message>
     );
   }
@@ -118,7 +116,7 @@ export function PaymentReview({ token, action: initialAction }: PaymentReviewPro
       return;
     }
     if (reason.trim() === '') {
-      setReasonError('Tell the member why, so they can fix it and record the payment again.');
+      setReasonError('Tell the member why.');
       return;
     }
     setReasonError(undefined);
@@ -159,7 +157,7 @@ export function PaymentReview({ token, action: initialAction }: PaymentReviewPro
           <dt>Amount</dt>
           <dd>
             <strong>
-              {formatAmount(payment.amount_minor)} {payment.currency}
+              {payment.currency} {formatAmount(payment.amount_minor)}
             </strong>
           </dd>
         </div>
@@ -213,7 +211,7 @@ export function PaymentReview({ token, action: initialAction }: PaymentReviewPro
         <>
           {action === 'reject' && (
             <Textarea
-              label="Reason for rejecting"
+              label="Reason"
               placeholder="e.g. The amount on the MoMo screenshot does not match."
               maxLength={500}
               rows={3}

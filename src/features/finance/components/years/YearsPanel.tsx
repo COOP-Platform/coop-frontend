@@ -52,21 +52,12 @@ export function YearsPanel({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <div className="page">
-      <SectionHeader
-        embedded={embedded}
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title="Financial years"
-        subtitle="Close a year once it is over and every record in it is decided. A closed year's figures stay as they were for the General Assembly."
-      />
+      <SectionHeader embedded={embedded} title="Financial years" />
 
       {notice && <SuccessNotice text={notice} />}
 
       {items.length === 0 ? (
-        <EmptyState
-          icon={<IconCalendar width={28} height={28} />}
-          title="No years yet"
-          message="Years show here once the community records money."
-        />
+        <EmptyState icon={<IconCalendar width={28} height={28} />} title="No years yet" />
       ) : (
         <ul className="years" aria-label="Financial years">
           {items.map((item) => (
@@ -93,7 +84,7 @@ export function YearsPanel({ embedded = false }: { embedded?: boolean }) {
         onClose={() => setClosing(null)}
         onClosed={(year) => {
           setClosing(null);
-          setNotice(`${year} is closed. Nothing dated in it can be added, changed or reversed.`);
+          setNotice(`${year} is closed.`);
         }}
       />
 
@@ -101,7 +92,7 @@ export function YearsPanel({ embedded = false }: { embedded?: boolean }) {
         <ReasonPrompt
           open={reopening !== null}
           title={reopening ? `Reopen ${reopening.year}` : 'Reopen year'}
-          subtitle="Its records can be added, changed and reversed again. The reason is kept on the record."
+          subtitle="Its records can be changed again."
           icon={<IconRefresh />}
           about={
             reopening
@@ -117,7 +108,7 @@ export function YearsPanel({ embedded = false }: { embedded?: boolean }) {
             if (year === undefined) return Promise.resolve();
             return reopen.mutateAsync({ communityId, year, reason }).then(() => {
               setReopening(null);
-              setNotice(`${year} is open again. Close it once the change is made.`);
+              setNotice(`${year} is open again.`);
             });
           }}
         />
@@ -152,8 +143,8 @@ function YearCard({
             {closed
               ? `Closed${item.closed_by ? ` by ${item.closed_by.full_name}` : ''}${item.closed_at ? ` on ${formatDate(item.closed_at)}` : ''}`
               : over
-                ? 'Over, not closed yet'
-                : 'This year, still running'}
+                ? 'Not closed yet'
+                : 'Running'}
           </p>
         </div>
         <Badge tone={closed ? 'neutral' : 'success'}>{closed ? 'Closed' : 'Open'}</Badge>
@@ -163,9 +154,8 @@ function YearCard({
         <p className="years__warning" role="note">
           <IconAlertTriangle width={18} height={18} aria-hidden="true" />
           <span>
-            {item.pending_count} record{item.pending_count === 1 ? '' : 's'} dated in {item.year}{' '}
-            {item.pending_count === 1 ? 'is' : 'are'} still waiting for a decision.
-            {!closed && over ? ' Confirm, approve or reject them before closing the year.' : ''}
+            {item.pending_count} record{item.pending_count === 1 ? '' : 's'} pending
+            {!closed && over ? '. Decide before closing.' : ''}
           </span>
         </p>
       )}
@@ -218,11 +208,7 @@ function YearFigures({ summary }: { summary: YearSummary }) {
         <Figure label="Money in" minor={moneyIn.total_minor} currency={currency} />
         <Figure label="Money out" minor={moneyOut.total_minor} currency={currency} />
         <Figure label="Net" minor={summary.net_minor} currency={currency} />
-        <Figure
-          label="Balance on 31 December"
-          minor={summary.closing_balance_minor}
-          currency={currency}
-        />
+        <Figure label="Closing balance" minor={summary.closing_balance_minor} currency={currency} />
       </dl>
       <p className="table__muted">
         Contributions <Money minor={moneyIn.contributions_minor} currency={currency} /> · Other
@@ -238,7 +224,7 @@ function YearFigures({ summary }: { summary: YearSummary }) {
       </p>
       {breakdown.length > 0 && (
         <details className="years__breakdown">
-          <summary>Where it came from and went</summary>
+          <summary>Breakdown</summary>
           <table className="table">
             <tbody>
               {breakdown.map((row) => (
@@ -290,7 +276,7 @@ function CloseYearDialog({
       open={item !== null}
       onClose={onClose}
       title={item ? `Close ${item.year}` : 'Close year'}
-      subtitle="Nothing dated in that year can be added, changed or reversed after this. Its figures are kept as they are now."
+      subtitle="Nothing dated in it can be added, changed or reversed after this."
       icon={
         <IconTile tone="warning" round>
           <IconLock />
@@ -327,9 +313,6 @@ function CloseYearForm({
 
   return (
     <form className="dialog__form" onSubmit={handleSubmit} noValidate>
-      <p className="table__muted">
-        Reopening later is possible, with a reason that is kept on the record.
-      </p>
       <Textarea
         label="Note"
         optional

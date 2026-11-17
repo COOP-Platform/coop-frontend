@@ -61,9 +61,8 @@ export function ContributionDrawerContent({
     <section className="details" aria-labelledby="contribution-details-title">
       <header className="details__head">
         <div>
-          <p className="section-head__eyebrow">Contribution</p>
           <h2 id="contribution-details-title" className="section-head__title">
-            Contribution Details
+            Payment details
           </h2>
           <p className="section-head__subtitle">{formatLongDate(row.paid_at)}</p>
         </div>
@@ -88,7 +87,7 @@ export function ContributionDrawerContent({
 
       <dl className="details__list">
         <div>
-          <dt>Purpose</dt>
+          <dt>For</dt>
           <dd>{purpose}</dd>
         </div>
         <div>
@@ -172,7 +171,7 @@ export function ContributionDrawerContent({
 
       {history.length > 0 && (
         <div>
-          <h3 className="details__subhead">Status history</h3>
+          <h3 className="details__subhead">History</h3>
           <ol className="history" role="list">
             {history.map((entry) => (
               <li key={`${entry.status}-${entry.at}`} className="history__item">
@@ -191,7 +190,7 @@ export function ContributionDrawerContent({
 
       {detail.isPending && (
         <p className="table__muted" role="status">
-          Loading the review trail…
+          Loading…
         </p>
       )}
       {detail.error && (
@@ -216,8 +215,7 @@ export function ContributionDrawerContent({
           </Button>
         ) : (
           <p className="details__note">
-            <IconInfoCircle width={16} height={16} aria-hidden="true" /> A receipt is available once
-            the Treasurer has confirmed the payment.
+            <IconInfoCircle width={16} height={16} aria-hidden="true" /> Receipt once confirmed.
           </p>
         )}
         {downloadError && (

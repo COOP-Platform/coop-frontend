@@ -16,8 +16,11 @@ import {
   IconSearch,
   IconWallet,
   LoadingState,
-  SegmentedControl,
+  SectionCard,
+  Select,
   StatCard,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
@@ -32,7 +35,6 @@ import { usePendingForMe, useReviewRights } from '../review-rights';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
 import { MonthPicker } from './MonthPicker';
-import { Pager } from './ReasonPrompt';
 import { RemindersDialog, ReviewActions } from './ReviewActions';
 import { SuccessNotice } from './SuccessNotice';
 
@@ -67,12 +69,9 @@ export function MonthOverview({ month, onMonthChange }: MonthProps) {
   return (
     <div className="money-section">
       <div className="section-bar">
-        <div>
-          <h2 className="section-title">{label} at a glance</h2>
-          <p className="table__muted">What members owe for the month and what has come in.</p>
-        </div>
+        <h2 className="section-title">{label}</h2>
         <div className="section-bar__actions">
-          <MonthPicker value={month} onChange={onMonthChange} />
+          <MonthPicker value={month} onChange={onMonthChange} labelHidden />
           {rights.canRemind && (
             <Button
               variant="secondary"
@@ -93,7 +92,7 @@ export function MonthOverview({ month, onMonthChange }: MonthProps) {
           <ErrorState message={errorMessage(summaryQuery.error)} />
         )
       ) : (
-        <MonthCards summary={summaryQuery.data.summary} label={label} />
+        <MonthCards summary={summaryQuery.data.summary} />
       )}
 
       <RemindersDialog
@@ -108,18 +107,16 @@ export function MonthOverview({ month, onMonthChange }: MonthProps) {
 
 function MonthCards({
   summary,
-  label,
 }: {
   summary: NonNullable<ReturnType<typeof useCommunityContributions>['data']>['summary'];
-  label: string;
 }) {
   const currency = summary.currency;
   return (
-    <div className="stat-grid stat-grid--four">
+    <div className="stat-grid">
       <StatCard
         label="Expected"
         value={<Money minor={summary.expected_minor} currency={currency} />}
-        caption={`From every member's shares for ${label}`}
+        caption="From all shares"
         icon={<IconWallet />}
         tone="info"
       />
@@ -128,16 +125,16 @@ function MonthCards({
         value={<Money minor={summary.received_minor} currency={currency} />}
         caption={
           summary.collection_rate === null
-            ? 'Nothing expected this month'
+            ? 'Nothing expected'
             : `${Math.round(summary.collection_rate)}% collected`
         }
         icon={<IconBadgeCheck />}
         tone="brand"
       />
       <StatCard
-        label="Awaiting review"
+        label="Pending"
         value={<Money minor={summary.pending_minor} currency={currency} />}
-        caption="Recorded, not yet confirmed"
+        caption="Not yet confirmed"
         icon={<IconClipboardClock />}
         tone="warning"
         emphasis={summary.pending_minor > 0}
@@ -145,9 +142,9 @@ function MonthCards({
       <StatCard
         label="Members paid"
         value={`${summary.paid_count} / ${summary.member_count}`}
-        caption={`With a confirmed payment for ${label}`}
+        caption="Confirmed payment"
         icon={<IconCommunity />}
-        tone="info"
+        tone="accent"
       />
     </div>
   );
@@ -162,6 +159,7 @@ export function ReviewQueue() {
   const pending = usePendingForMe();
   const [selected, setSelected] = useState<Contribution | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const paged = usePaged(pending.rows);
 
   function done(message: string) {
     setNotice(message);
@@ -178,25 +176,17 @@ export function ReviewQueue() {
 
   return (
     <div className="money-section">
-      <div className="section-bar">
-        <div>
-          <h2 className="section-title">Payments waiting for your review</h2>
-          <p className="table__muted">
-            Check each payment and its proof, then approve or reject it. The member is emailed
-            either way.
-          </p>
-        </div>
-      </div>
-
       {notice && <SuccessNotice text={notice} />}
 
-      <section className="card table-card" aria-label="Payments waiting for review">
+      <SectionCard
+        title="To review"
+        flush
+        footer={
+          pending.rows.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined
+        }
+      >
         {pending.rows.length === 0 ? (
-          <EmptyState
-            icon={<IconCheckCircle width={28} height={28} />}
-            title="Nothing waiting for you"
-            message="Payments members record show up here for you to approve or reject."
-          />
+          <EmptyState icon={<IconCheckCircle width={28} height={28} />} title="Nothing to review" />
         ) : (
           <div className="table-scroll">
             <table className="table">
@@ -211,7 +201,7 @@ export function ReviewQueue() {
                 </tr>
               </thead>
               <tbody>
-                {pending.rows.map((row) => (
+                {paged.rows.map((row) => (
                   <tr
                     key={row.id}
                     className="table__row--clickable"
@@ -231,7 +221,7 @@ export function ReviewQueue() {
                           <Money minor={row.amount_minor} currency={row.currency} />
                         </span>
                         <MethodCell row={row} />
-                        <span className="table__muted">Paid {formatDate(row.paid_at)}</span>
+                        <span className="table__muted">{formatDate(row.paid_at)}</span>
                       </span>
                     </td>
                     <td className="table__action-col">
@@ -243,7 +233,7 @@ export function ReviewQueue() {
             </table>
           </div>
         )}
-      </section>
+      </SectionCard>
 
       <PaymentDrawer selected={selected} onClose={() => setSelected(null)} onDone={done} />
     </div>
@@ -257,7 +247,7 @@ export function ReviewQueue() {
 type StatusFilter = 'all' | ContributionStatus;
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All statuses' },
   { value: 'pending', label: 'Pending' },
   { value: 'confirmed', label: 'Paid' },
   { value: 'rejected', label: 'Rejected' },
@@ -288,155 +278,152 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
     setSelected(null);
   }
 
+  const total = list.data?.total ?? 0;
+  const shownCount = list.data?.items.length ?? 0;
+  const from = shownCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+
   return (
     <div className="money-section">
-      <div className="section-bar">
-        <div>
-          <h2 className="section-title">Payments for {label}</h2>
-          <p className="table__muted">Every payment members recorded. Open one for details.</p>
-        </div>
-        <div className="section-bar__actions">
-          <MonthPicker
-            value={month}
-            onChange={(value) => {
-              onMonthChange(value);
-              setPage(1);
-            }}
-          />
-        </div>
-      </div>
-
       {notice && <SuccessNotice text={notice} />}
 
-      <div className="toolbar card">
-        <div className="search-field">
-          <label htmlFor={searchId} className="visually-hidden">
-            Search by member or reference
-          </label>
-          <span className="search-field__icon" aria-hidden="true">
-            <IconSearch />
-          </span>
-          <input
-            id={searchId}
-            type="search"
-            className="search-field__input"
-            placeholder="Search member or reference..."
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setPage(1);
-            }}
-          />
-        </div>
-        <div className="toolbar__controls">
-          <SegmentedControl
-            label="Filter by status"
-            options={STATUS_OPTIONS}
-            value={status}
-            onChange={(value) => {
-              setStatus(value);
-              setPage(1);
-            }}
-          />
-        </div>
-      </div>
-
-      {list.data === undefined ? (
-        list.isPending ? (
-          <LoadingState />
-        ) : (
-          <ErrorState message={errorMessage(list.error)} />
-        )
-      ) : (
-        <section className="card table-card" aria-label={`Payments for ${label}`}>
-          {list.data.items.length === 0 ? (
-            <EmptyState
-              icon={<IconWallet width={28} height={28} />}
-              title={`No payments for ${label}`}
-              message={
-                status === 'all' && !search
-                  ? 'Payments members record for this month will show here.'
-                  : 'Nothing matches these filters.'
-              }
-            />
-          ) : (
-            <div className="table-scroll">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th scope="col">Member</th>
-                    <th scope="col">For</th>
-                    <th scope="col">Amount</th>
-                    <th scope="col">Status</th>
-                    <th scope="col" className="table__action-col">
-                      Details
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.data.items.map((row) => {
-                    const badge = STATUS_LABEL[row.status];
-                    return (
-                      <tr
-                        key={row.id}
-                        className={
-                          row.id === selected?.id
-                            ? 'table__row--clickable is-selected'
-                            : 'table__row--clickable'
-                        }
-                        onClick={(event) => {
-                          if (!(event.target as HTMLElement).closest('button')) setSelected(row);
-                        }}
-                      >
-                        <td>
-                          <MemberCell row={row} />
-                        </td>
-                        <td>
-                          <PurposeCell row={row} />
-                        </td>
-                        <td>
-                          <span className="table__stack">
-                            <span className="table__amount">
-                              <Money minor={row.amount_minor} currency={row.currency} />
-                            </span>
-                            <MethodCell row={row} />
-                          </span>
-                        </td>
-                        <td>
-                          <Badge tone={badge.tone}>{badge.label}</Badge>
-                        </td>
-                        <td className="table__action-col">
-                          <button
-                            type="button"
-                            className="link-action"
-                            aria-haspopup="dialog"
-                            onClick={() => setSelected(row)}
-                          >
-                            <IconEye width={16} height={16} aria-hidden="true" />
-                            View details
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+      <SectionCard
+        title={`Payments · ${label}`}
+        flush
+        actions={
+          <>
+            <div className="search-field search-field--compact">
+              <label htmlFor={searchId} className="visually-hidden">
+                Search by member or reference
+              </label>
+              <span className="search-field__icon" aria-hidden="true">
+                <IconSearch />
+              </span>
+              <input
+                id={searchId}
+                type="search"
+                className="search-field__input"
+                placeholder="Search…"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+              />
             </div>
-          )}
-
-          <footer className="table-footer">
-            <p className="table-footer__summary">
-              Showing <strong>{list.data.items.length}</strong> of{' '}
-              <strong>{list.data.total}</strong> payments
-            </p>
-            <Pager
-              page={page}
-              pageCount={Math.max(1, Math.ceil(list.data.total / PAGE_SIZE))}
-              onChange={setPage}
+            <Select
+              label="Status"
+              labelHidden
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as StatusFilter);
+                setPage(1);
+              }}
+              options={STATUS_OPTIONS}
             />
-          </footer>
-        </section>
-      )}
+            <MonthPicker
+              value={month}
+              labelHidden
+              onChange={(value) => {
+                onMonthChange(value);
+                setPage(1);
+              }}
+            />
+          </>
+        }
+        footer={
+          list.data && list.data.items.length > 0 ? (
+            <TableFooter
+              from={from}
+              to={from + shownCount - 1}
+              total={total}
+              page={page}
+              pageCount={Math.max(1, Math.ceil(total / PAGE_SIZE))}
+              onPage={setPage}
+            />
+          ) : undefined
+        }
+      >
+        {list.data === undefined ? (
+          list.isPending ? (
+            <LoadingState />
+          ) : (
+            <ErrorState message={errorMessage(list.error)} />
+          )
+        ) : list.data.items.length === 0 ? (
+          <EmptyState
+            icon={<IconWallet width={28} height={28} />}
+            title={
+              status === 'all' && !search ? `No payments for ${label}` : 'No matching payments'
+            }
+          />
+        ) : (
+          <div className="table-scroll">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th scope="col">Member</th>
+                  <th scope="col">For</th>
+                  <th scope="col" className="num">
+                    Amount
+                  </th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="table__action-col">
+                    <span className="visually-hidden">Details</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.data.items.map((row) => {
+                  const badge = STATUS_LABEL[row.status];
+                  return (
+                    <tr
+                      key={row.id}
+                      className={
+                        row.id === selected?.id
+                          ? 'table__row--clickable is-selected'
+                          : 'table__row--clickable'
+                      }
+                      onClick={(event) => {
+                        if (!(event.target as HTMLElement).closest('button')) setSelected(row);
+                      }}
+                    >
+                      <td>
+                        <MemberCell row={row} />
+                      </td>
+                      <td>
+                        <PurposeCell row={row} />
+                      </td>
+                      <td className="num">
+                        <span className="table__stack">
+                          <span className="table__amount">
+                            <Money minor={row.amount_minor} currency={row.currency} />
+                          </span>
+                          <MethodCell row={row} />
+                        </span>
+                      </td>
+                      <td>
+                        <Badge tone={badge.tone}>{badge.label}</Badge>
+                      </td>
+                      <td className="table__action-col">
+                        <button
+                          type="button"
+                          className="link-action"
+                          aria-haspopup="dialog"
+                          aria-label={`View details, ${row.member.full_name}`}
+                          onClick={() => setSelected(row)}
+                        >
+                          <IconEye width={16} height={16} aria-hidden="true" />
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
 
       <PaymentDrawer selected={selected} onClose={() => setSelected(null)} onDone={done} />
     </div>

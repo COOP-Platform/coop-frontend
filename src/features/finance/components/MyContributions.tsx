@@ -11,17 +11,18 @@ import {
   IconCheckCircle,
   IconDownload,
   IconEye,
-  IconInfoCircle,
   IconPlusCircle,
   IconWallet,
   LoadingState,
   PageHeader,
+  SectionCard,
   SegmentedControl,
   Select,
   StatCard,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
-import { useCommittee } from '@/features/positions';
 import { apiDownload } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
@@ -53,6 +54,8 @@ const STATUS_FILTERS: { value: ContributionStatus | 'all'; label: string }[] = [
     label: STATUS_LABEL[value].label,
   })),
 ];
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 interface MyContributionsProps {
   /** Open the Record Contribution form on arrival (from the dashboard's button). */
@@ -90,7 +93,7 @@ export function MyContributions({
   const hasFines = FINES_ENABLED && (fines.data?.items.length ?? 0) > 0;
   const current: MyContributionsView = view === 'fines' && !hasFines ? 'payments' : view;
   const sections: { value: MyContributionsView; label: string }[] = [
-    { value: 'payments', label: 'My payments' },
+    { value: 'payments', label: 'Payments' },
     { value: 'arrears', label: monthsBehind > 0 ? `Ibirarane (${monthsBehind})` : 'Ibirarane' },
     ...(hasFines
       ? [{ value: 'fines' as const, label: finesToPay > 0 ? `Fines (${finesToPay})` : 'Fines' }]
@@ -114,6 +117,20 @@ export function MyContributions({
       (typeFilter === 'all' || item.contribution_type === typeFilter),
   );
   const filtering = statusFilter !== 'all' || typeFilter !== 'all';
+  const paged = usePaged(shown);
+  // Confirmed money per month of the chosen year, oldest first, for the trend line.
+  const monthlyTrend = useMemo(() => {
+    const lastMonth = year === THIS_YEAR ? new Date().getMonth() + 1 : 12;
+    const totals = Array.from({ length: lastMonth }, () => 0);
+    for (const item of items ?? []) {
+      if (item.status !== 'confirmed') continue;
+      const month = Number(item.paid_at.slice(5, 7));
+      if (month >= 1 && month <= lastMonth) {
+        totals[month - 1] = (totals[month - 1] ?? 0) + item.amount_minor;
+      }
+    }
+    return totals;
+  }, [items, year]);
   // Ibirarane paid this year: arrears payments the Treasurer confirmed, and those still waiting.
   const arrearsPayments = (items ?? []).filter((item) => item.contribution_type === 'arrears');
   const arrearsPaid = arrearsPayments.filter((item) => item.status === 'confirmed');
@@ -126,13 +143,6 @@ export function MyContributions({
     setPrefill(initial);
     setRecording(true);
   }
-
-  // "Contact your treasurer" names whoever holds that seat, when there is one.
-  const committee = useCommittee(communityId);
-  const treasurer = (committee.data ?? [])
-    .find((seat) => /treasur/i.test(seat.name))
-    ?.holders.map((holder) => holder.full_name)
-    .join(', ');
 
   async function downloadStatement() {
     if (communityId === undefined) return;
@@ -156,11 +166,11 @@ export function MyContributions({
   return (
     <div className="page">
       <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">Personal Portal</span>}
         title="My Contributions"
-        subtitle={`${shares.count} share${shares.count === 1 ? '' : 's'} in ${
-          shares.category.name
-        } · ${formatAmount(shares.owed_per_month_minor)} ${currency} a month`}
+        subtitle={`${currency} ${formatAmount(shares.owed_per_month_minor)} a month · ${plural(
+          shares.count,
+          'share',
+        )}`}
         actions={
           <>
             <Button
@@ -168,13 +178,14 @@ export function MyContributions({
               variant="secondary"
               icon={<IconDownload />}
               disabled={preparing}
+              aria-label={`Download ${year} statement (PDF)`}
               onClick={() => void downloadStatement()}
             >
-              {preparing ? 'Preparing…' : 'Download Statement (PDF)'}
+              {preparing ? 'Preparing…' : 'Statement'}
             </Button>
             {canRecord && (
               <Button inline icon={<IconPlusCircle />} onClick={() => openRecord(undefined)}>
-                Record Contribution
+                Record payment
               </Button>
             )}
           </>
@@ -185,12 +196,10 @@ export function MyContributions({
         <div className="notice notice--success" role="status">
           <IconCheckCircle width={20} height={20} aria-hidden="true" />
           <div>
-            <p className="notice__title">Contribution sent for review</p>
+            <p className="notice__title">Sent for review</p>
             <p className="notice__text">
-              {formatAmount(justRecorded.amount_minor)} {justRecorded.currency} paid on{' '}
-              {formatDate(justRecorded.paid_at)} is pending. The Treasurer will confirm it
-              {justRecorded.proof_count > 0 ? ' using the proof you attached' : ''}, and your
-              receipt is ready after that.
+              {currency} {formatAmount(justRecorded.amount_minor)} paid on{' '}
+              {formatDate(justRecorded.paid_at)} is pending until the Treasurer confirms it.
             </p>
           </div>
         </div>
@@ -202,54 +211,69 @@ export function MyContributions({
         </p>
       )}
 
-      <div className="stat-grid my-contributions__stats">
+      <div className="stat-grid">
         <StatCard
-          variant="tint"
-          label="Total Contributed"
+          label="Total contributed"
           value={<Money minor={summary.total_contributed_minor} currency={currency} />}
           caption={
-            summary.pending_minor > 0
-              ? `${formatAmount(summary.pending_minor)} ${currency} awaiting the Treasurer`
-              : `Confirmed payments in ${year}`
+            summary.pending_minor > 0 ? (
+              <>
+                <b className="caption-warn">
+                  {currency} {formatAmount(summary.pending_minor)}
+                </b>{' '}
+                pending
+              </>
+            ) : year === THIS_YEAR ? (
+              'This year'
+            ) : (
+              `In ${year}`
+            )
           }
           icon={<IconWallet />}
           tone="brand"
+          trend={monthlyTrend}
         />
         <StatCard
-          variant="tint"
-          label="Ibirarane Paid"
-          value={<Money minor={arrearsPaidMinor} currency={currency} />}
-          caption={
-            arrearsWaitingMinor > 0
-              ? `${arrearsPaid.length} payment${arrearsPaid.length === 1 ? '' : 's'} · ${formatAmount(arrearsWaitingMinor)} ${currency} awaiting the Treasurer`
-              : `${arrearsPaid.length} arrears payment${arrearsPaid.length === 1 ? '' : 's'} in ${year}`
-          }
-          icon={<IconHistory />}
-          tone="neutral"
-        />
-        <StatCard
-          variant="tint"
-          label="Number of Contributions"
+          label="Payments"
           value={summary.count}
           caption={
             summary.on_time_rate === null
-              ? 'No monthly payment to measure yet'
-              : `${Math.round(summary.on_time_rate)}% paid on time`
+              ? undefined
+              : `${Math.round(summary.on_time_rate)}% on time`
           }
           icon={<IconBadgeCheck />}
           tone="info"
         />
         <StatCard
-          variant="tint"
-          label="Outstanding Amount"
+          label="Ibirarane paid"
+          value={<Money minor={arrearsPaidMinor} currency={currency} />}
+          caption={
+            arrearsWaitingMinor > 0 ? (
+              <>
+                <b className="caption-warn">
+                  {currency} {formatAmount(arrearsWaitingMinor)}
+                </b>{' '}
+                pending
+              </>
+            ) : (
+              plural(arrearsPaid.length, 'payment')
+            )
+          }
+          icon={<IconHistory />}
+          tone="accent"
+        />
+        <StatCard
+          label="Outstanding"
           value={<Money minor={summary.outstanding_minor} currency={currency} />}
           caption={
             summary.outstanding_minor === 0
-              ? 'All dues cleared'
-              : `Of ${formatAmount(summary.owed_to_date_minor)} ${currency} owed so far`
+              ? 'All clear'
+              : monthsBehind > 0
+                ? `${plural(monthsBehind, 'month')} behind`
+                : `Of ${currency} ${formatAmount(summary.owed_to_date_minor)}`
           }
           icon={<IconCheckCircle />}
-          tone={summary.outstanding_minor === 0 ? 'brand' : 'warning'}
+          tone="warning"
           emphasis={summary.outstanding_minor > 0}
         />
       </div>
@@ -290,20 +314,14 @@ export function MyContributions({
       )}
 
       {current === 'payments' && (
-        <section className="card table-card" aria-labelledby="history-title">
-          <header className="table-card__head my-contributions__head">
-            <div>
-              <h2 id="history-title" className="section-head__title">
-                Contribution History
-              </h2>
-              <p className="section-head__subtitle">
-                Every payment recorded for you in {year}, with its review status.
-              </p>
-            </div>
-
-            <div className="my-contributions__filters">
+        <SectionCard
+          title="History"
+          flush
+          actions={
+            <>
               <Select
-                label="Period"
+                label="Year"
+                labelHidden
                 value={String(year)}
                 onChange={(event) => setYear(Number(event.target.value))}
                 options={YEAR_OPTIONS}
@@ -312,6 +330,7 @@ export function MyContributions({
                 <>
                   <Select
                     label="Status"
+                    labelHidden
                     value={statusFilter}
                     onChange={(event) =>
                       setStatusFilter(event.target.value as ContributionStatus | 'all')
@@ -320,6 +339,7 @@ export function MyContributions({
                   />
                   <Select
                     label="Type"
+                    labelHidden
                     value={typeFilter}
                     onChange={(event) =>
                       setTypeFilter(event.target.value as ContributionType | 'all')
@@ -335,43 +355,42 @@ export function MyContributions({
                         setTypeFilter('all');
                       }}
                     >
-                      Clear filters
+                      Clear
                     </Button>
                   )}
                 </>
               )}
-            </div>
-          </header>
-
+            </>
+          }
+          footer={shown.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined}
+        >
           {(items ?? []).length === 0 ? (
             <EmptyState
               icon={<IconWallet width={28} height={28} />}
-              title={`No contributions in ${year}`}
-              message="Payments you record and the Treasurer confirms will show here."
+              title={`No payments in ${year}`}
             />
           ) : shown.length === 0 ? (
-            <EmptyState
-              icon={<IconWallet width={28} height={28} />}
-              title="No payments match these filters"
-              message="Try another status or type, or clear the filters."
-            />
+            <EmptyState icon={<IconWallet width={28} height={28} />} title="No matching payments" />
           ) : (
             <div className="table-scroll">
               <table className="table">
                 <thead>
                   <tr>
                     <th scope="col">Date</th>
-                    <th scope="col">Amount</th>
-                    <th scope="col">For</th>
+                    <th scope="col">Type</th>
                     <th scope="col">Method</th>
+                    <th scope="col">Paid into</th>
+                    <th scope="col" className="num">
+                      Amount
+                    </th>
                     <th scope="col">Status</th>
                     <th scope="col" className="table__action-col">
-                      Details
+                      <span className="visually-hidden">Details</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {shown.map((item) => {
+                  {paged.rows.map((item) => {
                     const status = STATUS_LABEL[item.status];
                     const method = item.payment_method
                       ? METHOD_LABEL[item.payment_method]
@@ -390,9 +409,6 @@ export function MyContributions({
                         }}
                       >
                         <td>{formatDate(item.paid_at)}</td>
-                        <td className="table__amount">
-                          <Money minor={item.amount_minor} currency={item.currency} />
-                        </td>
                         <td>{TYPE_LABEL[item.contribution_type]}</td>
                         <td>
                           <span className="channel">
@@ -403,6 +419,10 @@ export function MyContributions({
                             {method.label}
                           </span>
                         </td>
+                        <td>{item.account?.name ?? '—'}</td>
+                        <td className="num">
+                          <Money minor={item.amount_minor} currency={item.currency} />
+                        </td>
                         <td>
                           <Badge tone={status.tone}>{status.label}</Badge>
                         </td>
@@ -411,10 +431,11 @@ export function MyContributions({
                             type="button"
                             className="link-action"
                             aria-haspopup="dialog"
+                            aria-label={`View details, ${formatDate(item.paid_at)}`}
                             onClick={() => setSelected(item)}
                           >
                             <IconEye width={16} height={16} aria-hidden="true" />
-                            View details
+                            View
                           </button>
                         </td>
                       </tr>
@@ -424,15 +445,7 @@ export function MyContributions({
               </table>
             </div>
           )}
-
-          <footer className="table-card__foot">
-            <IconInfoCircle width={18} height={18} aria-hidden="true" />
-            <span>
-              Need assistance or correction? Contact your community treasurer
-              {treasurer ? ` (${treasurer})` : ''}.
-            </span>
-          </footer>
-        </section>
+        </SectionCard>
       )}
 
       <Drawer

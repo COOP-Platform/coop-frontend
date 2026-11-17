@@ -7,21 +7,21 @@ import {
   EmptyState,
   ErrorState,
   IconCalendar,
-  IconCheckCircle,
-  IconClock,
   IconEyeOff,
-  IconMapPin,
   IconPlus,
-  IconUsers,
   LoadingState,
   PageHeader,
-  SegmentedControl,
+  SectionCard,
+  Select,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 
-import { eventTypeLabel, formatEventWhen, rsvpSummary, useEvents } from '../api/events';
+import { eventTypeLabel, useEvents } from '../api/events';
 import type { CommunityEvent, EventListFilter } from '../api/events';
+import { formatMeetingDay, formatMeetingTime } from '../api/meetings';
 import { EventFormDialog } from './EventFormDialog';
 import { EventRsvp } from './EventRsvp';
 
@@ -39,19 +39,16 @@ const FILTER: Record<EventsTab, EventListFilter> = {
   cancelled: 'cancelled',
 };
 
-const EMPTY: Record<EventsTab, { title: string; message: string }> = {
-  upcoming: {
-    title: 'No upcoming events',
-    message: 'Celebrations, fundraisers and visits planned by the family will show here.',
-  },
-  past: { title: 'No past events yet', message: 'Events that have taken place will show here.' },
-  cancelled: { title: 'No cancelled events', message: 'Good news: nothing has been called off.' },
+const EMPTY: Record<EventsTab, string> = {
+  upcoming: 'No upcoming events',
+  past: 'No past events',
+  cancelled: 'No cancelled events',
 };
 
 export function EventStatusBadge({ event }: { event: CommunityEvent }) {
   if (event.status === 'cancelled') return <Badge tone="danger">Cancelled</Badge>;
   if (event.status === 'completed') return <Badge tone="neutral">Past</Badge>;
-  return <Badge tone="success">Upcoming</Badge>;
+  return <Badge tone="info">Upcoming</Badge>;
 }
 
 /** Only the organiser and visibility managers receive `hidden_from`. */
@@ -60,7 +57,7 @@ export function HiddenBadge({ event }: { event: CommunityEvent }) {
   if (count === 0) return null;
   return (
     <Badge tone="warning" icon={<IconEyeOff width={12} height={12} />}>
-      Hidden from {count} member{count === 1 ? '' : 's'}
+      Hidden from {count}
     </Badge>
   );
 }
@@ -81,12 +78,12 @@ export function EventsPage({
   const navigate = useNavigate();
   const events = useEvents(communityId, FILTER[tab]);
   const [creating, setCreating] = useState(false);
+  const paged = usePaged(events.data?.items ?? []);
 
   return (
     <div className="page">
       <PageHeader
         title="Events"
-        subtitle="Celebrations, fundraisers and visits: tell the family whether you are coming."
         actions={
           can('event.create') ? (
             <Button inline icon={<IconPlus />} onClick={() => setCreating(true)}>
@@ -95,27 +92,60 @@ export function EventsPage({
           ) : undefined
         }
       />
-      <SegmentedControl label="Which events" options={TABS} value={tab} onChange={onTabChange} />
 
-      {events.data === undefined ? (
-        events.isPending ? (
-          <LoadingState label="Loading events…" />
+      <SectionCard
+        title={`${TABS.find((t) => t.value === tab)?.label ?? ''} events`}
+        flush
+        actions={
+          <Select
+            label="Which events"
+            labelHidden
+            options={TABS}
+            value={tab}
+            onChange={(e) => onTabChange(e.target.value as EventsTab)}
+          />
+        }
+        footer={
+          events.data && events.data.items.length > 0 ? (
+            <TableFooter {...paged} onPage={paged.setPage} />
+          ) : undefined
+        }
+      >
+        {events.data === undefined ? (
+          events.isPending ? (
+            <LoadingState label="Loading events…" />
+          ) : (
+            <ErrorState message={errorMessage(events.error)} />
+          )
+        ) : events.data.items.length === 0 ? (
+          <EmptyState icon={<IconCalendar />} title={EMPTY[tab]} />
         ) : (
-          <ErrorState message={errorMessage(events.error)} />
-        )
-      ) : events.data.items.length === 0 ? (
-        <section className="card">
-          <EmptyState icon={<IconCalendar />} {...EMPTY[tab]} />
-        </section>
-      ) : (
-        <ul className="budget-cards event-cards" role="list">
-          {events.data.items.map((event) => (
-            <li key={event.id}>
-              <EventCard event={event} />
-            </li>
-          ))}
-        </ul>
-      )}
+          <div className="table-scroll">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th scope="col">Event</th>
+                  <th scope="col">When</th>
+                  <th scope="col">Place</th>
+                  <th scope="col" className="num">
+                    Yes
+                  </th>
+                  <th scope="col" className="num">
+                    No
+                  </th>
+                  <th scope="col">Status</th>
+                  <th scope="col">You</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.rows.map((event) => (
+                  <EventRow key={event.id} event={event} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
 
       <EventFormDialog
         open={creating}
@@ -130,44 +160,55 @@ export function EventsPage({
   );
 }
 
-function EventCard({ event }: { event: CommunityEvent }) {
+function EventRow({ event }: { event: CommunityEvent }) {
+  const { confirmed, apologies, guests } = event.rsvp;
+  const cancelled = event.status === 'cancelled';
   return (
-    <article className="card budget-card budget-card--static event-card">
-      <div className="budget-card__head">
-        <span className="event-card__type">{eventTypeLabel(event.event_type)}</span>
-        <EventStatusBadge event={event} />
-      </div>
-      <h3 className="budget-card__title">
-        <Link
-          to="/meetings/events/$eventId"
-          params={{ eventId: event.id }}
-          className="event-card__link"
-        >
-          {event.title}
-        </Link>
-      </h3>
-      <p className="event-card__meta">
-        <IconClock width={14} height={14} aria-hidden="true" /> {formatEventWhen(event)}
-      </p>
-      {event.venue && (
-        <p className="event-card__meta">
-          <IconMapPin width={14} height={14} aria-hidden="true" /> {event.venue}
-        </p>
-      )}
-      {event.status === 'cancelled' ? (
-        event.cancel_reason && <p className="event-card__meta">Reason: {event.cancel_reason}</p>
-      ) : (
-        <p className="event-card__meta">
-          <IconUsers width={14} height={14} aria-hidden="true" /> {rsvpSummary(event)}
-        </p>
-      )}
-      <HiddenBadge event={event} />
-      {event.status === 'completed' && event.my_rsvp?.response === 'confirmed' && (
-        <p className="event-card__meta">
-          <IconCheckCircle width={14} height={14} aria-hidden="true" /> You said you would come
-        </p>
-      )}
-      {event.status === 'scheduled' && <EventRsvp event={event} />}
-    </article>
+    <tr>
+      <td>
+        <span className="table__stack">
+          <Link
+            to="/meetings/events/$eventId"
+            params={{ eventId: event.id }}
+            className="event-row__link"
+          >
+            {event.title}
+          </Link>
+          <span className="table__muted">
+            {cancelled && event.cancel_reason
+              ? event.cancel_reason
+              : eventTypeLabel(event.event_type)}
+          </span>
+        </span>
+      </td>
+      <td className="event-row__when">
+        {formatMeetingDay(event.starts_at)} · {formatMeetingTime(event.starts_at)}
+      </td>
+      <td>{event.venue ?? <span className="table__muted">—</span>}</td>
+      <td className="num">
+        {cancelled ? '—' : confirmed}
+        {!cancelled && guests > 0 && <span className="table__muted"> +{guests}</span>}
+      </td>
+      <td className="num">{cancelled ? '—' : apologies}</td>
+      <td>
+        <span className="event-row__badges">
+          <EventStatusBadge event={event} />
+          <HiddenBadge event={event} />
+        </span>
+      </td>
+      <td>
+        {event.status === 'scheduled' ? (
+          <EventRsvp event={event} compact />
+        ) : (
+          <span className="table__muted">
+            {cancelled || !event.my_rsvp
+              ? '—'
+              : event.my_rsvp.response === 'confirmed'
+                ? 'Said yes'
+                : 'Said no'}
+          </span>
+        )}
+      </td>
+    </tr>
   );
 }

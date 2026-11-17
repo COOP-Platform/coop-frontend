@@ -24,7 +24,7 @@ export function StatusHistory({
       ) : history.error ? (
         <p className="form-error">{errorMessage(history.error)}</p>
       ) : history.data.length === 0 ? (
-        <p className="table__muted">Nothing has changed since they joined.</p>
+        <p className="table__muted">No changes yet.</p>
       ) : (
         <ol className="status-history" role="list">
           {history.data.map((event) => (

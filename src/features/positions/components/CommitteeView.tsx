@@ -3,7 +3,6 @@ import {
   Badge,
   EmptyState,
   ErrorState,
-  IconInfoCircle,
   IconTile,
   IconUsers,
   LoadingState,
@@ -21,16 +20,13 @@ import { useCommittee } from '../api/positions';
  * actions — from the committee endpoint any active member may read.
  */
 export function CommitteeView() {
-  const { membership, communityId } = useWorkspace();
+  const { communityId } = useWorkspace();
   const committee = useCommittee(communityId);
   const seats = committee.data ?? [];
 
   return (
     <div className="page">
-      <PageHeader
-        title="Committee"
-        subtitle={`The people holding positions in ${membership?.community.name ?? 'your community'}.`}
-      />
+      <PageHeader title="Committee" />
 
       {committee.isPending ? (
         <LoadingState label="Loading the committee…" />
@@ -40,11 +36,7 @@ export function CommitteeView() {
         </section>
       ) : seats.length === 0 ? (
         <section className="card">
-          <EmptyState
-            icon={<IconUsers width={28} height={28} />}
-            title="No committee"
-            message="This community has no committee positions."
-          />
+          <EmptyState icon={<IconUsers width={28} height={28} />} title="No committee" />
         </section>
       ) : (
         <ul className="position-grid" role="list">
@@ -65,10 +57,10 @@ export function CommitteeView() {
               <h2 className="position-card__name">{seat.name}</h2>
               {seat.description && <p className="position-card__description">{seat.description}</p>}
               <dl className="position-card__holder">
-                <dt>{seat.holders.length > 1 ? 'Held by' : 'Assigned Member'}</dt>
+                <dt>{seat.holders.length > 1 ? 'Held by' : 'Holder'}</dt>
                 <dd>
                   {seat.holders.length === 0 ? (
-                    <span className="position-card__vacant">Seat open</span>
+                    <span className="position-card__vacant">Open</span>
                   ) : (
                     <ul className="committee-holders" role="list">
                       {seat.holders.map((holder) => (
@@ -85,13 +77,6 @@ export function CommitteeView() {
           ))}
         </ul>
       )}
-
-      <aside className="notice notice--info">
-        <IconInfoCircle aria-hidden="true" />
-        <p className="notice__text">
-          Positions are assigned by your community&apos;s administrators.
-        </p>
-      </aside>
     </div>
   );
 }

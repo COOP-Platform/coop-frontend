@@ -37,7 +37,7 @@ export function EditExpenseDialog({
       title="Edit expense"
       subtitle={
         expense
-          ? `The amount (${formatAmount(expense.amount_minor)} ${expense.currency}) cannot change: reverse it and record it again if it is wrong.`
+          ? `The amount (${formatAmount(expense.amount_minor)} ${expense.currency}) cannot change.`
           : ''
       }
       icon={
@@ -183,9 +183,7 @@ function EditForm({
           />
         </div>
       )}
-      {!pending && (
-        <p className="table__muted">The date and budget are fixed once an expense is approved.</p>
-      )}
+      {!pending && <p className="table__muted">Date and budget are fixed once approved.</p>}
       <Textarea
         label="Notes"
         optional

@@ -175,27 +175,10 @@
   gap: var(--space-4);
 }
 
-.notif-page__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.notif-page__count {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
 .notif-page__error {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-danger);
-}
-
-.notif-page__card {
-  padding: var(--space-2);
 }
 
 .notif-page__list {
@@ -210,6 +193,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
+  padding: 0 var(--space-3);
 }
 
 .notif-page__row + .notif-page__row {
@@ -235,10 +219,6 @@
 .notif-page__mark:disabled {
   cursor: progress;
   color: var(--color-text-subtle);
-}
-
-.notif-page__pager {
-  justify-content: center;
 }
 
 @media (max-width: 720px) {

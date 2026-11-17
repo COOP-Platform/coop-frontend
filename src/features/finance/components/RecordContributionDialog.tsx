@@ -110,8 +110,8 @@ export function RecordContributionDialog({
       title={forMember ? 'Record a payment for a member' : 'Record Contribution'}
       subtitle={
         forMember
-          ? 'A member paid you or the community directly. It stays pending until someone else confirms it.'
-          : 'Tell the Treasurer about a payment you made. It stays pending until they confirm it.'
+          ? 'Pending until someone else confirms it.'
+          : 'Pending until the Treasurer confirms it.'
       }
       icon={
         <IconTile tone="brand" round>
@@ -340,7 +340,7 @@ function RecordContributionForm({
           ]}
           hint={
             forOther && who !== ''
-              ? 'You recorded it, so someone else must confirm it.'
+              ? 'Someone else must confirm it.'
               : members.isPending
                 ? 'Loading members…'
                 : undefined
@@ -365,7 +365,7 @@ function RecordContributionForm({
           options={openCampaigns.map((c) => ({ value: c.id, label: c.title }))}
           hint={
             selectedCampaign?.my_share.outstanding_minor
-              ? `You still owe ${formatAmount(selectedCampaign.my_share.outstanding_minor)} ${selectedCampaign.currency} for it.`
+              ? `You owe ${formatAmount(selectedCampaign.my_share.outstanding_minor)} ${selectedCampaign.currency}.`
               : undefined
           }
           error={errors.campaign_id}
@@ -384,7 +384,7 @@ function RecordContributionForm({
           }))}
           hint={
             selectedFine && selectedFine.pending_minor > 0
-              ? `${formatAmount(selectedFine.pending_minor)} ${selectedFine.currency} for it is already waiting for the Treasurer.`
+              ? `${formatAmount(selectedFine.pending_minor)} ${selectedFine.currency} already waiting for review.`
               : undefined
           }
           error={errors.fine_id}
@@ -414,8 +414,8 @@ function RecordContributionForm({
         hint={
           hasPeriod && monthly
             ? forOther
-              ? `${payer?.full_name ?? 'Their'}${payer?.full_name ? "'s" : ''} ${payer?.shares ?? 1} share${payer?.shares === 1 ? '' : 's'} come to ${formatAmount(monthly)} RWF a month.`
-              : `Your ${shares?.count ?? 1} share${shares?.count === 1 ? '' : 's'} come to ${formatAmount(monthly)} RWF a month.`
+              ? `${payer?.shares ?? 1} share${payer?.shares === 1 ? '' : 's'}: ${formatAmount(monthly)} RWF a month.`
+              : `${shares?.count ?? 1} share${shares?.count === 1 ? '' : 's'}: ${formatAmount(monthly)} RWF a month.`
             : undefined
         }
         error={errors.amount}
@@ -443,7 +443,7 @@ function RecordContributionForm({
       {channels.length > 0 && (
         <Select
           label="Paid into"
-          hint="Where the money went. It can differ from how it was paid: a MoMo payment sent to the bank."
+          hint="The account the money went into."
           placeholder="Choose the account"
           value={channel}
           onChange={(event) => setPickedChannel(event.target.value)}

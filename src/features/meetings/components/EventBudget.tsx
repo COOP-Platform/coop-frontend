@@ -5,18 +5,25 @@ import { useState } from 'react';
 import {
   Badge,
   Button,
+  EmptyState,
   ErrorState,
+  IconBanknote,
+  IconCheckCircle,
   IconFlag,
   IconHandHeart,
+  IconPiggyBank,
   IconPlusCircle,
   IconSend,
+  IconUsers,
+  IconWallet,
   LoadingState,
+  SectionCard,
+  StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import {
   BudgetFormDialog,
   CampaignFormDialog,
-  Meter,
   Money,
   RecordContributionDialog,
   RecordExpenseDialog,
@@ -30,13 +37,61 @@ import { errorMessage } from '@/lib/api/errors';
 import type { CommunityEvent } from '../api/events';
 
 /**
- * An event's money, on its page: the budget planned for it, what members
- * contributed to it, and what was taken from the community pocket.
+ * The event's budget at a glance: planned, from members, from the community
+ * pocket, and what is left. Shown only when the event has a budget the caller
+ * may read; it shares the budget query with `EventBudget` below.
+ */
+export function EventBudgetStats({ event }: { event: CommunityEvent }) {
+  const { communityId, can } = useWorkspace();
+  const visible = event.budget !== null && can('finance.budget.view');
+  const budget = useBudgetDetail(communityId, visible ? event.budget?.id : undefined);
+  if (!visible || !budget.data) return null;
+  const b = budget.data;
+  return (
+    <div className="stat-grid">
+      <StatCard
+        label="Budget"
+        value={<Money minor={b.planned_minor} currency={b.currency} />}
+        caption={`Spent ${formatAmount(b.spent_minor)}`}
+        icon={<IconWallet />}
+        tone="brand"
+      />
+      <StatCard
+        label="From members"
+        value={<Money minor={b.raised_minor} currency={b.currency} />}
+        icon={<IconUsers />}
+        tone="info"
+      />
+      <StatCard
+        label="From pocket"
+        value={<Money minor={b.from_wallet_minor} currency={b.currency} />}
+        icon={<IconPiggyBank />}
+        tone="accent"
+      />
+      <StatCard
+        label="Left"
+        value={<Money minor={b.left_to_spend_minor} currency={b.currency} />}
+        caption={
+          b.pending_spent_minor > 0
+            ? `${formatAmount(b.pending_spent_minor)} awaiting approval`
+            : undefined
+        }
+        icon={<IconBanknote />}
+        tone="warning"
+        emphasis={b.left_to_spend_minor < 0}
+      />
+    </div>
+  );
+}
+
+/**
+ * An event's money, on its page: the budget lines planned for it, and the
+ * contributions members are asked for.
  *
  * - No budget yet: whoever manages budgets plans one for this event.
  * - Members pay into its dedicated contributions ("Contribute").
  * - Spending beyond what members raised comes from the community pocket;
- *   whoever records expenses takes it from there ("Take from the pocket"),
+ *   whoever records expenses takes it from there ("Use pocket money"),
  *   and someone else approves it as for any expense.
  */
 export function EventBudget({ event }: { event: CommunityEvent }) {
@@ -56,39 +111,32 @@ export function EventBudget({ event }: { event: CommunityEvent }) {
   }
 
   return (
-    <section className="card event-budget" aria-labelledby="event-budget-title">
-      <header className="event-budget__head">
-        <div>
-          <h2 id="event-budget-title" className="section-head__title">
-            Budget and contributions
-          </h2>
-          <p className="section-head__subtitle">
-            What this event costs, what members put in, and what comes from the community pocket.
-          </p>
-        </div>
-      </header>
-
+    <>
       {notice && (
-        <p className="event-budget__notice" role="status">
-          {notice}
-        </p>
+        <div className="notice notice--success event-detail__wide" role="status">
+          <IconCheckCircle width={20} height={20} aria-hidden="true" />
+          <p className="notice__text">{notice}</p>
+        </div>
       )}
 
       {event.budget === null ? (
-        <div className="event-budget__empty">
-          <p className="table__muted">
-            {cancelled
-              ? 'This event is cancelled, so it has no budget.'
-              : 'No budget is planned for this event yet.'}
-          </p>
-          {canPlan && (
-            <Button inline icon={<IconFlag />} onClick={() => setPlanning(true)}>
-              Plan a budget for this event
-            </Button>
-          )}
-        </div>
+        <SectionCard
+          title="Budget"
+          className="event-detail__wide"
+          actions={
+            canPlan ? (
+              <Button inline icon={<IconFlag />} onClick={() => setPlanning(true)}>
+                Plan a budget
+              </Button>
+            ) : undefined
+          }
+        >
+          <p className="table__muted">{cancelled ? 'Cancelled: no budget.' : 'No budget yet.'}</p>
+        </SectionCard>
       ) : !can('finance.budget.view') ? (
-        <p className="table__muted">This event has a budget: {event.budget.title}.</p>
+        <SectionCard title="Budget" className="event-detail__wide">
+          <p>{event.budget.title}</p>
+        </SectionCard>
       ) : (
         <BudgetBody budgetId={event.budget.id} onNotice={setNotice} />
       )}
@@ -100,7 +148,7 @@ export function EventBudget({ event }: { event: CommunityEvent }) {
         onClose={() => setPlanning(false)}
         onSaved={(message) => refreshEvent(message)}
       />
-    </section>
+    </>
   );
 }
 
@@ -118,64 +166,56 @@ function BudgetBody({
   const [taking, setTaking] = useState(false);
   const [paying, setPaying] = useState<Campaign | null>(null);
 
-  if (budget.isPending) return <LoadingState label="Loading the budget…" />;
-  if (budget.error)
-    return <ErrorState title="Couldn't load the budget" message={errorMessage(budget.error)} />;
+  if (budget.isPending || budget.error) {
+    return (
+      <SectionCard title="Budget" className="event-detail__wide">
+        {budget.error ? (
+          <ErrorState title="Couldn't load the budget" message={errorMessage(budget.error)} />
+        ) : (
+          <LoadingState label="Loading the budget…" />
+        )}
+      </SectionCard>
+    );
+  }
   const b = budget.data;
   const open = b.status === 'active';
   // Open contributions for this budget, with the caller's own share.
   const mine = (campaigns.data?.items ?? []).filter((c) => c.budget?.id === b.id);
+  const canAsk = open && can('finance.campaign.manage');
+  const canTake = open && can('finance.expense.record');
 
   return (
     <>
-      <div className="event-budget__figures">
-        <Figure label="Planned" minor={b.planned_minor} currency={b.currency} />
-        <Figure label="Members contributed" minor={b.raised_minor} currency={b.currency} />
-        <Figure
-          label="From the community pocket"
-          minor={b.from_wallet_minor}
-          currency={b.currency}
-          hint="Spent beyond what members contributed"
-        />
-        <Figure
-          label="Left to spend"
-          minor={b.left_to_spend_minor}
-          currency={b.currency}
-          warn={b.left_to_spend_minor < 0}
-        />
-      </div>
-
-      <div className="event-budget__meters">
-        <Meter
-          label="Contributed so far"
-          value={b.raised_minor}
-          of={b.planned_minor}
-          currency={b.currency}
-          tone="in"
-        />
-        <Meter
-          label="Spent so far"
-          value={b.spent_minor}
-          of={b.planned_minor}
-          currency={b.currency}
-          tone="out"
-        />
-      </div>
-      {b.pending_spent_minor > 0 && (
-        <p className="table__muted">
-          {formatAmount(b.pending_spent_minor)} {b.currency} of spending is waiting for approval.
-        </p>
-      )}
-
       <BudgetLines budget={b} />
 
-      <div className="event-budget__block">
-        <h3 className="details__subhead">Contributions for this event</h3>
+      <SectionCard
+        title="Contributions"
+        className="event-detail__wide"
+        flush={b.campaigns.length > 0}
+        actions={
+          canAsk || canTake ? (
+            <>
+              {canAsk && (
+                <Button inline icon={<IconPlusCircle />} onClick={() => setAsking(true)}>
+                  Ask members
+                </Button>
+              )}
+              {canTake && (
+                <Button
+                  inline
+                  variant="secondary"
+                  icon={<IconSend />}
+                  onClick={() => setTaking(true)}
+                >
+                  Use pocket money
+                </Button>
+              )}
+            </>
+          ) : undefined
+        }
+      >
         {b.campaigns.length === 0 ? (
-          <p className="table__muted">
-            Members have not been asked to contribute yet.
-            {open && can('finance.campaign.manage') && ' Ask them below.'}
-          </p>
+          <EmptyState icon={<IconHandHeart />} title="No contributions yet" />
         ) : (
           <ul className="event-budget__campaigns" role="list">
             {b.campaigns.map((c) => {
@@ -195,17 +235,17 @@ function BudgetBody({
                       {c.charge === 'per_share' ? 'per share' : 'per member'}
                       {c.due_date && ` · due ${c.due_date}`} · {formatAmount(c.collected_minor)}
                       {c.expected_minor !== null && ` of ${formatAmount(c.expected_minor)}`}{' '}
-                      {b.currency} collected
+                      collected
                     </p>
                     {share && (
                       <p className="event-budget__mine">
                         {share.outstanding_minor !== null && share.outstanding_minor > 0
-                          ? `You still owe ${formatAmount(share.outstanding_minor)} ${b.currency}.`
+                          ? `You owe ${formatAmount(share.outstanding_minor)} ${b.currency}`
                           : share.paid_minor > 0
-                            ? `You paid ${formatAmount(share.paid_minor)} ${b.currency}. Thank you!`
-                            : 'You have not contributed yet.'}
+                            ? `You paid ${formatAmount(share.paid_minor)} ${b.currency}`
+                            : 'Not paid yet'}
                         {share.pending_minor > 0 &&
-                          ` ${formatAmount(share.pending_minor)} ${b.currency} is waiting for the Treasurer.`}
+                          ` · ${formatAmount(share.pending_minor)} ${b.currency} pending`}
                       </p>
                     )}
                   </div>
@@ -224,32 +264,7 @@ function BudgetBody({
             })}
           </ul>
         )}
-      </div>
-
-      {open && (can('finance.campaign.manage') || can('finance.expense.record')) && (
-        <div className="event-budget__actions">
-          {can('finance.campaign.manage') && (
-            <Button inline icon={<IconPlusCircle />} onClick={() => setAsking(true)}>
-              Ask members to contribute
-            </Button>
-          )}
-          {can('finance.expense.record') && (
-            <Button inline variant="secondary" icon={<IconSend />} onClick={() => setTaking(true)}>
-              Take money from the community pocket
-            </Button>
-          )}
-        </div>
-      )}
-      {open && can('finance.expense.record') && (
-        <p className="table__muted event-budget__explain">
-          Taking money from the pocket records an expense for this event. It counts once someone
-          else approves it; what members contributed is used first, the rest comes from the pocket.
-        </p>
-      )}
-
-      <p className="event-budget__more">
-        <Link to="/finance/planning">Open it in Budgets & Shares</Link>
-      </p>
+      </SectionCard>
 
       <CampaignFormDialog
         open={asking}
@@ -267,7 +282,7 @@ function BudgetBody({
         onClose={() => setTaking(false)}
         onRecorded={() => {
           setTaking(false);
-          onNotice('Expense recorded for this event. It counts once someone else approves it.');
+          onNotice('Expense recorded. It counts once someone else approves it.');
         }}
       />
       <RecordContributionDialog
@@ -288,70 +303,101 @@ function BudgetBody({
         onClose={() => setPaying(null)}
         onRecorded={() => {
           setPaying(null);
-          onNotice('Contribution sent. The Treasurer confirms it, then it counts for this event.');
+          onNotice('Contribution sent. It counts once the Treasurer confirms it.');
         }}
       />
     </>
   );
 }
 
-function Figure({
-  label,
-  minor,
-  currency,
-  hint,
-  warn = false,
-}: {
-  label: string;
-  minor: number;
-  currency: string;
-  hint?: string;
-  warn?: boolean;
-}) {
+function BudgetLines({ budget: b }: { budget: BudgetDetail }) {
   return (
-    <div className={`event-budget__figure${warn ? ' is-warn' : ''}`}>
-      <p className="event-budget__figure-label">{label}</p>
-      <p className="event-budget__figure-value">
-        <Money minor={minor} currency={currency} />
-      </p>
-      {hint && <p className="table__muted event-budget__figure-hint">{hint}</p>}
-    </div>
+    <SectionCard
+      title="Budget"
+      className="event-detail__wide"
+      flush={b.lines.length > 0}
+      footer={
+        <Link to="/finance/planning" className="event-budget__more">
+          Open in Budgets
+        </Link>
+      }
+    >
+      {b.lines.length === 0 ? (
+        <EmptyState icon={<IconWallet />} title="No budget lines" />
+      ) : (
+        <div className="table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">Line</th>
+                <th scope="col" className="num">
+                  Planned
+                </th>
+                <th scope="col" className="num">
+                  Spent
+                </th>
+                <th scope="col" className="num">
+                  Left
+                </th>
+                <th scope="col" className="event-budget__used-col">
+                  Used
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {b.lines.map((line) => (
+                <tr key={line.id}>
+                  <td>{line.title}</td>
+                  <td className="num">{formatAmount(line.planned_minor)}</td>
+                  <td className="num">{formatAmount(line.spent_minor)}</td>
+                  <td className="num">{formatAmount(line.left_to_spend_minor)}</td>
+                  <td>
+                    <UsedBar spent={line.spent_minor} planned={line.planned_minor} />
+                  </td>
+                </tr>
+              ))}
+              {b.unallocated_spent_minor > 0 && (
+                <tr>
+                  <td>Other spending</td>
+                  <td className="num">—</td>
+                  <td className="num">{formatAmount(b.unallocated_spent_minor)}</td>
+                  <td className="num">—</td>
+                  <td />
+                </tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr className="event-budget__total">
+                <th scope="row">Total ({b.currency})</th>
+                <td className="num">{formatAmount(b.planned_minor)}</td>
+                <td className="num">{formatAmount(b.spent_minor)}</td>
+                <td className="num">{formatAmount(b.left_to_spend_minor)}</td>
+                <td>
+                  <UsedBar spent={b.spent_minor} planned={b.planned_minor} />
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
-function BudgetLines({ budget }: { budget: BudgetDetail }) {
-  if (budget.lines.length === 0) return null;
+/** A thin bar: how much of the planned amount is spent. */
+function UsedBar({ spent, planned }: { spent: number; planned: number }) {
+  const percent = planned > 0 ? Math.round((spent / planned) * 100) : 0;
   return (
-    <div className="event-budget__block">
-      <h3 className="details__subhead">What it pays for</h3>
-      <div className="table-scroll">
-        <table className="table table--compact">
-          <thead>
-            <tr>
-              <th scope="col">Line</th>
-              <th scope="col" className="table__amount">
-                Planned
-              </th>
-              <th scope="col" className="table__amount">
-                Spent
-              </th>
-              <th scope="col" className="table__amount">
-                Left
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {budget.lines.map((line) => (
-              <tr key={line.id}>
-                <td>{line.title}</td>
-                <td className="table__amount">{formatAmount(line.planned_minor)}</td>
-                <td className="table__amount">{formatAmount(line.spent_minor)}</td>
-                <td className="table__amount">{formatAmount(line.left_to_spend_minor)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <span className="report-bar">
+      <span className="report-bar__track" aria-hidden="true">
+        <span
+          className={
+            percent > 100 ? 'report-bar__fill report-bar__fill--short' : 'report-bar__fill'
+          }
+          style={{ width: `${Math.min(percent, 100)}%` }}
+        />
+      </span>
+      <span className="report-bar__value">{percent}%</span>
+    </span>
   );
 }

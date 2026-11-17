@@ -1,6 +1,17 @@
 import { Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 
-import { IconInstitution, IconPiggyBank, IconSend } from '@/components/ui';
+import {
+  ErrorState,
+  IconInstitution,
+  IconPiggyBank,
+  IconSend,
+  IconWallet,
+  LoadingState,
+  SectionCard,
+  StatCard,
+} from '@/components/ui';
+import type { IconTileTone } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 
@@ -15,6 +26,7 @@ const SINCE = '2020-01-01';
 /** Records listed under each source. */
 const LATEST = 3;
 const today = () => new Date().toLocaleDateString('en-CA');
+const records = (n: number) => `${n} record${n === 1 ? '' : 's'}`;
 
 /** All-time total of one kind of record (the summary covers every page), and its latest few. */
 function useAllTime(
@@ -43,37 +55,35 @@ export function CashBox() {
   const expenses = useAllTime(communityId, 'expense');
 
   const failed = [wallet, contributions, income, expenses].find((part) => part.error);
-  if (failed) {
-    return (
-      <section className="card cash-box">
-        <p className="table__warn" role="alert">
-          {errorMessage(failed.error)}
-        </p>
-      </section>
-    );
-  }
+  if (failed) return <ErrorState message={errorMessage(failed.error)} />;
   if (
     wallet.data === undefined ||
     contributions.data === undefined ||
     income.data === undefined ||
     expenses.data === undefined
   ) {
-    return (
-      <section className="card cash-box" aria-busy="true">
-        <p className="table__muted">Counting the money…</p>
-      </section>
-    );
+    return <LoadingState label="Counting the money…" />;
   }
 
   const currency = wallet.data.currency;
-  const sources = [
+  const sources: {
+    label: string;
+    minor: number;
+    count: number;
+    items: typeof contributions.data.items;
+    sign: '+' | '-';
+    tone: IconTileTone;
+    icon: ReactNode;
+    link: ReactNode;
+  }[] = [
     {
-      label: 'Member contributions',
+      label: 'Contributions',
       minor: contributions.data.summary.money_in_minor,
       count: contributions.data.summary.in_count,
       items: contributions.data.items,
-      sign: '+' as const,
-      tone: 'in',
+      sign: '+',
+      tone: 'info',
+      icon: <IconWallet />,
       link: (
         <Link to="/finance/money" search={{ tab: 'payments' }}>
           See payments
@@ -85,8 +95,9 @@ export function CashBox() {
       minor: income.data.summary.money_in_minor,
       count: income.data.summary.in_count,
       items: income.data.items,
-      sign: '+' as const,
-      tone: 'in',
+      sign: '+',
+      tone: 'accent',
+      icon: <IconPiggyBank />,
       link: (
         <Link to="/finance/expenses-income" search={{ tab: 'income' }}>
           See income
@@ -94,89 +105,104 @@ export function CashBox() {
       ),
     },
     {
-      label: 'Expenses paid',
+      label: 'Expenses',
       minor: expenses.data.summary.money_out_minor,
       count: expenses.data.summary.out_count,
       items: expenses.data.items,
-      sign: '-' as const,
-      tone: 'out',
+      sign: '-',
+      tone: 'warning',
+      icon: <IconSend />,
       link: <Link to="/finance/expenses-income">See expenses</Link>,
     },
   ];
 
   return (
-    <section className="card cash-box" aria-labelledby="cash-box-title">
-      <div className="cash-box__top">
-        <div>
-          <p className="cash-box__eyebrow">
-            <IconInstitution width={16} height={16} aria-hidden="true" /> Money in the community
-            pocket
-          </p>
-          <h2 id="cash-box-title" className="cash-box__figure">
-            <Money minor={wallet.data.wallet_balance_minor} currency={currency} />
-          </h2>
-          <p className="table__muted">Everything since the community started.</p>
-        </div>
-
-        {(can('finance.income.record') || can('finance.expense.record')) && (
-          <div className="cash-box__actions">
-            {can('finance.income.record') && (
-              <Link
-                to="/finance/expenses-income"
-                search={{ tab: 'income', record: true }}
-                className="btn btn--secondary btn--inline btn--sm"
-              >
-                <IconPiggyBank width={16} height={16} aria-hidden="true" /> Add income
-              </Link>
-            )}
-            {can('finance.expense.record') && (
-              <Link
-                to="/finance/expenses-income"
-                search={{ record: true }}
-                className="btn btn--secondary btn--inline btn--sm"
-              >
-                <IconSend width={16} height={16} aria-hidden="true" /> Record expense
-              </Link>
-            )}
-          </div>
-        )}
-      </div>
-
-      <ul className="cash-box__sources" role="list" aria-label="Where the money comes from">
+    <div className="money-section">
+      <div className="stat-grid">
+        <StatCard
+          label="Community pocket"
+          value={<Money minor={wallet.data.wallet_balance_minor} currency={currency} />}
+          caption="All time"
+          icon={<IconInstitution />}
+          tone="brand"
+        />
         {sources.map((source) => (
-          <li key={source.label} className={`cash-box__source cash-box__source--${source.tone}`}>
-            <span className="cash-box__source-label">{source.label}</span>
-            <span className="cash-box__source-figure">
+          <StatCard
+            key={source.label}
+            label={source.label}
+            value={
               <Money
                 minor={source.minor}
                 currency={currency}
                 sign={source.minor > 0 ? source.sign : undefined}
               />
-            </span>
-            {source.items.length > 0 && (
-              <ul
-                className="cash-box__latest"
-                role="list"
-                aria-label={`Latest ${source.label.toLowerCase()}`}
-              >
-                {source.items.map((item) => (
-                  <li key={item.source.id}>
-                    <span className="cash-box__latest-who">{item.party ?? item.narrative}</span>
-                    <span className="cash-box__latest-amount">
-                      {formatAmount(item.amount_minor)}
-                    </span>
-                    <span className="table__muted">{formatShortDate(item.date)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <span className="table__muted">
-              {source.count} record{source.count === 1 ? '' : 's'} so far · {source.link}
-            </span>
-          </li>
+            }
+            caption={records(source.count)}
+            icon={source.icon}
+            tone={source.tone}
+          />
         ))}
-      </ul>
-    </section>
+      </div>
+
+      <SectionCard
+        title="Latest"
+        actions={
+          (can('finance.income.record') || can('finance.expense.record')) && (
+            <>
+              {can('finance.income.record') && (
+                <Link
+                  to="/finance/expenses-income"
+                  search={{ tab: 'income', record: true }}
+                  className="btn btn--secondary btn--inline btn--sm"
+                >
+                  <IconPiggyBank width={16} height={16} aria-hidden="true" /> Add income
+                </Link>
+              )}
+              {can('finance.expense.record') && (
+                <Link
+                  to="/finance/expenses-income"
+                  search={{ record: true }}
+                  className="btn btn--secondary btn--inline btn--sm"
+                >
+                  <IconSend width={16} height={16} aria-hidden="true" /> Record expense
+                </Link>
+              )}
+            </>
+          )
+        }
+      >
+        <ul className="cash-box__sources" role="list" aria-label="Where the money comes from">
+          {sources.map((source) => (
+            <li
+              key={source.label}
+              className={`cash-box__source cash-box__source--${source.sign === '+' ? 'in' : 'out'}`}
+            >
+              <span className="cash-box__source-label">{source.label}</span>
+              {source.items.length > 0 ? (
+                <ul
+                  className="cash-box__latest"
+                  role="list"
+                  aria-label={`Latest ${source.label.toLowerCase()}`}
+                >
+                  {source.items.map((item) => (
+                    <li key={item.source.id}>
+                      <span className="cash-box__latest-who">{item.party ?? item.narrative}</span>
+                      <span className="cash-box__latest-amount">
+                        {formatAmount(item.amount_minor)}
+                      </span>
+                      <span className="table__muted">{formatShortDate(item.date)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="table__muted">None yet</span>
+              )}
+              <span className="cash-box__link">{source.link}</span>
+            </li>
+          ))}
+        </ul>
+      </SectionCard>
+    </div>
   );
 }
 
@@ -189,10 +215,10 @@ export function CashBoxLine() {
     <div className="notice notice--info cash-box-line" role="status">
       <IconInstitution width={20} height={20} aria-hidden="true" />
       <p className="notice__text">
-        <strong>Money in the community pocket: </strong>
-        {formatAmount(flow.data.wallet_balance_minor)} {flow.data.currency}{' '}
+        <strong>Community pocket: </strong>
+        {flow.data.currency} {formatAmount(flow.data.wallet_balance_minor)}{' '}
         <Link to="/finance/money" search={{ tab: 'pocket' }} className="cash-box__link">
-          where it comes from
+          See sources
         </Link>
       </p>
     </div>

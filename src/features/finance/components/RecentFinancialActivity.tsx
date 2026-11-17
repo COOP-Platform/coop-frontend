@@ -1,7 +1,14 @@
 import { Link } from '@tanstack/react-router';
 
-import { Badge, EmptyState, IconArrowRight, IconHistory, IconTile } from '@/components/ui';
-import { formatLongDate } from '@/lib/format/date';
+import {
+  Badge,
+  EmptyState,
+  IconHistory,
+  SectionCard,
+  TableFooter,
+  usePaged,
+} from '@/components/ui';
+import { formatShortDate } from '@/lib/format/date';
 
 import type { CashFlowItem } from '../api/summary';
 import { humanize } from '../labels';
@@ -20,83 +27,77 @@ const SOURCE_LABEL: Record<CashFlowItem['source']['type'], string> = {
 };
 
 export function RecentFinancialActivity({ entries, showAllLink }: RecentFinancialActivityProps) {
+  const paged = usePaged(entries);
   return (
-    <section className="card finance-activity" aria-labelledby="finance-activity-title">
-      <header className="section-head">
-        <div className="section-head__text">
-          <h2 id="finance-activity-title" className="section-head__title">
-            Recent Financial Activity
-          </h2>
-          <p className="section-head__subtitle">Latest community transactions recorded in ledger</p>
+    <SectionCard
+      title="Recent activity"
+      actions={
+        showAllLink && (
+          <Link to="/finance/money" className="link-action">
+            See all
+          </Link>
+        )
+      }
+      flush
+      footer={paged.pageCount > 1 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined}
+    >
+      {entries.length === 0 ? (
+        <EmptyState icon={<IconHistory />} title="No transactions yet" />
+      ) : (
+        <div className="table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">Who</th>
+                <th scope="col">What</th>
+                <th scope="col">Date</th>
+                <th scope="col" className="num">
+                  Amount
+                </th>
+                <th scope="col">Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.rows.map((entry) => {
+                const incoming = entry.direction === 'in';
+                // The member or payee leads; the narrative ("Monthly contribution", the
+                // expense title) is the fallback when the party is hidden.
+                const who = entry.party ?? entry.narrative;
+                const what = entry.party
+                  ? entry.narrative
+                  : entry.category
+                    ? humanize(entry.category)
+                    : '—';
+                return (
+                  <tr key={`${entry.source.type}-${entry.source.id}`}>
+                    <td className="table__name">{who}</td>
+                    <td>{what}</td>
+                    <td>{formatShortDate(entry.date)}</td>
+                    <td
+                      className={
+                        incoming
+                          ? 'num table__amount finance-activity__figure--in'
+                          : 'num table__amount'
+                      }
+                    >
+                      <Money
+                        minor={entry.amount_minor}
+                        currency={entry.currency}
+                        sign={incoming ? '+' : '-'}
+                      />
+                    </td>
+                    <td>
+                      <Badge tone={incoming ? 'success' : 'warning'}>
+                        {SOURCE_LABEL[entry.source.type]}
+                      </Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </header>
-
-      {entries.length === 0 && (
-        <EmptyState
-          icon={<IconHistory />}
-          title="No transactions yet"
-          message="Confirmed contributions, income and approved expenses will show here."
-        />
       )}
-
-      <ul className="finance-activity__list" role="list">
-        {entries.map((entry) => {
-          const incoming = entry.direction === 'in';
-          // The member or payee leads; the narrative ("Monthly contribution", the
-          // expense title) is the fallback when the party is hidden.
-          const title = entry.party ?? entry.narrative;
-          const detail = entry.party ? entry.narrative : entry.category && humanize(entry.category);
-          return (
-            <li key={`${entry.source.type}-${entry.source.id}`} className="finance-activity__item">
-              <IconTile tone={incoming ? 'brand' : 'warning'} round size="md">
-                <IconArrowRight
-                  className={incoming ? 'finance-arrow finance-arrow--in' : 'finance-arrow'}
-                />
-              </IconTile>
-
-              <div className="finance-activity__body">
-                <p className="finance-activity__title">
-                  {title}
-                  <Badge tone={incoming ? 'success' : 'warning'}>
-                    {SOURCE_LABEL[entry.source.type]}
-                  </Badge>
-                </p>
-                <p className="finance-activity__meta">
-                  {[detail, incoming ? 'Received' : 'Disbursed', formatLongDate(entry.date)]
-                    .filter(Boolean)
-                    .join(' • ')}
-                </p>
-              </div>
-
-              <div className="finance-activity__amount">
-                <p
-                  className={
-                    incoming
-                      ? 'finance-activity__figure finance-activity__figure--in'
-                      : 'finance-activity__figure'
-                  }
-                >
-                  <Money
-                    minor={entry.amount_minor}
-                    currency={entry.currency}
-                    sign={incoming ? '+' : '-'}
-                  />
-                </p>
-                {entry.payment_method && (
-                  <p className="finance-activity__method">{humanize(entry.payment_method)}</p>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      {showAllLink && (
-        <Link to="/finance/money" className="finance-activity__all">
-          View All in Community Money
-          <IconArrowRight width={20} height={20} />
-        </Link>
-      )}
-    </section>
+    </SectionCard>
   );
 }

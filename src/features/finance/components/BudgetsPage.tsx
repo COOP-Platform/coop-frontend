@@ -74,13 +74,7 @@ export function BudgetsPage({
   return (
     <div className="page">
       {/* Inside Budgets & Shares the tab already names the section: no heading. */}
-      {!embedded && (
-        <SectionHeader
-          eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-          title="Budgets"
-          subtitle="Plan spending for events and projects, and collect dedicated contributions for them."
-        />
-      )}
+      {!embedded && <SectionHeader title="Budgets" />}
       {!embedded && (
         <SegmentedControl
           label="Section"
@@ -152,21 +146,17 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
   return (
     <div className="money-section">
       <div className="section-bar">
-        <div>
-          <h2 className="section-title">Budgets</h2>
-          <p className="table__muted">
-            Planned, raised from dedicated contributions, and spent through approved expenses.
-          </p>
-        </div>
+        <h2 className="section-title">Budgets</h2>
         <div className="section-bar__actions">
-          <SegmentedControl
+          <Select
             label="Status"
+            labelHidden
             options={[
               { value: 'active', label: 'Open' },
               { value: 'closed', label: 'Closed' },
             ]}
             value={filter}
-            onChange={setFilter}
+            onChange={(event) => setFilter(event.target.value as BudgetFilter)}
           />
           {canManage && (
             <Button inline icon={<IconPlus />} onClick={() => setCreating(true)}>
@@ -187,7 +177,6 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
           <EmptyState
             icon={<IconFlag />}
             title={filter === 'active' ? 'No open budgets' : 'No closed budgets'}
-            message="A budget plans what an event or project will cost, line by line."
           />
         </section>
       ) : (
@@ -436,7 +425,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         open={closing}
         onClose={() => setClosing(false)}
         title="Close budget"
-        subtitle="Its open dedicated contributions close too. Whatever is left stays in the cash box."
+        subtitle="Its open collections close too. What is left stays in the cash box."
         icon={
           <IconTile tone="warning" round>
             <IconFlag />
@@ -497,7 +486,7 @@ export function BudgetFormDialog({
       open={open}
       onClose={onClose}
       title={budget ? 'Edit budget' : event ? `Budget for ${event.title}` : 'New budget'}
-      subtitle="List what it will cost, line by line. The planned total is the sum of the lines."
+      subtitle="The planned total is the sum of the lines."
       icon={
         <IconTile tone="brand" round>
           <IconFlag />
@@ -695,21 +684,17 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
   return (
     <div className="money-section">
       <div className="section-bar">
-        <div>
-          <h2 className="section-title">Dedicated contributions</h2>
-          <p className="table__muted">
-            Money collected from members for one purpose, e.g. a celebration or a family event.
-          </p>
-        </div>
+        <h2 className="section-title">Dedicated contributions</h2>
         <div className="section-bar__actions">
-          <SegmentedControl
+          <Select
             label="Status"
+            labelHidden
             options={[
               { value: 'open', label: 'Open' },
               { value: 'closed', label: 'Closed' },
             ]}
             value={filter}
-            onChange={setFilter}
+            onChange={(event) => setFilter(event.target.value as CampaignFilter)}
           />
           {canManage && (
             <Button inline icon={<IconPlus />} onClick={() => setEditing('new')}>
@@ -730,7 +715,6 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
           <EmptyState
             icon={<IconHandHeart />}
             title={filter === 'open' ? 'No open collections' : 'No closed collections'}
-            message="When the committee collects for an event, it shows here with what you owe."
           />
         </section>
       ) : (
@@ -888,7 +872,7 @@ export function CampaignFormDialog({
       open={open}
       onClose={onClose}
       title={campaign ? 'Edit collection' : 'New dedicated contribution'}
-      subtitle="Members see what they owe and pay it from My Contributions."
+      subtitle="Members pay it from My Contributions."
       icon={
         <IconTile tone="brand" round>
           <IconHandHeart />
@@ -1036,7 +1020,7 @@ function CampaignForm({
         error={errors.due_date}
       />
       <Checkbox
-        label="Required: members owe it (untick for a voluntary collection)"
+        label="Required (untick for voluntary)"
         checked={required}
         onChange={(event) => setRequired(event.target.checked)}
       />

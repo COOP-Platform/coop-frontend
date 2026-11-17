@@ -63,11 +63,7 @@ export function ReportsPage({
     return (
       <div className="page">
         <PageHeader title="Reports" />
-        <EmptyState
-          icon={<IconLock />}
-          title="You cannot see meeting reports"
-          message="Ask a committee member if you think you should."
-        />
+        <EmptyState icon={<IconLock />} title="You cannot see meeting reports" />
       </div>
     );
   }
@@ -75,19 +71,19 @@ export function ReportsPage({
   return (
     <div className="page">
       <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">Meetings & Events</span>}
         title="Reports"
-        subtitle="Who came to which meeting, and how the period's meetings went."
         actions={
           <>
             <Select
               label="Year"
+              labelHidden
               value={String(year)}
               onChange={(event) => setYear(Number(event.target.value))}
               options={years.map((y) => ({ value: String(y), label: String(y) }))}
             />
             <Select
               label="Month"
+              labelHidden
               value={month === null ? '' : String(month)}
               onChange={(event) =>
                 setMonth(event.target.value === '' ? null : Number(event.target.value))
@@ -104,7 +100,7 @@ export function ReportsPage({
               disabled={busy}
               onClick={() => void download()}
             >
-              {busy ? 'Preparing…' : 'Register (PDF)'}
+              {busy ? 'Preparing…' : 'Register PDF'}
             </Button>
           </>
         }

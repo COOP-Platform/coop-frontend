@@ -55,11 +55,7 @@ export function ExpensesIncomePage({
 
   return (
     <div className="page">
-      <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title="Expenses & Income"
-        subtitle="Money paid out of the community, and money in that is not a member's contribution."
-      />
+      <PageHeader title="Expenses & Income" />
       <Tabs options={options} value={current} onChange={onTabChange} />
       {current === 'expenses' ? (
         <ExpensesPage key="expenses" embedded startRecording={record} />
@@ -95,11 +91,7 @@ export function BudgetsSharesPage({
 
   return (
     <div className="page">
-      <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title="Budgets & Shares"
-        subtitle="What members are asked to pay: shares every month, and dedicated contributions for events and projects."
-      />
+      <PageHeader title="Budgets & Shares" />
       <Tabs options={options} value={current} onChange={onTabChange} />
       {current === 'shares' ? (
         <SharesPage embedded />
@@ -131,11 +123,7 @@ export function ReportsHubPage({
 }) {
   return (
     <div className="page">
-      <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title="Reports"
-        subtitle="The cash flow statement, where contributions, income and expenses came from and went, and each year's close."
-      />
+      <PageHeader title="Reports" />
       <Tabs options={REPORT_TABS} value={tab} onChange={onTabChange} />
       {tab === 'statement' && <CashFlowStatement embedded />}
       {tab === 'categories' && <ReportsPage embedded />}

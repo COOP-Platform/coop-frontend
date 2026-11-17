@@ -57,7 +57,6 @@ function EditOwnProfileForm({
       open
       onClose={onClose}
       title="Edit my profile"
-      subtitle="Who should the community call if something happens to you?"
       icon={
         <IconTile tone="brand" round>
           <IconUserPen />
@@ -97,7 +96,7 @@ function EditOwnProfileForm({
           inputMode="tel"
           maxLength={20}
           placeholder="+250788123456"
-          hint="Start with the country code, for example +250."
+          hint="Include the country code."
           value={contactPhone}
           onChange={(event) => setContactPhone(event.target.value)}
           error={fieldErrors.emergency_contact_phone}
@@ -107,14 +106,11 @@ function EditOwnProfileForm({
           optional
           maxLength={80}
           placeholder="For example: cousin of the founder"
-          hint="Mostly used by family communities."
           value={relationship}
           onChange={(event) => setRelationship(event.target.value)}
           error={fieldErrors.family_relationship}
         />
-        <p className="table__muted">
-          Only you and the people who manage members can see your emergency contact.
-        </p>
+        <p className="table__muted">Only you and member managers see this.</p>
         {formError && <p className="form-error">{formError}</p>}
         <button type="submit" hidden />
       </form>

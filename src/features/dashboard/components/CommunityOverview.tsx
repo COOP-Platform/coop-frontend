@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 
-import { Badge, IconArrowRight, IconShieldCheck } from '@/components/ui';
+import { Badge, IconArrowRight, IconShieldCheck, SectionCard } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 import type { MembershipSummary } from '@/features/auth';
 import type { Community } from '@/features/communities';
@@ -20,23 +20,15 @@ interface CommunityOverviewProps {
   /** From /me, shown while the community itself loads. */
   fallbackName: string;
   fallbackType: string;
-  memberCount: number;
   membership: MembershipSummary | undefined;
-  canEdit: boolean;
 }
 
-/**
- * Who the community is and where the signed-in member stands in it — the
- * same for every member; only the prompt to describe the community is for
- * those who may edit it.
- */
+/** Who the community is and where the signed-in member stands in it. */
 export function CommunityOverview({
   community,
   fallbackName,
   fallbackType,
-  memberCount,
   membership,
-  canEdit,
 }: CommunityOverviewProps) {
   const name = community?.name ?? fallbackName;
   const status = membership ? MEMBERSHIP_STATUS[membership.status] : undefined;
@@ -52,19 +44,14 @@ export function CommunityOverview({
               {name}
             </h2>
             <p className="dash-identity__meta">
-              {communityTypeLabel(community?.type ?? fallbackType)} · {memberCount} active{' '}
-              {memberCount === 1 ? 'member' : 'members'}
+              {communityTypeLabel(community?.type ?? fallbackType)}
             </p>
           </div>
         </div>
         {community?.description ? (
           <p className="dash-identity__description">{community.description}</p>
         ) : (
-          <p className="dash-identity__description dash-muted">
-            {canEdit
-              ? 'No description yet. Tell members who you are and what brings you together.'
-              : 'This community has not added a description yet.'}
-          </p>
+          <p className="dash-identity__description dash-muted">No description yet.</p>
         )}
         <div className="dash-links">
           <Link to="/community/settings" className="dash-link">
@@ -78,17 +65,14 @@ export function CommunityOverview({
         </div>
       </section>
 
-      <section className="card dash-me" aria-labelledby="dash-me-title">
-        <h2 id="dash-me-title" className="dash-me__title">
-          Your membership
-        </h2>
+      <SectionCard title="Your membership">
         <dl className="dash-me__facts">
           <div className="dash-me__fact">
             <dt>Status</dt>
             <dd>{status ? <Badge tone={status.tone}>{status.label}</Badge> : '—'}</dd>
           </div>
           <div className="dash-me__fact">
-            <dt>Contribution category</dt>
+            <dt>Category</dt>
             <dd>{membership?.member_category.name ?? '—'}</dd>
           </div>
           <div className="dash-me__fact">
@@ -102,7 +86,7 @@ export function CommunityOverview({
             </div>
           )}
         </dl>
-      </section>
+      </SectionCard>
     </div>
   );
 }

@@ -1,15 +1,4 @@
-import type { ReactNode } from 'react';
-
-import {
-  Badge,
-  IconCheckCircle,
-  IconEye,
-  IconLock,
-  IconShieldCheck,
-  IconTile,
-  IconUsers,
-  LoadingState,
-} from '@/components/ui';
+import { Badge, LoadingState, SectionCard } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { PERMISSION_CATALOG, useCommittee, usePositions } from '@/features/positions';
 import type { Position } from '@/features/positions';
@@ -62,37 +51,10 @@ const SENSITIVE: readonly { code: string; what: string }[] = [
   { code: 'audit.view', what: 'The activity log of who did what' },
 ];
 
-function Section({
-  icon,
-  title,
-  lede,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  lede?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="card cs-privacy__section">
-      <header className="section-head">
-        <IconTile tone="info" size="lg">
-          {icon}
-        </IconTile>
-        <div className="section-head__text">
-          <h2 className="section-head__title">{title}</h2>
-          {lede && <p className="section-head__subtitle">{lede}</p>}
-        </div>
-      </header>
-      {children}
-    </section>
-  );
-}
-
 function PermissionList({ codes }: { codes: readonly string[] }) {
   const groups = inWords(codes);
   if (groups.length === 0) {
-    return <p className="cs-text cs-muted">Nothing beyond being listed as a member.</p>;
+    return <p className="cs-text cs-muted">Member only.</p>;
   }
   return (
     <dl className="cs-rights">
@@ -114,22 +76,19 @@ function PositionCard({ position }: { position: Position }) {
   return (
     <li className="cs-position">
       <div className="cs-position__head">
-        <h3 className="cs-position__name">{position.name}</h3>
+        <h3 className="cs-position__name">
+          {position.name}
+          {position.is_admin && <Badge tone="info">Runs the community</Badge>}
+        </h3>
         <span className="cs-muted">
           {position.holder_count === 0
-            ? 'Nobody holds it'
+            ? 'Vacant'
             : `${position.holder_count} ${position.holder_count === 1 ? 'person' : 'people'}`}
         </span>
       </div>
       {position.description && <p className="cs-text cs-muted">{position.description}</p>}
-      {position.is_admin && (
-        <p className="cs-text">
-          <strong>Runs the community:</strong> can do everything below, including deciding who holds
-          which position.
-        </p>
-      )}
       <details className="cs-position__details">
-        <summary>What this position can see and do</summary>
+        <summary>Rights</summary>
         <PermissionList codes={position.permissions} />
       </details>
     </li>
@@ -145,36 +104,29 @@ export function PrivacyAccess() {
 
   return (
     <div className="cs-privacy">
-      <div className="notice notice--info" role="note">
-        <IconShieldCheck />
-        <div>
-          <p className="notice__title">Rights come from positions, not titles</p>
-          <p className="notice__text">
-            What anyone can see or do here depends on the positions they hold in this community, and
-            the community decides what each position allows. The platform checks these rights every
-            time — hiding a button is not what protects your data.
-          </p>
-        </div>
-      </div>
-
-      <Section
-        icon={<IconUsers />}
-        title="Your access"
-        lede={`You hold: ${roleLabel}. Contribution category: ${membership?.member_category.name ?? 'not set'}.`}
-      >
+      <SectionCard title="Your access">
+        <dl className="cs-facts cs-access">
+          <div className="cs-fact">
+            <dt className="cs-fact__label">Positions</dt>
+            <dd className="cs-fact__value">{roleLabel}</dd>
+          </div>
+          <div className="cs-fact">
+            <dt className="cs-fact__label">Category</dt>
+            <dd className="cs-fact__value">{membership?.member_category.name ?? 'Not set'}</dd>
+          </div>
+        </dl>
         {membership?.status !== 'active' && (
           <p className="cs-text">
-            Your membership is <strong>{membership?.status ?? 'not active'}</strong>, so you cannot
-            use any of these rights until it is active again.
+            Your membership is <strong>{membership?.status ?? 'not active'}</strong>: these rights
+            are paused.
           </p>
         )}
         <PermissionList codes={membership?.permissions ?? []} />
-      </Section>
+      </SectionCard>
 
-      <Section
-        icon={<IconEye />}
-        title="Who can see your personal details"
-        lede="Answered from the rights your community has given each position."
+      <SectionCard
+        title="Who sees what"
+        footer="All members see the member list: names, emails, positions and status. Outsiders cannot."
       >
         {canViewPositions && positions.isPending ? (
           <LoadingState />
@@ -199,22 +151,9 @@ export function PrivacyAccess() {
             })}
           </ul>
         )}
-        <p className="cs-text cs-muted">
-          Every member of this community can see the member list: names, email addresses, positions
-          and membership status. People outside the community cannot. Your own contributions,
-          positions and profile are always visible to you.
-        </p>
-      </Section>
+      </SectionCard>
 
-      <Section
-        icon={<IconCheckCircle />}
-        title="Positions in this community"
-        lede={
-          canViewPositions
-            ? 'Open a position to see, in plain words, what it can see and do.'
-            : 'The committee seats and who holds them.'
-        }
-      >
+      <SectionCard title={canViewPositions ? 'Positions' : 'Committee'}>
         {canViewPositions ? (
           positions.isPending ? (
             <LoadingState />
@@ -228,35 +167,25 @@ export function PrivacyAccess() {
         ) : committee.isPending ? (
           <LoadingState />
         ) : (
-          <>
-            <ul className="cs-positions" role="list">
-              {(committee.data ?? []).map((seat) => (
-                <li key={seat.id} className="cs-position">
-                  <div className="cs-position__head">
-                    <h3 className="cs-position__name">{seat.name}</h3>
-                    <span className="cs-muted">
-                      {seat.holders.length === 0
-                        ? 'Vacant'
-                        : seat.holders.map((h) => h.full_name).join(', ')}
-                    </span>
-                  </div>
-                  {seat.description && <p className="cs-text cs-muted">{seat.description}</p>}
-                </li>
-              ))}
-            </ul>
-            <p className="cs-text cs-muted">
-              The full list of what each position allows is shown to those who manage positions. Ask
-              your committee if you want to know.
-            </p>
-          </>
+          <ul className="cs-positions" role="list">
+            {(committee.data ?? []).map((seat) => (
+              <li key={seat.id} className="cs-position">
+                <div className="cs-position__head">
+                  <h3 className="cs-position__name">{seat.name}</h3>
+                  <span className="cs-muted">
+                    {seat.holders.length === 0
+                      ? 'Vacant'
+                      : seat.holders.map((h) => h.full_name).join(', ')}
+                  </span>
+                </div>
+                {seat.description && <p className="cs-text cs-muted">{seat.description}</p>}
+              </li>
+            ))}
+          </ul>
         )}
-      </Section>
+      </SectionCard>
 
-      <Section
-        icon={<IconLock />}
-        title="The COOP technical team (Platform Administrators)"
-        lede="The people who keep the platform running. They are not part of your community."
-      >
+      <SectionCard title="COOP technical team">
         <div className="cs-platform">
           <div>
             <h3 className="cs-platform__title">
@@ -286,13 +215,12 @@ export function PrivacyAccess() {
               </li>
               <li>
                 Every such look is written to your community&apos;s activity log first: who looked,
-                when, what and why. A reason is required. Showing this log to your committee in the
-                app is coming later.
+                when, what and why. A reason is required.
               </li>
             </ul>
           </div>
         </div>
-      </Section>
+      </SectionCard>
     </div>
   );
 }

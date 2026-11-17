@@ -27,7 +27,7 @@ export function AttachProof({ row }: { row: Contribution }) {
   if (row.status !== 'pending' || !mine) return null;
 
   if (done) {
-    return <p className="details__note">Proof attached. The Treasurer can see it now.</p>;
+    return <p className="details__note">Proof attached.</p>;
   }
 
   return (

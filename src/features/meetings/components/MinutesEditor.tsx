@@ -292,15 +292,10 @@ export function MinutesEditor({
     <form className="card minutes-editor" onSubmit={handleSubmit} noValidate>
       <header className="minutes-editor__head">
         <h2 className="section-title">{minutes ? 'Edit draft minutes' : 'Write minutes'}</h2>
-        <p className="table__muted">
-          A draft can be changed as often as needed. Once it is finalised it is shared with every
-          member and can no longer be changed.
-        </p>
       </header>
 
       <Textarea
         label="Notes"
-        hint="What was discussed, in the order of the agenda."
         rows={8}
         maxLength={MINUTES_LIMITS.discussion}
         counter
@@ -312,10 +307,7 @@ export function MinutesEditor({
       <fieldset className="minutes-editor__group">
         <legend className="field__label">Decisions</legend>
         <p className="table__muted minutes-editor__help">
-          Each decision taken, with the votes. Leave the result on “Count the votes” and it is
-          adopted when more members voted for than against, rejected otherwise. Choose Adopted,
-          Rejected or Deferred yourself when there was no vote (for example, a decision agreed by
-          everyone, or one postponed to a later meeting).
+          “Count the votes” adopts it when more voted for than against.
         </p>
         {decisions.map((d, index) => {
           const auto = derivedResult(d);
@@ -416,14 +408,7 @@ export function MinutesEditor({
 
       <fieldset className="minutes-editor__group">
         <legend className="field__label">Action items</legend>
-        <p className="table__muted minutes-editor__help">
-          Work agreed at the meeting: who will do it and by when.
-        </p>
-        {members.isError && (
-          <p className="table__muted">
-            Could not load the member list, so you cannot choose who does each item right now.
-          </p>
-        )}
+        {members.isError && <p className="table__muted">Could not load members to assign.</p>}
         {actions.map((a, index) => {
           const options =
             a.assigneeId && !memberOptions.some((o) => o.value === a.assigneeId)

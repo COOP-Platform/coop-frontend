@@ -10,7 +10,10 @@ import {
   IconArrowLeft,
   IconEye,
   IconHistory,
+  SectionCard,
+  TableFooter,
   Textarea,
+  usePaged,
 } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
@@ -46,7 +49,7 @@ export function CommunitySupportPage({ communityId }: { communityId: string }) {
   const trimmed = reason.trim();
   const clientError =
     attempted && trimmed.length < SUPPORT_REASON_MIN_LENGTH
-      ? `Say why you are opening it, in at least ${SUPPORT_REASON_MIN_LENGTH} characters — a support ticket number is enough.`
+      ? `Give a reason of at least ${SUPPORT_REASON_MIN_LENGTH} characters — a ticket number is enough.`
       : undefined;
   const serverError = open.error instanceof ApiError ? open.error.fieldErrors.reason : undefined;
 
@@ -63,11 +66,7 @@ export function CommunitySupportPage({ communityId }: { communityId: string }) {
     <div className="page">
       <PlatformHeader
         title={open.data ? name : 'Support view'}
-        subtitle={
-          open.data
-            ? `${typeLabel(open.data.community.type)} · read-only · no money is shown here`
-            : `Look at ${name}'s members and invitations, read-only, to help with a problem.`
-        }
+        subtitle={open.data ? `${typeLabel(open.data.community.type)} · read-only` : name}
         actions={
           <Link to="/platform/communities" className="link-action">
             <IconArrowLeft width={16} height={16} aria-hidden="true" />
@@ -92,16 +91,15 @@ export function CommunitySupportPage({ communityId }: { communityId: string }) {
             <div>
               <p className="notice__title">Opening this community is logged</p>
               <p className="notice__text">
-                Your name, the time and the reason you give are written to {name}&apos;s own audit
-                log before anything is shown, and its administrators can read it. Everything you see
-                is read-only, and it never includes contributions, expenses or balances.
+                Your name, the time and your reason go to {name}&apos;s audit log, which its
+                administrators can read. Read-only; no money is shown.
               </p>
             </div>
           </div>
 
           <Textarea
             label="Why are you opening it?"
-            hint="For example the support ticket number, or what the community asked for help with."
+            hint="e.g. the support ticket number"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             maxLength={REASON_MAX}
@@ -139,15 +137,16 @@ const MEMBER_STATUS: Record<
 
 function SupportRecords({ view, onClose }: { view: SupportView; onClose: () => void }) {
   const { community, memberships, invitations } = view;
+  const members = usePaged(memberships);
+  const invites = usePaged(invitations);
 
   return (
     <>
       <div className="notice notice--info" role="status">
         <IconHistory width={20} height={20} aria-hidden="true" />
         <div>
-          <p className="notice__title">This look was logged (entry #{view.audit_entry_id})</p>
+          <p className="notice__title">Logged as entry #{view.audit_entry_id}</p>
           <p className="notice__text">
-            It is in {community.name}&apos;s audit log with your name and reason.{' '}
             <Link
               to="/platform/audit-log"
               search={{ community: community.id, action: SUPPORT_READ_ACTION }}
@@ -159,10 +158,7 @@ function SupportRecords({ view, onClose }: { view: SupportView; onClose: () => v
         </div>
       </div>
 
-      <section className="card platform-section" aria-labelledby="support-profile">
-        <h2 id="support-profile" className="section-head__title">
-          Profile
-        </h2>
+      <SectionCard title="Profile">
         <dl className="platform-facts">
           <div>
             <dt>Status</dt>
@@ -187,19 +183,17 @@ function SupportRecords({ view, onClose }: { view: SupportView; onClose: () => v
             <dd>{community.contact_phone ?? '—'}</dd>
           </div>
           <div>
-            <dt>On the platform since</dt>
+            <dt>Since</dt>
             <dd>{formatDate(community.created_at)}</dd>
           </div>
         </dl>
-      </section>
+      </SectionCard>
 
-      <section className="card table-card" aria-labelledby="support-members">
-        <header className="table-card__head">
-          <h2 id="support-members" className="section-head__title">
-            Members ({memberships.length})
-          </h2>
-          <p className="section-head__subtitle">Who is in it, and in which positions.</p>
-        </header>
+      <SectionCard
+        title="Members"
+        flush
+        footer={<TableFooter {...members} onPage={members.setPage} />}
+      >
         {memberships.length === 0 ? (
           <EmptyState title="No members" />
         ) : (
@@ -214,7 +208,7 @@ function SupportRecords({ view, onClose }: { view: SupportView; onClose: () => v
                 </tr>
               </thead>
               <tbody>
-                {memberships.map((m) => (
+                {members.rows.map((m) => (
                   <tr key={m.id}>
                     <td>
                       <span className="table__stack">
@@ -235,17 +229,13 @@ function SupportRecords({ view, onClose }: { view: SupportView; onClose: () => v
             </table>
           </div>
         )}
-      </section>
+      </SectionCard>
 
-      <section className="card table-card" aria-labelledby="support-invitations">
-        <header className="table-card__head">
-          <h2 id="support-invitations" className="section-head__title">
-            Invitations ({invitations.length})
-          </h2>
-          <p className="section-head__subtitle">
-            Whether each invitation&apos;s emails actually went out.
-          </p>
-        </header>
+      <SectionCard
+        title="Invitations"
+        flush
+        footer={<TableFooter {...invites} onPage={invites.setPage} />}
+      >
         {invitations.length === 0 ? (
           <EmptyState title="No invitations" />
         ) : (
@@ -255,19 +245,19 @@ function SupportRecords({ view, onClose }: { view: SupportView; onClose: () => v
                 <tr>
                   <th scope="col">Email</th>
                   <th scope="col">Status</th>
-                  <th scope="col">Invitation email</th>
+                  <th scope="col">Email sent</th>
                   <th scope="col">Expires</th>
                 </tr>
               </thead>
               <tbody>
-                {invitations.map((invitation) => (
+                {invites.rows.map((invitation) => (
                   <tr key={invitation.id}>
                     <td>{invitation.email}</td>
                     <td>{typeLabel(invitation.status)}</td>
                     <td>
                       {invitation.invitation_email_sent_at ? (
                         <span className="table__muted">
-                          Sent {formatDateTime(invitation.invitation_email_sent_at)}
+                          {formatDateTime(invitation.invitation_email_sent_at)}
                         </span>
                       ) : (
                         <Badge tone="warning">Never sent</Badge>
@@ -280,7 +270,7 @@ function SupportRecords({ view, onClose }: { view: SupportView; onClose: () => v
             </table>
           </div>
         )}
-      </section>
+      </SectionCard>
 
       <div>
         <Button variant="secondary" inline onClick={onClose}>

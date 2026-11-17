@@ -73,11 +73,6 @@ export function AnnouncementFormDialog({
       open={open}
       onClose={onClose}
       title={editing ? 'Edit announcement' : 'New announcement'}
-      subtitle={
-        editing
-          ? 'Changes show straight away for anyone who can see it.'
-          : 'Share news with every member, or only some positions. It stays a draft until it is published.'
-      }
       icon={
         <IconTile tone="brand" round>
           {editing ? <IconPencil /> : <IconMegaphone />}
@@ -276,9 +271,6 @@ function AnnouncementForm({
               ))}
             </div>
           )}
-          <p className="table__muted">
-            Only members holding one of these positions will see it. The committee always can.
-          </p>
           {errors.position_ids && <p className="form-error">{errors.position_ids}</p>}
         </fieldset>
       )}

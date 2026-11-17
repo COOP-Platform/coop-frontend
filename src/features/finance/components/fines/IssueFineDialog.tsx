@@ -39,7 +39,6 @@ export function IssueFineDialog({
       open={open}
       onClose={onClose}
       title="Issue a fine"
-      subtitle="The member sees it on their My Contributions page and can pay it there."
       icon={
         <IconTile tone="warning" round>
           <IconGavel />
@@ -98,7 +97,7 @@ function IssueFineForm({
     if (membershipId === '') problems.membership_id = 'Choose the member to fine.';
     if (amount.trim() === '' || !Number.isFinite(amountMinor) || amountMinor <= 0)
       problems.amount = 'Enter the fine amount, more than 0.';
-    if (reason.trim() === '') problems.reason = 'Say what the fine is for. The member sees it.';
+    if (reason.trim() === '') problems.reason = 'Say what it is for. The member sees it.';
     if (kind === 'late_payment' && period === '') problems.period = 'Choose the month paid late.';
     if (kind === 'meeting_absence' && meetingId === '')
       problems.meeting = 'Choose the meeting the member missed.';
@@ -165,7 +164,7 @@ function IssueFineForm({
               label: `${r.name} · ${formatAmount(r.amount_minor)} ${r.currency}`,
             })),
           ]}
-          hint="Fills in the kind, amount and reason. You can still change them."
+          hint="Fills in the form. You can still edit it."
         />
       )}
 

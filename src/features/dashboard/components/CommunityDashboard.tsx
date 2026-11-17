@@ -8,6 +8,7 @@ import {
   IconIdBadge,
   IconMail,
   IconPencil,
+  IconSprout,
   IconUserCog,
   IconUserPlus,
   LoadingState,
@@ -22,6 +23,7 @@ import {
 } from '@/features/communities/components/settings/profile';
 import { effectiveStatus, useInvitations, useMemberDirectory } from '@/features/members';
 import { useCommittee, usePositions } from '@/features/positions';
+import type { DirectoryMember } from '@/features/members';
 import type { Position } from '@/features/positions';
 import { errorMessage } from '@/lib/api/errors';
 import { isPlainMemberPosition } from '@/lib/position-tone';
@@ -33,8 +35,22 @@ import { NeedsAttention } from './NeedsAttention';
 import { RemoveVacantDialog } from './RemoveVacantDialog';
 import { RecentActivity } from './RecentActivity';
 
-function typeLabel(type: string): string {
-  return type.replace(/_/g, ' ');
+const DAY = 24 * 60 * 60 * 1000;
+
+function joinedAt(member: DirectoryMember): string | null {
+  return member.activatedAt ?? member.joinDate;
+}
+
+/** Active members at the end of each of the last six months, oldest first. */
+function memberTrend(active: readonly DirectoryMember[]): number[] {
+  const now = new Date();
+  return [5, 4, 3, 2, 1, 0].map((back) => {
+    const end = new Date(now.getFullYear(), now.getMonth() - back + 1, 1).getTime();
+    return active.filter((m) => {
+      const at = joinedAt(m);
+      return at !== null && new Date(at).getTime() < end;
+    }).length;
+  });
 }
 
 export function CommunityDashboard() {
@@ -65,7 +81,13 @@ export function CommunityDashboard() {
   // administered is refused by the API anyway.
   const dismissable = vacantSeats.filter((p) => !p.is_admin);
   const pending = (invitations.data ?? []).filter((i) => effectiveStatus(i) === 'pending');
-  const activeCount = members.filter((m) => m.status === 'active').length;
+  const active = members.filter((m) => m.status === 'active');
+  const activeCount = active.length;
+  const monthAgo = Date.now() - 30 * DAY;
+  const newCount = active.filter((m) => {
+    const at = joinedAt(m);
+    return at !== null && new Date(at).getTime() >= monthAgo;
+  }).length;
   const incompleteProfile =
     canEditProfile && community.data
       ? missingProfileFields(community.data).map((field) => field.label)
@@ -74,14 +96,7 @@ export function CommunityDashboard() {
   return (
     <div className="page">
       <PageHeader
-        eyebrow={
-          <span className="eyebrow">
-            {membership?.community.name} · {typeLabel(membership?.community.type ?? '')}
-            <span className="eyebrow__dot" aria-label="Active" />
-          </span>
-        }
         title="Community"
-        subtitle="Manage your community and stay up to date."
         actions={
           <>
             {canInvite && (
@@ -119,64 +134,76 @@ export function CommunityDashboard() {
         }
       />
 
-      <CommunityOverview
-        community={community.data}
-        fallbackName={membership?.community.name ?? ''}
-        fallbackType={membership?.community.type ?? ''}
-        memberCount={activeCount}
-        membership={membership}
-        canEdit={canEditProfile}
-      />
-
       <div className="stat-grid">
         <StatCard
           label="Members"
           value={activeCount}
-          caption="Active members registered"
+          caption="Active"
           icon={<IconCommunity />}
           tone="brand"
+          trend={memberTrend(active)}
         />
         <StatCard
-          label="Active Positions"
+          label="Positions"
           value={
             canViewPositions
               ? filledSeats.length
               : (committee.data ?? []).filter((seat) => seat.holders.length > 0).length
           }
-          caption={canViewPositions ? 'Assigned leadership roles' : 'Committee seats filled'}
+          caption="Seats filled"
           icon={<IconIdBadge />}
           tone="info"
         />
+        <StatCard
+          label="New members"
+          value={newCount}
+          caption="Last 30 days"
+          icon={<IconSprout />}
+          tone="accent"
+        />
         {canInvite && (
           <StatCard
-            label="Pending Invitations"
+            label="Invitations"
             value={pending.length}
-            caption="Awaiting response"
+            caption="Awaiting reply"
             icon={<IconMail />}
             tone="warning"
           />
         )}
       </div>
 
-      <NeedsAttention
-        incompleteProfile={incompleteProfile}
-        pendingInvitations={pending}
-        vacantSeats={vacantSeats}
-        membersWithoutPosition={
-          canViewPositions && !directory.positionsPending
-            ? members.filter(
-                (m) => m.status === 'active' && m.positionsKnown && m.positions.length === 0,
-              )
-            : []
-        }
-        canInvite={canInvite}
-        canAssign={can('position.assign')}
-        onDismissVacant={
-          can('position.delete') && dismissable.length > 0
-            ? () => setRemovingVacant(dismissable)
-            : undefined
-        }
+      <CommunityOverview
+        community={community.data}
+        fallbackName={membership?.community.name ?? ''}
+        fallbackType={membership?.community.type ?? ''}
+        membership={membership}
       />
+
+      <div className="dash-row">
+        <NeedsAttention
+          incompleteProfile={incompleteProfile}
+          pendingInvitations={pending}
+          vacantSeats={vacantSeats}
+          membersWithoutPosition={
+            canViewPositions && !directory.positionsPending
+              ? members.filter(
+                  (m) => m.status === 'active' && m.positionsKnown && m.positions.length === 0,
+                )
+              : []
+          }
+          canInvite={canInvite}
+          canAssign={can('position.assign')}
+          onDismissVacant={
+            can('position.delete') && dismissable.length > 0
+              ? () => setRemovingVacant(dismissable)
+              : undefined
+          }
+        />
+
+        <RecentActivity
+          entries={buildActivity(members, invitations.data ?? [], canInvite).slice(0, 5)}
+        />
+      </div>
 
       <RemoveVacantDialog
         key={removingVacant === null ? 'closed' : 'open'}
@@ -185,10 +212,6 @@ export function CommunityDashboard() {
       />
 
       <AppSections can={can} />
-
-      <RecentActivity
-        entries={buildActivity(members, invitations.data ?? [], canInvite).slice(0, 5)}
-      />
     </div>
   );
 }

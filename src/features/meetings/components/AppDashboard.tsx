@@ -10,6 +10,7 @@ import {
   IconMapPin,
   IconMegaphone,
   PageHeader,
+  SectionCard,
   StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -46,17 +47,13 @@ export function AppDashboard() {
 
   return (
     <div className="page">
-      <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">Meetings & Events</span>}
-        title="Dashboard"
-        subtitle={`What is coming up${membership ? ` in ${membership.community.name}` : ''}, and what you may have missed.`}
-      />
+      <PageHeader title="Dashboard" subtitle={membership?.community.name} />
 
-      <div className="stat-grid stat-grid--three">
+      <div className="stat-grid">
         <StatCard
           label="Next meeting"
           value={next ? formatRelative(next.scheduled_at) : 'None planned'}
-          caption={next ? next.title : 'The Secretary schedules meetings'}
+          caption={next?.title}
           icon={<IconChat />}
           tone="brand"
         />
@@ -65,8 +62,8 @@ export function AppDashboard() {
           value={eventItems.length}
           caption={
             eventItems.some((e) => e.my_rsvp === null)
-              ? `${eventItems.filter((e) => e.my_rsvp === null).length} waiting for your answer`
-              : 'You have answered every invitation'
+              ? `${eventItems.filter((e) => e.my_rsvp === null).length} to answer`
+              : 'All answered'
           }
           icon={<IconCalendar />}
           tone="info"
@@ -74,19 +71,25 @@ export function AppDashboard() {
         <StatCard
           label="Unread announcements"
           value={unreadCount}
-          caption={unreadCount === 0 ? 'You are up to date' : 'Open Announcements to read them'}
+          caption={unreadCount === 0 ? 'Up to date' : undefined}
           icon={<IconMegaphone />}
-          tone={unreadCount > 0 ? 'warning' : 'info'}
+          tone="warning"
           emphasis={unreadCount > 0}
+        />
+        <StatCard
+          label="Final minutes"
+          value={minutes.data?.total ?? 0}
+          icon={<IconFile />}
+          tone="accent"
         />
       </div>
 
       <div className="meetings-dashboard">
         <Panel
           title="Next meeting"
-          link={<Link to="/meetings/list">All meetings</Link>}
+          link={<Link to="/meetings/list">See all</Link>}
           empty={!next}
-          emptyText="No meeting is planned yet."
+          emptyText="No meeting planned"
         >
           {next && (
             <Link
@@ -126,9 +129,9 @@ export function AppDashboard() {
 
         <Panel
           title="Upcoming events"
-          link={<Link to="/meetings/events">All events</Link>}
+          link={<Link to="/meetings/events">See all</Link>}
           empty={eventItems.length === 0}
-          emptyText="No event is planned yet."
+          emptyText="No upcoming events"
         >
           <ul className="meetings-dashboard__list" role="list">
             {eventItems.slice(0, 4).map((event) => (
@@ -147,9 +150,9 @@ export function AppDashboard() {
 
         <Panel
           title="Announcements"
-          link={<Link to="/meetings/announcements">All announcements</Link>}
+          link={<Link to="/meetings/announcements">See all</Link>}
           empty={(announcements.data?.items.length ?? 0) === 0}
-          emptyText="Nothing has been announced yet."
+          emptyText="No announcements"
         >
           <ul className="meetings-dashboard__list" role="list">
             {(announcements.data?.items ?? []).map((a) => (
@@ -168,11 +171,11 @@ export function AppDashboard() {
           title="Latest minutes"
           link={
             <Link to="/meetings/list" search={{ tab: 'minutes' }}>
-              All minutes
+              See all
             </Link>
           }
           empty={(minutes.data?.items.length ?? 0) === 0}
-          emptyText="No minutes have been finalised yet."
+          emptyText="No final minutes"
         >
           <ul className="meetings-dashboard__list" role="list">
             {(minutes.data?.items ?? []).slice(0, 3).map((m) => (
@@ -211,12 +214,12 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="card meetings-dashboard__panel" aria-label={title}>
-      <header className="meetings-dashboard__head">
-        <h2 className="section-head__title">{title}</h2>
-        <span className="meetings-dashboard__link">{link}</span>
-      </header>
-      {empty ? <EmptyState icon={<IconCalendar />} title={emptyText} message="" /> : children}
-    </section>
+    <SectionCard
+      title={title}
+      className="meetings-dashboard__panel"
+      actions={<span className="meetings-dashboard__link">{link}</span>}
+    >
+      {empty ? <EmptyState icon={<IconCalendar />} title={emptyText} /> : children}
+    </SectionCard>
   );
 }

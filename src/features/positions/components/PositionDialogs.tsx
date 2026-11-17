@@ -102,13 +102,10 @@ export function PositionFormDialog({
       <form className="details position-form" onSubmit={handleSubmit} noValidate>
         <header className="details__head">
           <div>
-            <p className="section-head__eyebrow">{initial ? 'Edit position' : 'New position'}</p>
             <h2 className="section-head__title">{initial ? initial.name : 'Create Position'}</h2>
-            <p className="section-head__subtitle">
-              {initial
-                ? 'Changes apply at once to everyone holding this position.'
-                : 'Add a governance role to the community.'}
-            </p>
+            {initial && (
+              <p className="section-head__subtitle">Changes apply to everyone holding it.</p>
+            )}
           </div>
         </header>
 
@@ -266,7 +263,7 @@ export function DeletePositionDialog({
       open={open}
       onClose={onClose}
       title={`Delete ${position.name}`}
-      subtitle="This cannot be undone. The community always keeps at least one admin position."
+      subtitle="This cannot be undone."
       icon={
         <IconTile tone="danger" round>
           <IconIdBadge />
@@ -343,8 +340,8 @@ export function AssignMemberDialog({
       }
       subtitle={
         replacing
-          ? `Moves this position from ${replacing.fullName} to another member. Their other positions stay.`
-          : 'Adds this position to a member. Their other positions stay.'
+          ? `From ${replacing.fullName}. Their other positions stay.`
+          : 'Their other positions stay.'
       }
       icon={
         <IconTile tone="brand" round>
@@ -368,11 +365,7 @@ export function AssignMemberDialog({
         value={membershipId}
         onChange={(event) => setMembershipId(event.target.value)}
         options={candidates.map((m) => ({ value: m.membershipId, label: m.fullName }))}
-        hint={
-          candidates.length === 0
-            ? 'Every active member already holds this position.'
-            : 'Active members who do not already hold this position.'
-        }
+        hint={candidates.length === 0 ? 'Every active member already holds it.' : undefined}
       />
       {error && <p className="form-error">{errorMessage(error)}</p>}
     </Dialog>

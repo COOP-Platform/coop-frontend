@@ -6,6 +6,7 @@ import { hasCommunity, useMe } from '@/features/auth';
 
 interface PlatformHeaderProps {
   title: string;
+  /** At most one short fact line under the title. */
   subtitle?: ReactNode;
   actions?: ReactNode;
 }
@@ -20,7 +21,6 @@ export function PlatformHeader({ title, subtitle, actions }: PlatformHeaderProps
 
   return (
     <PageHeader
-      eyebrow={<span className="eyebrow eyebrow--muted">Platform administration</span>}
       title={title}
       subtitle={subtitle}
       actions={
@@ -35,21 +35,5 @@ export function PlatformHeader({ title, subtitle, actions }: PlatformHeaderProps
         </>
       }
     />
-  );
-}
-
-/** What this area can and cannot do — said once, plainly, on every page that shows data. */
-export function ReadOnlyNotice() {
-  return (
-    <div className="notice notice--info" role="note">
-      <div>
-        <p className="notice__title">Read-only, by design</p>
-        <p className="notice__text">
-          Platform Administrators run the service. Nothing here can change a community&apos;s data.
-          Opening one community&apos;s records to help with a problem is read-only and is written to
-          that community&apos;s audit log.
-        </p>
-      </div>
-    </div>
   );
 }

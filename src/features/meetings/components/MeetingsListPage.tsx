@@ -2,20 +2,18 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import {
-  Badge,
   Button,
   EmptyState,
   ErrorState,
   IconCalendar,
-  IconClock,
-  IconFile,
-  IconLink,
-  IconMapPin,
   IconPlus,
   IconTile,
   LoadingState,
   PageHeader,
+  SectionCard,
   SegmentedControl,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
@@ -59,7 +57,6 @@ export function MeetingsListPage({
     <div className="page">
       <PageHeader
         title="Meetings"
-        subtitle="When the family meets, what will be discussed, who came, and what was decided."
         actions={
           can('meeting.create') && (
             <Button icon={<IconPlus />} onClick={() => setScheduling(true)}>
@@ -70,7 +67,7 @@ export function MeetingsListPage({
       />
       <SegmentedControl label="Meetings" options={TABS} value={tab} onChange={onTabChange} />
 
-      {tab === 'minutes' ? <MinutesList /> : <MeetingCards past={tab === 'past'} />}
+      {tab === 'minutes' ? <MinutesList /> : <MeetingTable past={tab === 'past'} />}
 
       <MeetingFormDialog
         open={scheduling}
@@ -85,102 +82,94 @@ export function MeetingsListPage({
   );
 }
 
-function MeetingCards({ past }: { past: boolean }) {
-  const { communityId, can } = useWorkspace();
+function MeetingTable({ past }: { past: boolean }) {
+  const { communityId } = useWorkspace();
   const meetings = useMeetings(communityId);
 
-  if (meetings.isPending) return <LoadingState label="Loading meetings…" />;
-  if (meetings.isError) {
-    return <ErrorState title="Could not load meetings" message={errorMessage(meetings.error)} />;
-  }
-
   const now = Date.now();
-  const rows = meetings.data
+  const rows = (meetings.data ?? [])
     .filter((m) => isUpcoming(m, now) !== past)
     .sort((a, b) => {
       const diff = new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime();
       return past ? -diff : diff;
     });
-
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        icon={
-          <IconTile tone="neutral" size="lg">
-            <IconCalendar />
-          </IconTile>
-        }
-        title={past ? 'No past meetings yet' : 'No meetings coming up'}
-        message={
-          past
-            ? 'Meetings appear here once they have taken place.'
-            : can('meeting.create')
-              ? 'Schedule the next meeting so everyone knows when to come.'
-              : 'When a meeting is scheduled, it shows up here.'
-        }
-      />
-    );
-  }
+  const paged = usePaged(rows);
 
   return (
-    <ul className="meeting-list">
-      {rows.map((meeting) => (
-        <li key={meeting.id}>
-          <MeetingCard meeting={meeting} />
-        </li>
-      ))}
-    </ul>
+    <SectionCard
+      title={past ? 'Past meetings' : 'Upcoming meetings'}
+      flush
+      footer={rows.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined}
+    >
+      {meetings.isPending ? (
+        <LoadingState label="Loading meetings…" />
+      ) : meetings.isError ? (
+        <ErrorState title="Could not load meetings" message={errorMessage(meetings.error)} />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          icon={
+            <IconTile tone="neutral" size="lg">
+              <IconCalendar />
+            </IconTile>
+          }
+          title={past ? 'No past meetings' : 'No meetings coming up'}
+        />
+      ) : (
+        <div className="table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">Meeting</th>
+                <th scope="col">Date</th>
+                <th scope="col">Time</th>
+                <th scope="col">Place</th>
+                <th scope="col" className="num">
+                  Agenda
+                </th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.rows.map((meeting) => (
+                <MeetingRow key={meeting.id} meeting={meeting} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
-function MeetingCard({ meeting }: { meeting: MeetingSummary }) {
-  const start = new Date(meeting.scheduled_at);
+function MeetingRow({ meeting }: { meeting: MeetingSummary }) {
   const cancelled = meeting.status === 'cancelled';
   return (
-    <Link
-      to="/meetings/$meetingId"
-      params={{ meetingId: meeting.id }}
-      className={cancelled ? 'card meeting-card meeting-card--cancelled' : 'card meeting-card'}
-    >
-      <div className="meeting-card__date" aria-hidden="true">
-        <span className="meeting-card__month">
-          {start.toLocaleDateString('en-GB', { month: 'short' })}
+    <tr className={cancelled ? 'meeting-row meeting-row--cancelled' : 'meeting-row'}>
+      <td>
+        <span className="table__stack">
+          <Link
+            to="/meetings/$meetingId"
+            params={{ meetingId: meeting.id }}
+            className="meeting-row__link"
+          >
+            {meeting.title}
+          </Link>
+          <span className="table__muted">{MEETING_TYPE_LABELS[meeting.meeting_type]}</span>
         </span>
-        <span className="meeting-card__day">{start.getDate()}</span>
-      </div>
-      <div className="meeting-card__body">
-        <div className="meeting-card__head">
-          <h3 className="meeting-card__title">{meeting.title}</h3>
-          <MeetingStatusBadge meeting={meeting} />
-        </div>
-        <ul className="meeting-card__facts">
-          <li>
-            <Badge tone="neutral">{MEETING_TYPE_LABELS[meeting.meeting_type]}</Badge>
-          </li>
-          <li>
-            <IconClock aria-hidden="true" />
-            {formatMeetingDay(meeting.scheduled_at)} · {formatMeetingTimes(meeting)}
-          </li>
-          {meeting.location && (
-            <li>
-              <IconMapPin aria-hidden="true" />
-              {meeting.location}
-            </li>
-          )}
-          {meeting.online_link && (
-            <li>
-              <IconLink aria-hidden="true" />
-              Online
-            </li>
-          )}
-          <li>
-            <IconFile aria-hidden="true" />
-            {meeting.agenda_count === 0
-              ? 'No agenda yet'
-              : `${meeting.agenda_count} agenda item${meeting.agenda_count === 1 ? '' : 's'}`}
-          </li>
-        </ul>
-      </div>
-    </Link>
+      </td>
+      <td className="meeting-row__nowrap">{formatMeetingDay(meeting.scheduled_at)}</td>
+      <td className="meeting-row__nowrap">{formatMeetingTimes(meeting)}</td>
+      <td>
+        {meeting.location || meeting.online_link ? (
+          [meeting.location, meeting.online_link && 'Online'].filter(Boolean).join(' · ')
+        ) : (
+          <span className="table__muted">—</span>
+        )}
+      </td>
+      <td className="num">{meeting.agenda_count}</td>
+      <td>
+        <MeetingStatusBadge meeting={meeting} />
+      </td>
+    </tr>
   );
 }

@@ -3,7 +3,7 @@
 .meetings-dashboard {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
 @media (max-width: 960px) {
@@ -12,23 +12,15 @@
   }
 }
 
-.meetings-dashboard__panel {
+.meetings-dashboard__panel .section-card__body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-5);
-}
-
-.meetings-dashboard__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   gap: var(--space-3);
 }
 
 .meetings-dashboard__link {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .meetings-dashboard__feature {

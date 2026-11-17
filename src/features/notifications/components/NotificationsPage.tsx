@@ -2,17 +2,16 @@ import { useEffect, useState } from 'react';
 
 import {
   Button,
-  Card,
   EmptyState,
   ErrorState,
   IconBell,
   IconCheckCircle,
-  IconChevronLeft,
-  IconChevronRight,
   IconTile,
   LoadingState,
   PageHeader,
-  SegmentedControl,
+  SectionCard,
+  Select,
+  TableFooter,
 } from '@/components/ui';
 import { errorMessage } from '@/lib/api/errors';
 
@@ -28,9 +27,9 @@ import { NotificationItem } from './NotificationItem';
 type Show = 'unread' | 'all';
 
 const SHOW_OPTIONS = [
-  { value: 'unread', label: 'Unread' },
   { value: 'all', label: 'All' },
-] as const;
+  { value: 'unread', label: 'Unread' },
+];
 
 const PAGE_SIZE = 20;
 
@@ -54,39 +53,14 @@ export function NotificationsPage() {
   }, [data, page, pageCount]);
 
   const actionError = markAll.error ?? markRead.error;
+  const from = (page - 1) * PAGE_SIZE + 1;
 
   return (
     <div className="notif-page">
       <PageHeader
         title="Notifications"
-        subtitle="Updates from all your communities. We also send these by email."
-        actions={
-          <Button
-            variant="secondary"
-            inline
-            icon={<IconCheckCircle width={18} height={18} />}
-            disabled={unread === 0 || markAll.isPending}
-            onClick={() => markAll.mutate()}
-          >
-            Mark all as read
-          </Button>
-        }
+        subtitle={<span aria-live="polite">{unread === 0 ? 'No unread' : `${unread} unread`}</span>}
       />
-
-      <div className="notif-page__toolbar">
-        <SegmentedControl
-          label="Show"
-          options={SHOW_OPTIONS}
-          value={show}
-          onChange={(value) => {
-            setShow(value);
-            setPage(1);
-          }}
-        />
-        <span className="notif-page__count" aria-live="polite">
-          {unread === 0 ? 'No unread notifications' : `${unread} unread`}
-        </span>
-      </div>
 
       {actionError && (
         <p className="notif-page__error" role="alert">
@@ -94,28 +68,59 @@ export function NotificationsPage() {
         </p>
       )}
 
-      {list.isPending ? (
-        <LoadingState label="Loading notifications…" />
-      ) : list.isError ? (
-        <ErrorState title="Could not load notifications" message={errorMessage(list.error)} />
-      ) : data && data.items.length === 0 ? (
-        <Card>
+      <SectionCard
+        title={show === 'unread' ? 'Unread' : 'All notifications'}
+        flush
+        actions={
+          <>
+            <Select
+              label="Show"
+              labelHidden
+              options={SHOW_OPTIONS}
+              value={show}
+              onChange={(event) => {
+                setShow(event.target.value as Show);
+                setPage(1);
+              }}
+            />
+            <Button
+              variant="secondary"
+              inline
+              icon={<IconCheckCircle width={18} height={18} />}
+              disabled={unread === 0 || markAll.isPending}
+              onClick={() => markAll.mutate()}
+            >
+              Mark all as read
+            </Button>
+          </>
+        }
+        footer={
+          data && data.items.length > 0 ? (
+            <TableFooter
+              from={from}
+              to={from + data.items.length - 1}
+              total={data.total}
+              page={page}
+              pageCount={pageCount}
+              onPage={setPage}
+            />
+          ) : undefined
+        }
+      >
+        {list.isPending ? (
+          <LoadingState label="Loading notifications…" />
+        ) : list.isError ? (
+          <ErrorState title="Could not load notifications" message={errorMessage(list.error)} />
+        ) : data && data.items.length === 0 ? (
           <EmptyState
             icon={
               <IconTile tone="neutral" size="lg">
                 <IconBell />
               </IconTile>
             }
-            title="You're all caught up"
-            message={
-              show === 'unread'
-                ? 'There is nothing you have not read.'
-                : 'Nothing here yet. News from your communities will appear here.'
-            }
+            title={show === 'unread' ? "You're all caught up" : 'No notifications yet'}
           />
-        </Card>
-      ) : (
-        <Card className="notif-page__card">
+        ) : (
           <ul className="notif-page__list">
             {data?.items.map((notification) => (
               <li key={notification.id} className="notif-page__row">
@@ -137,34 +142,8 @@ export function NotificationsPage() {
               </li>
             ))}
           </ul>
-        </Card>
-      )}
-
-      {pageCount > 1 && (
-        <nav className="pagination notif-page__pager" aria-label="Pagination">
-          <button
-            type="button"
-            className="pagination__step"
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-          >
-            <IconChevronLeft width={16} height={16} />
-            Previous
-          </button>
-          <span className="notif-page__count">
-            Page {page} of {pageCount}
-          </span>
-          <button
-            type="button"
-            className="pagination__step"
-            disabled={page >= pageCount}
-            onClick={() => setPage(page + 1)}
-          >
-            Next
-            <IconChevronRight width={16} height={16} />
-          </button>
-        </nav>
-      )}
+        )}
+      </SectionCard>
     </div>
   );
 }

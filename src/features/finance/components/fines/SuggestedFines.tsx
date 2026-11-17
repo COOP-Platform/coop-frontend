@@ -9,6 +9,7 @@ import {
   IconCheckCircle,
   IconGavel,
   LoadingState,
+  SectionCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
@@ -83,16 +84,27 @@ export function SuggestedFines() {
   }
 
   return (
-    <section className="card table-card" aria-labelledby="fine-suggestions-title">
-      <header className="table-card__head">
-        <h2 id="fine-suggestions-title" className="section-head__title">
-          Suggested fines {items.length > 0 && <Badge tone="warning">{items.length}</Badge>}
-        </h2>
-        <p className="section-head__subtitle">
-          What your fine rules say is due. Tick the ones to issue; to skip one, leave it unticked.
-        </p>
-      </header>
-
+    <SectionCard
+      title={
+        <>Suggested fines {items.length > 0 && <Badge tone="warning">{items.length}</Badge>}</>
+      }
+      flush
+      footer={
+        items.length > 0 ? (
+          <>
+            <span>{picked.size === 0 ? 'Nothing selected' : `${picked.size} selected`}</span>
+            <Button
+              inline
+              icon={<IconGavel />}
+              disabled={picked.size === 0 || busy}
+              onClick={() => void issueSelected()}
+            >
+              {busy ? 'Issuing…' : 'Issue selected'}
+            </Button>
+          </>
+        ) : undefined
+      }
+    >
       {issuedRows.length > 0 && (
         <div className="notice notice--success fines__notice" role="status">
           <IconCheckCircle width={20} height={20} aria-hidden="true" />
@@ -101,8 +113,7 @@ export function SuggestedFines() {
               {issuedRows.length} fine{issuedRows.length === 1 ? '' : 's'} issued
             </p>
             <p className="notice__text">
-              {issuedRows.map(({ row }) => `${row.member.full_name}`).join(', ')}. They see it on
-              their My Contributions page.
+              {issuedRows.map(({ row }) => `${row.member.full_name}`).join(', ')}
             </p>
           </div>
         </div>
@@ -116,11 +127,7 @@ export function SuggestedFines() {
           message={errorMessage(suggestions.error)}
         />
       ) : items.length === 0 ? (
-        <EmptyState
-          icon={<IconGavel width={28} height={28} />}
-          title="No fines to suggest"
-          message="When a member pays late or misses a meeting, and a rule covers it, it shows here."
-        />
+        <EmptyState icon={<IconGavel width={28} height={28} />} title="No fines to suggest" />
       ) : (
         <>
           <div className="table-scroll">
@@ -141,7 +148,7 @@ export function SuggestedFines() {
                   </th>
                   <th scope="col">Member</th>
                   <th scope="col">Fine</th>
-                  <th scope="col" className="table__amount">
+                  <th scope="col" className="num">
                     Amount
                   </th>
                   <th scope="col">Rule</th>
@@ -172,7 +179,7 @@ export function SuggestedFines() {
                           )}
                         </span>
                       </td>
-                      <td className="table__amount">
+                      <td className="num">
                         <Money minor={row.amount_minor} />
                       </td>
                       <td>{row.rule.name}</td>
@@ -182,19 +189,8 @@ export function SuggestedFines() {
               </tbody>
             </table>
           </div>
-          <footer className="table-card__foot fines__foot">
-            <span>{picked.size === 0 ? 'Nothing selected' : `${picked.size} selected`}</span>
-            <Button
-              inline
-              icon={<IconGavel />}
-              disabled={picked.size === 0 || busy}
-              onClick={() => void issueSelected()}
-            >
-              {busy ? 'Issuing…' : 'Issue selected'}
-            </Button>
-          </footer>
         </>
       )}
-    </section>
+    </SectionCard>
   );
 }

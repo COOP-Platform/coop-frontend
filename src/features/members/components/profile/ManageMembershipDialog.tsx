@@ -76,7 +76,6 @@ function ManageMembershipForm({
       open
       onClose={onClose}
       title="Edit membership"
-      subtitle={`Change ${profile.full_name}'s category or status.`}
       icon={
         <IconTile tone="brand" round>
           <IconUserCog />
@@ -122,7 +121,7 @@ function ManageMembershipForm({
             ]}
             value={status}
             onChange={(event) => setStatus(event.target.value as MemberProfile['status'])}
-            hint="A suspended member keeps their positions but can do nothing until made active again."
+            hint="Keeps positions; can do nothing until active."
             error={fieldErrors.status}
           />
         )}
@@ -135,7 +134,7 @@ function ManageMembershipForm({
             rows={3}
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            hint="Only people who manage members see these."
+            hint="Only member managers see these."
             error={fieldErrors.notes}
           />
         )}

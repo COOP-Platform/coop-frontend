@@ -1,5 +1,4 @@
 import { useId, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 
 import {
   Badge,
@@ -7,7 +6,6 @@ import {
   EmptyState,
   ErrorState,
   IconArrowRight,
-  IconBarChart,
   IconCheckCircle,
   IconDownload,
   IconFile,
@@ -16,8 +14,12 @@ import {
   IconSearch,
   Input,
   LoadingState,
+  SectionCard,
   SegmentedControl,
   Select,
+  StatCard,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
@@ -39,7 +41,7 @@ import {
   previousPeriod,
 } from '../period';
 import type { Period, PeriodPreset } from '../period';
-import { Pager } from './ReasonPrompt';
+import { Money } from './Money';
 import { CashFlowBars, CategoryBars } from './StatementCharts';
 import { SectionHeader } from './SectionHeader';
 
@@ -51,7 +53,6 @@ const PRESETS: PeriodPreset[] = [
   'last_year',
   'custom',
 ];
-const ROWS_PER_PAGE = 10;
 const ALL = '';
 
 /**
@@ -95,13 +96,12 @@ export function CashFlowStatement({ embedded = false }: { embedded?: boolean }) 
     <div className="page">
       <SectionHeader
         embedded={embedded}
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Cash Flow Statement"
-        subtitle="Track the community's cash: what it started with, what came in, what went out and what is left."
         actions={
           <>
             <Select
               label="Period"
+              labelHidden
               value={preset}
               onChange={(event) => setPreset(event.target.value as PeriodPreset)}
               options={PRESETS.map((p) => ({ value: p, label: PRESET_LABEL[p] }))}
@@ -200,20 +200,19 @@ function StatementBody({ communityId, period }: { communityId: string; period: P
       <KpiCards summary={s} previous={previous.data} />
 
       <div className="statement-grid">
-        <section className="card statement-panel" aria-labelledby="overview-title">
-          <header className="statement-panel__head">
-            <h2 id="overview-title" className="section-head__title">
-              <IconBarChart width={20} height={20} aria-hidden="true" /> Cash flow overview
-            </h2>
+        <SectionCard
+          title="Money in and out"
+          actions={
             <p className="chart-legend">
               <span>
-                <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> Money in
+                <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> In
               </span>
               <span>
-                <span className="legend-swatch legend-swatch--out" aria-hidden="true" /> Money out
+                <span className="legend-swatch legend-swatch--out" aria-hidden="true" /> Out
               </span>
             </p>
-          </header>
+          }
+        >
           <CashFlowBars
             months={s.monthly.map((m) => ({
               month: m.month,
@@ -221,7 +220,7 @@ function StatementBody({ communityId, period }: { communityId: string; period: P
               out_minor: m.expenses_minor,
             }))}
           />
-        </section>
+        </SectionCard>
 
         <CategoryPanel inRows={inRows} outRows={outRows} currency={currency} />
       </div>
@@ -237,39 +236,51 @@ function StatementBody({ communityId, period }: { communityId: string; period: P
 
 function KpiCards({ summary, previous }: { summary: SummaryReport; previous?: SummaryReport }) {
   const currency = summary.currency;
+  const monthly = summary.monthly;
   return (
-    <div className="kpi-grid">
-      <Kpi
-        tone="info"
-        icon={<IconInstitution />}
+    <div className="stat-grid">
+      <StatCard
         label="Opening balance"
-        minor={summary.opening_balance_minor}
-        currency={currency}
-        note={`At the start of ${monthName(summary.period.from.slice(0, 7))}`}
+        value={<Money minor={summary.opening_balance_minor} currency={currency} />}
+        caption={`Start of ${monthName(summary.period.from.slice(0, 7))}`}
+        icon={<IconInstitution />}
+        tone="accent"
       />
-      <Kpi
-        tone="in"
+      <StatCard
+        label="Cash in"
+        value={<Money minor={summary.totals.money_in_minor} currency={currency} />}
+        caption={
+          <Change
+            delta={change(summary.totals.money_in_minor, previous?.totals.money_in_minor)}
+            goodWhenUp
+          />
+        }
         icon={<IconArrowRight className="kpi__arrow-in" />}
-        label="Total cash in"
-        minor={summary.totals.money_in_minor}
-        currency={currency}
-        change={change(summary.totals.money_in_minor, previous?.totals.money_in_minor)}
+        tone="info"
+        trend={monthly.map((m) => m.contributions_minor + m.income_minor)}
       />
-      <Kpi
-        tone="out"
+      <StatCard
+        label="Cash out"
+        value={<Money minor={summary.totals.expenses_minor} currency={currency} />}
+        caption={
+          <Change delta={change(summary.totals.expenses_minor, previous?.totals.expenses_minor)} />
+        }
         icon={<IconArrowRight className="kpi__arrow-out" />}
-        label="Total cash out"
-        minor={summary.totals.expenses_minor}
-        currency={currency}
-        change={change(summary.totals.expenses_minor, previous?.totals.expenses_minor)}
+        tone="warning"
+        trend={monthly.map((m) => m.expenses_minor)}
       />
-      <Kpi
-        tone="brand"
-        icon={<IconCheckCircle />}
+      <StatCard
         label="Closing balance"
-        minor={summary.closing_balance_minor}
-        currency={currency}
-        change={change(summary.closing_balance_minor, previous?.closing_balance_minor)}
+        value={<Money minor={summary.closing_balance_minor} currency={currency} />}
+        caption={
+          <Change
+            delta={change(summary.closing_balance_minor, previous?.closing_balance_minor)}
+            goodWhenUp
+          />
+        }
+        icon={<IconCheckCircle />}
+        tone="brand"
+        trend={monthly.map((m) => m.running_balance_minor)}
       />
     </div>
   );
@@ -281,41 +292,17 @@ function change(now: number, before: number | undefined): number | null {
   return ((now - before) / Math.abs(before)) * 100;
 }
 
-function Kpi({
-  tone,
-  icon,
-  label,
-  minor,
-  currency,
-  change: delta,
-  note,
-}: {
-  tone: 'info' | 'in' | 'out' | 'brand';
-  icon: ReactNode;
-  label: string;
-  minor: number;
-  currency: string;
-  change?: number | null;
-  note?: string;
-}) {
+/** "↑ 12% vs last period": green when the move is good, orange when it is not. */
+function Change({ delta, goodWhenUp = false }: { delta: number | null; goodWhenUp?: boolean }) {
+  if (delta === null) return <>No earlier period</>;
+  const up = delta >= 0;
   return (
-    <section className={`card kpi kpi--${tone}`} aria-label={label}>
-      <span className="kpi__icon" aria-hidden="true">
-        {icon}
-      </span>
-      <div className="kpi__body">
-        <p className="kpi__label">{label}</p>
-        <p className="kpi__value">
-          {currency} {formatAmount(minor)}
-        </p>
-        <p className="kpi__note">
-          {note ??
-            (delta === null || delta === undefined
-              ? 'Nothing to compare with before'
-              : `${delta >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(delta))}% vs previous period`)}
-        </p>
-      </div>
-    </section>
+    <>
+      <b className={up === goodWhenUp ? 'caption-up' : 'caption-warn'}>
+        {up ? '↑' : '↓'} {Math.abs(Math.round(delta))}%
+      </b>{' '}
+      vs last period
+    </>
   );
 }
 
@@ -334,23 +321,22 @@ function CategoryPanel({
 }) {
   const [side, setSide] = useState<'in' | 'out'>('in');
   return (
-    <section className="card statement-panel" aria-labelledby="category-title">
-      <header className="statement-panel__head">
-        <h2 id="category-title" className="section-head__title">
-          Cash flow by category
-        </h2>
+    <SectionCard
+      title="By category"
+      actions={
         <SegmentedControl
           label="Money in or out"
           options={[
-            { value: 'in', label: 'Money in' },
-            { value: 'out', label: 'Money out' },
+            { value: 'in', label: 'In' },
+            { value: 'out', label: 'Out' },
           ]}
           value={side}
           onChange={setSide}
         />
-      </header>
+      }
+    >
       <CategoryBars rows={side === 'in' ? inRows : outRows} kind={side} currency={currency} />
-    </section>
+    </SectionCard>
   );
 }
 
@@ -390,7 +376,6 @@ function TransactionTable({
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState(ALL);
   const [method, setMethod] = useState(ALL);
-  const [page, setPage] = useState(1);
 
   // Newest first: the newest row's balance is the closing balance, and each
   // older row's is the one after it less what that later row moved.
@@ -416,18 +401,13 @@ function TransactionTable({
       (text) => text !== null && text.toLowerCase().includes(needle),
     );
   });
-  const pageCount = Math.max(1, Math.ceil(filtered.length / ROWS_PER_PAGE));
-  const current = Math.min(page, pageCount);
-  const visible = filtered.slice((current - 1) * ROWS_PER_PAGE, current * ROWS_PER_PAGE);
+  const paged = usePaged(filtered);
 
   return (
-    <section className="card table-card" aria-labelledby="statement-table-title">
-      <header className="statement-table__head">
-        <h2 id="statement-table-title" className="section-head__title">
-          Cash flow statement
-        </h2>
-        <p className="table__muted statement-table__unit">Amounts in {currency}</p>
-        <div className="statement-table__filters">
+    <SectionCard
+      title="Transactions"
+      actions={
+        <>
           <div className="search-field">
             <label htmlFor={searchId} className="visually-hidden">
               Search transactions
@@ -439,20 +419,21 @@ function TransactionTable({
               id={searchId}
               type="search"
               className="search-field__input"
-              placeholder="Search transactions..."
+              placeholder="Search…"
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
-                setPage(1);
+                paged.setPage(1);
               }}
             />
           </div>
           <Select
             label="Category"
+            labelHidden
             value={category}
             onChange={(event) => {
               setCategory(event.target.value);
-              setPage(1);
+              paged.setPage(1);
             }}
             options={[
               { value: ALL, label: 'All categories' },
@@ -461,26 +442,28 @@ function TransactionTable({
           />
           <Select
             label="Payment method"
+            labelHidden
             value={method}
             onChange={(event) => {
               setMethod(event.target.value);
-              setPage(1);
+              paged.setPage(1);
             }}
             options={[
-              { value: ALL, label: 'All payment methods' },
+              { value: ALL, label: 'All methods' },
               ...methods.map((m) => ({ value: m, label: humanize(m) })),
             ]}
           />
-        </div>
-      </header>
-
-      {visible.length === 0 ? (
+        </>
+      }
+      flush
+      footer={<TableFooter {...paged} onPage={paged.setPage} />}
+    >
+      {paged.rows.length === 0 ? (
         <EmptyState
           icon={<IconHistory />}
           title={
             items.length === 0 ? 'No money moved in this period' : 'Nothing matches these filters'
           }
-          message="Confirmed contributions, recorded income and approved expenses show here."
         />
       ) : (
         <div className="table-scroll">
@@ -491,19 +474,19 @@ function TransactionTable({
                 <th scope="col">Reference</th>
                 <th scope="col">Description</th>
                 <th scope="col">Category</th>
-                <th scope="col" className="statement-table__num">
-                  Cash in
+                <th scope="col" className="num">
+                  In ({currency})
                 </th>
-                <th scope="col" className="statement-table__num">
-                  Cash out
+                <th scope="col" className="num">
+                  Out ({currency})
                 </th>
-                <th scope="col" className="statement-table__num">
+                <th scope="col" className="num">
                   Balance
                 </th>
               </tr>
             </thead>
             <tbody>
-              {visible.map(({ item, balance }) => (
+              {paged.rows.map(({ item, balance }) => (
                 <tr key={`${item.source.type}-${item.source.id}`}>
                   <td className="statement-table__date">{formatDate(item.date)}</td>
                   <td className="mono">{reference(item)}</td>
@@ -518,31 +501,19 @@ function TransactionTable({
                       {categoryOf(item)}
                     </Badge>
                   </td>
-                  <td className="statement-table__num cash-box__in">
+                  <td className="num cash-box__in">
                     {item.direction === 'in' ? formatAmount(item.amount_minor) : '—'}
                   </td>
-                  <td className="statement-table__num cash-box__out">
+                  <td className="num cash-box__out">
                     {item.direction === 'out' ? formatAmount(item.amount_minor) : '—'}
                   </td>
-                  <td className="statement-table__num table__amount">{formatAmount(balance)}</td>
+                  <td className="num table__amount">{formatAmount(balance)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-
-      <footer className="table-footer">
-        <p className="table-footer__summary">
-          Showing{' '}
-          <strong>
-            {filtered.length === 0 ? 0 : (current - 1) * ROWS_PER_PAGE + 1}–
-            {(current - 1) * ROWS_PER_PAGE + visible.length}
-          </strong>{' '}
-          of <strong>{filtered.length}</strong> transactions
-        </p>
-        <Pager page={current} pageCount={pageCount} onChange={setPage} />
-      </footer>
-    </section>
+    </SectionCard>
   );
 }

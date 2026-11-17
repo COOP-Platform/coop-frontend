@@ -18,6 +18,8 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   placeholder?: string;
   hint?: string;
   error?: string;
+  /** Read by screen readers only: a filter in a card header. */
+  labelHidden?: boolean;
 }
 
 export function Select({
@@ -30,6 +32,7 @@ export function Select({
   id,
   className,
   required,
+  labelHidden,
   ...rest
 }: SelectProps) {
   const generatedId = useId();
@@ -48,7 +51,10 @@ export function Select({
 
   return (
     <div className="field">
-      <label htmlFor={selectId} className="field__label">
+      <label
+        htmlFor={selectId}
+        className={labelHidden ? 'field__label visually-hidden' : 'field__label'}
+      >
         {label}
         {required && (
           <span className="field__required" aria-hidden="true">

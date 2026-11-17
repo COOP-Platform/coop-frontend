@@ -9,8 +9,6 @@ import {
   EmptyState,
   ErrorState,
   IconCheckCircle,
-  IconChevronLeft,
-  IconChevronRight,
   IconEyeOff,
   IconMegaphone,
   IconPencil,
@@ -20,7 +18,9 @@ import {
   IconTrash,
   LoadingState,
   PageHeader,
-  SegmentedControl,
+  SectionCard,
+  Select,
+  TableFooter,
 } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -102,7 +102,6 @@ export function AnnouncementsPage({
     <div className="page">
       <PageHeader
         title="Announcements"
-        subtitle="News and reminders for everyone in the community."
         badge={
           unreadCount > 0 ? (
             <Badge tone="brand" dot>
@@ -122,41 +121,49 @@ export function AnnouncementsPage({
       {notice && (
         <div className="notice notice--success" role="status">
           <IconCheckCircle width={20} height={20} aria-hidden="true" />
-          <div>
-            <p className="notice__title">Done</p>
-            <p className="notice__text">{notice}</p>
-          </div>
+          <p className="notice__text">{notice}</p>
         </div>
       )}
 
-      {tabs.length > 1 && (
-        <SegmentedControl
-          label="Which announcements"
-          options={tabs}
-          value={current}
-          onChange={(next) => {
-            setPage(1);
-            onTabChange(next);
-          }}
-        />
-      )}
-
-      {list.data === undefined ? (
-        list.isPending ? (
-          <LoadingState />
+      <SectionCard
+        title={CARD_TITLE[current]}
+        flush
+        actions={
+          tabs.length > 1 ? (
+            <Select
+              label="Which announcements"
+              labelHidden
+              options={tabs}
+              value={current}
+              onChange={(event) => {
+                setPage(1);
+                onTabChange(event.target.value as AnnouncementsTab);
+              }}
+            />
+          ) : undefined
+        }
+        footer={
+          list.data && list.data.items.length > 0 ? (
+            <TableFooter
+              from={(page - 1) * PAGE_SIZE + 1}
+              to={Math.min(page * PAGE_SIZE, list.data.total)}
+              total={list.data.total}
+              page={page}
+              pageCount={Math.max(1, Math.ceil(list.data.total / PAGE_SIZE))}
+              onPage={setPage}
+            />
+          ) : undefined
+        }
+      >
+        {list.data === undefined ? (
+          list.isPending ? (
+            <LoadingState />
+          ) : (
+            <ErrorState message={errorMessage(list.error)} />
+          )
+        ) : list.data.items.length === 0 ? (
+          <EmptyState icon={<IconMegaphone width={28} height={28} />} title={EMPTY[current]} />
         ) : (
-          <ErrorState message={errorMessage(list.error)} />
-        )
-      ) : list.data.items.length === 0 ? (
-        <div className="card">
-          <EmptyState
-            icon={<IconMegaphone width={28} height={28} />}
-            title={EMPTY[current].title}
-            message={EMPTY[current].message}
-          />
-        </div>
-      ) : (
-        <>
           <ul className="announcement-list" aria-label="Announcements">
             {list.data.items.map((item) => (
               <li key={item.id}>
@@ -168,13 +175,8 @@ export function AnnouncementsPage({
               </li>
             ))}
           </ul>
-          <Pager
-            page={page}
-            pageCount={Math.max(1, Math.ceil(list.data.total / PAGE_SIZE))}
-            onChange={setPage}
-          />
-        </>
-      )}
+        )}
+      </SectionCard>
 
       <Drawer
         open={selected !== null}
@@ -208,19 +210,16 @@ export function AnnouncementsPage({
   );
 }
 
-const EMPTY: Record<AnnouncementsTab, { title: string; message: string }> = {
-  feed: {
-    title: 'No announcements right now',
-    message: 'News and reminders from the committee will show here.',
-  },
-  drafts: {
-    title: 'No drafts',
-    message: 'Announcements saved but not yet published show here.',
-  },
-  expired: {
-    title: 'Nothing expired',
-    message: 'Announcements whose "hide after" time has passed show here.',
-  },
+const EMPTY: Record<AnnouncementsTab, string> = {
+  feed: 'No announcements',
+  drafts: 'No drafts',
+  expired: 'Nothing expired',
+};
+
+const CARD_TITLE: Record<AnnouncementsTab, string> = {
+  feed: 'Latest',
+  drafts: 'Drafts',
+  expired: 'Expired',
 };
 
 /** "For: Treasurer, Secretary" on a card addressed to chosen positions. */
@@ -243,7 +242,7 @@ function AnnouncementCard({
   return (
     <button
       type="button"
-      className={`card announcement-card${unread ? ' announcement-card--unread' : ''}`}
+      className={`announcement-card${unread ? ' announcement-card--unread' : ''}`}
       aria-haspopup="dialog"
       onClick={onOpen}
     >
@@ -310,15 +309,9 @@ function AnnouncementDetails({
     <section className="details" aria-labelledby="announcement-details-title">
       <header className="details__head">
         <div>
-          <p className="section-head__eyebrow">Announcement · {PRIORITY_LABEL[a.priority]}</p>
           <h2 id="announcement-details-title" className="section-head__title">
             {a.title}
           </h2>
-          <p className="section-head__subtitle">
-            {a.published_at
-              ? `Published ${formatLongDate(a.published_at)}`
-              : 'Draft: members cannot see it yet'}
-          </p>
         </div>
         <Badge tone={status.tone}>{status.label}</Badge>
       </header>
@@ -326,6 +319,12 @@ function AnnouncementDetails({
       <p className="announcement-body">{a.body}</p>
 
       <dl className="details__list">
+        {a.published_at && (
+          <div>
+            <dt>Published</dt>
+            <dd>{formatLongDate(a.published_at)}</dd>
+          </div>
+        )}
         <div>
           <dt>Written by</dt>
           <dd>
@@ -342,7 +341,7 @@ function AnnouncementDetails({
             {a.audience === 'everyone'
               ? 'Every member'
               : a.audience_positions.map((p) => p.name).join(', ')}
-            {!a.is_for_me && <span className="table__muted"> (not addressed to you)</span>}
+            {!a.is_for_me && <span className="table__muted"> (not for you)</span>}
           </dd>
         </div>
         {a.pinned && (
@@ -391,8 +390,7 @@ function AnnouncementDetails({
               onClick={() => {
                 setError(null);
                 publish.mutate(target, {
-                  onSuccess: (saved) =>
-                    onDone(`"${saved.title}" is published. Every member can read it now.`),
+                  onSuccess: (saved) => onDone(`"${saved.title}" is published.`),
                   onError: (failure) => setError(errorMessage(failure)),
                 });
               }}
@@ -441,7 +439,7 @@ function AnnouncementDetails({
           <ConfirmDialog
             open={confirm === 'unpublish'}
             title="Unpublish this announcement?"
-            subtitle="It leaves the members' list and goes back to the drafts. You can publish it again later."
+            subtitle="Members stop seeing it; it goes back to the drafts."
             icon={<IconEyeOff />}
             about={a.title}
             confirmLabel="Unpublish"
@@ -450,14 +448,14 @@ function AnnouncementDetails({
             onConfirm={() =>
               unpublish.mutateAsync(target).then((saved) => {
                 setConfirm(null);
-                onDone(`"${saved.title}" is back in the drafts. Members no longer see it.`);
+                onDone(`"${saved.title}" is back in the drafts.`);
               })
             }
           />
           <ConfirmDialog
             open={confirm === 'delete'}
             title="Delete this announcement?"
-            subtitle="It disappears for everyone. This cannot be undone here."
+            subtitle="It disappears for everyone. This cannot be undone."
             icon={<IconTrash />}
             about={a.title}
             confirmLabel="Delete"
@@ -539,43 +537,5 @@ function ConfirmDialog({
         </div>
       </div>
     </Dialog>
-  );
-}
-
-/** Previous / Page n of m / Next. */
-function Pager({
-  page,
-  pageCount,
-  onChange,
-}: {
-  page: number;
-  pageCount: number;
-  onChange: (page: number) => void;
-}) {
-  if (pageCount <= 1) return null;
-  return (
-    <nav className="pagination" aria-label="Pagination">
-      <button
-        type="button"
-        className="pagination__step"
-        disabled={page === 1}
-        onClick={() => onChange(page - 1)}
-      >
-        <IconChevronLeft width={16} height={16} />
-        Previous
-      </button>
-      <span className="table__muted">
-        Page {page} of {pageCount}
-      </span>
-      <button
-        type="button"
-        className="pagination__step"
-        disabled={page === pageCount}
-        onClick={() => onChange(page + 1)}
-      >
-        Next
-        <IconChevronRight width={16} height={16} />
-      </button>
-    </nav>
   );
 }

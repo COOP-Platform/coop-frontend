@@ -25,6 +25,7 @@ import './styles/closeout-settings.css';
 import './styles/closeout-access.css';
 import './styles/closeout-platform.css';
 import './styles/closeout-member-profile.css';
+import './styles/templates.css';
 
 const router = createRouter({
   routeTree,

@@ -73,20 +73,14 @@ export function BudgetsPage({
   const [notice, setNotice] = useState<string | null>(null);
   return (
     <div className="page">
-      <SectionHeader
-        embedded={embedded}
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title={
-          embedded ? (section === 'budgets' ? 'Budgets' : 'Dedicated contributions') : 'Budgets'
-        }
-        subtitle={
-          embedded
-            ? section === 'budgets'
-              ? 'Plan what an event or project will cost, line by line.'
-              : 'Collect money from members for one purpose.'
-            : 'Plan spending for events and projects, and collect dedicated contributions for them.'
-        }
-      />
+      {/* Inside Budgets & Shares the tab already names the section: no heading. */}
+      {!embedded && (
+        <SectionHeader
+          eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
+          title="Budgets"
+          subtitle="Plan spending for events and projects, and collect dedicated contributions for them."
+        />
+      )}
       {!embedded && (
         <SegmentedControl
           label="Section"

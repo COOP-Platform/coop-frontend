@@ -1,28 +1,16 @@
 import { useState } from 'react';
 
 import {
-  Badge,
-  Button,
   EmptyState,
   ErrorState,
-  IconDownload,
   IconLock,
-  IconMail,
-  IconUserMinus,
-  IconUserPlus,
-  IconUsers,
   LoadingState,
   PageHeader,
   SectionCard,
   Select,
-  StatCard,
-  TableFooter,
-  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
-import { downloadCsv } from '@/lib/csv';
-import { formatDate } from '@/lib/format/date';
 
 import { MIN_REPORT_YEAR, useMembersReport } from '../api/reports';
 import type { MembersReport } from '../api/reports';
@@ -30,9 +18,10 @@ import type { MembersReport } from '../api/reports';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /**
- * Community app, Reports: members now, who joined and who left in a year,
- * members by category, and the member list (also as CSV). Every member reads
- * it (member.view); invitation figures only for those who may invite.
+ * Community app, Reports: only what no other page shows. Who joined and who
+ * left in a year, by month, and active members by category. Member counts,
+ * invitations and the member list (with its CSV) live on the Dashboard and
+ * Members pages. Every member reads it (member.view).
  */
 export function CommunityReportsPage() {
   const { communityId, can } = useWorkspace();
@@ -52,31 +41,18 @@ export function CommunityReportsPage() {
     );
   }
 
-  const data = report.data;
-
   return (
     <div className="page">
       <PageHeader
         title="Reports"
         actions={
-          <>
-            <Select
-              label="Year"
-              labelHidden
-              value={String(year)}
-              onChange={(event) => setYear(Number(event.target.value))}
-              options={years.map((y) => ({ value: String(y), label: String(y) }))}
-            />
-            <Button
-              variant="secondary"
-              inline
-              icon={<IconDownload />}
-              disabled={!data || data.roster.length === 0}
-              onClick={() => data && downloadRoster(data)}
-            >
-              Members CSV
-            </Button>
-          </>
+          <Select
+            label="Year"
+            labelHidden
+            value={String(year)}
+            onChange={(event) => setYear(Number(event.target.value))}
+            options={years.map((y) => ({ value: String(y), label: String(y) }))}
+          />
         }
       />
 
@@ -94,68 +70,20 @@ export function CommunityReportsPage() {
 }
 
 function ReportBody({ data }: { data: MembersReport }) {
-  const invites = data.invitations;
   return (
     <>
-      <div className="stat-grid">
-        <StatCard
-          label="Members"
-          value={data.members.total}
-          caption={
-            data.members.suspended > 0 ? `${data.members.suspended} suspended` : 'All active'
-          }
-          icon={<IconUsers />}
-          tone="brand"
-        />
-        <StatCard
-          label="Joined"
-          value={data.joined}
-          caption={`In ${data.year}`}
-          icon={<IconUserPlus />}
-          tone="info"
-        />
-        <StatCard
-          label="Left"
-          value={data.left}
-          caption={`In ${data.year}`}
-          icon={<IconUserMinus />}
-          tone="warning"
-        />
-        {invites ? (
-          <StatCard
-            label="Invitations"
-            value={
-              invites.pending +
-              invites.accepted +
-              invites.expired +
-              invites.revoked +
-              invites.rejected
-            }
-            caption={`${invites.pending} pending`}
-            icon={<IconMail />}
-            tone="accent"
-          />
-        ) : (
-          <StatCard
-            label="Categories"
-            value={data.by_category.length}
-            caption="Of active members"
-            icon={<IconUsers />}
-            tone="accent"
-          />
-        )}
-      </div>
-
       <div className="statement-grid">
         <SectionCard
           title="Joined and left"
           actions={
             <p className="chart-legend">
               <span>
-                <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> Joined
+                <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> Joined{' '}
+                <strong>{data.joined}</strong>
               </span>
               <span>
-                <span className="legend-swatch legend-swatch--out" aria-hidden="true" /> Left
+                <span className="legend-swatch legend-swatch--out" aria-hidden="true" /> Left{' '}
+                <strong>{data.left}</strong>
               </span>
             </p>
           }
@@ -175,8 +103,6 @@ function ReportBody({ data }: { data: MembersReport }) {
           )}
         </SectionCard>
       </div>
-
-      <RosterTable roster={data.roster} />
     </>
   );
 }
@@ -206,64 +132,6 @@ function CategoryList({ rows, total }: { rows: MembersReport['by_category']; tot
         </li>
       ))}
     </ul>
-  );
-}
-
-function RosterTable({ roster }: { roster: MembersReport['roster'] }) {
-  const paged = usePaged(roster);
-  return (
-    <SectionCard
-      title="Members"
-      flush
-      footer={roster.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined}
-    >
-      {roster.length === 0 ? (
-        <EmptyState icon={<IconUsers width={28} height={28} />} title="No members yet" />
-      ) : (
-        <div className="table-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Category</th>
-                <th scope="col">Positions</th>
-                <th scope="col">Joined</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paged.rows.map((m) => (
-                <tr key={m.membership_id}>
-                  <td>{m.full_name}</td>
-                  <td>{m.category ?? '—'}</td>
-                  <td className="table__muted">{m.positions.join(', ') || '—'}</td>
-                  <td>{m.join_date ? formatDate(m.join_date) : '—'}</td>
-                  <td>
-                    <Badge tone={m.status === 'active' ? 'success' : 'warning'}>
-                      {m.status === 'active' ? 'Active' : 'Suspended'}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </SectionCard>
-  );
-}
-
-function downloadRoster(data: MembersReport) {
-  downloadCsv(
-    `members-${data.year}.csv`,
-    ['Name', 'Category', 'Positions', 'Joined', 'Status'],
-    data.roster.map((m) => [
-      m.full_name,
-      m.category ?? '',
-      m.positions.join('; '),
-      m.join_date ?? '',
-      m.status,
-    ]),
   );
 }
 

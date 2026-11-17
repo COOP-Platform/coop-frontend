@@ -110,6 +110,8 @@ function EventDetails({
     event.status === 'cancelled' &&
     (event.hidden_from?.length ?? 0) > 0;
   const canCancel = can('event.cancel') && upcoming;
+  // Members see the event and its money report; responses are for organisers.
+  const organises = can('event.create') || can('event.update');
   const { confirmed, apologies, expected, guests } = event.rsvp;
 
   return (
@@ -206,34 +208,36 @@ function EventDetails({
           {event.description && <p className="event-detail__description">{event.description}</p>}
         </SectionCard>
 
-        <SectionCard
-          title="Who is coming"
-          className="event-coming"
-          footer={
-            <EventRsvp key={event.my_rsvp?.responded_at ?? 'none'} event={event} withGuests />
-          }
-        >
-          <dl className="event-counts">
-            <div>
-              <dt>Invited</dt>
-              <dd>{expected}</dd>
-            </div>
-            <div>
-              <dt>Yes{guests > 0 ? ` · +${guests} guest${guests === 1 ? '' : 's'}` : ''}</dt>
-              <dd className="event-counts__yes">{confirmed}</dd>
-            </div>
-            <div>
-              <dt>No</dt>
-              <dd className="event-counts__no">{apologies}</dd>
-            </div>
-          </dl>
-        </SectionCard>
+        {organises && (
+          <SectionCard
+            title="Who is coming"
+            className="event-coming"
+            footer={
+              <EventRsvp key={event.my_rsvp?.responded_at ?? 'none'} event={event} withGuests />
+            }
+          >
+            <dl className="event-counts">
+              <div>
+                <dt>Invited</dt>
+                <dd>{expected}</dd>
+              </div>
+              <div>
+                <dt>Yes{guests > 0 ? ` · +${guests} guest${guests === 1 ? '' : 's'}` : ''}</dt>
+                <dd className="event-counts__yes">{confirmed}</dd>
+              </div>
+              <div>
+                <dt>No</dt>
+                <dd className="event-counts__no">{apologies}</dd>
+              </div>
+            </dl>
+          </SectionCard>
+        )}
 
         <EventBudget event={event} />
 
-        <EventResponses event={event} />
+        {organises && <EventResponses event={event} />}
 
-        {event.hidden_from && event.hidden_from.length > 0 && (
+        {organises && event.hidden_from && event.hidden_from.length > 0 && (
           <SectionCard
             title="Hidden from"
             className="event-detail__wide"

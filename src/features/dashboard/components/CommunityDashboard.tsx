@@ -200,9 +200,12 @@ export function CommunityDashboard() {
           }
         />
 
-        <RecentActivity
-          entries={buildActivity(members, invitations.data ?? [], canInvite).slice(0, 5)}
-        />
+        {/* Recent activity is for whoever manages members, not every member. */}
+        {(canInvite || can('member.update')) && (
+          <RecentActivity
+            entries={buildActivity(members, invitations.data ?? [], canInvite).slice(0, 5)}
+          />
+        )}
       </div>
 
       <RemoveVacantDialog

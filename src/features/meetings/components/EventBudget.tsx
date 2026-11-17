@@ -163,7 +163,8 @@ function BudgetBody({ budgetId }: { budgetId: string }) {
                 c.status === 'open' &&
                 share !== undefined &&
                 (share.outstanding_minor === null || share.outstanding_minor > 0) &&
-                can('finance.contribution.record');
+                can('finance.contribution.record') &&
+                (can('event.create') || can('event.update'));
               return (
                 <li key={c.id} className="event-budget__campaign">
                   <div>

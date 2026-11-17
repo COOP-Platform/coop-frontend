@@ -135,7 +135,9 @@ function MinutesView({
   onEdit: () => void;
   onFinalised: () => void;
 }) {
-  const { communityId } = useWorkspace();
+  const { communityId, can } = useWorkspace();
+  // The roll-call figures are for whoever runs meetings; members read the minutes.
+  const seesAttendance = canWrite || canPublish || can('meeting.attendance.record');
   const [confirming, setConfirming] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -228,7 +230,7 @@ function MinutesView({
               <dd>{minutes.meeting.location}</dd>
             </>
           )}
-          {minutes.quorum && (
+          {seesAttendance && minutes.quorum && (
             <>
               <dt>Attendance</dt>
               <dd>

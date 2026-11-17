@@ -418,12 +418,12 @@ function BalanceBreakdown({ account }: { account: Account }) {
       `Opening ${formatAmount(account.latest_balance.balance_minor)} · ${formatDate(account.latest_balance.as_of)}`,
     );
   }
-  if (account.contributions_since_minor !== 0)
-    lines.push(`+ ${formatAmount(account.contributions_since_minor)} payments`);
-  if (account.movements_since_minor > 0)
-    lines.push(`+ ${formatAmount(account.movements_since_minor)} by hand`);
-  if (account.movements_since_minor < 0)
-    lines.push(`− ${formatAmount(-account.movements_since_minor)} by hand`);
+  // Null for members who may not see balances (they never get here anyway).
+  const payments = account.contributions_since_minor ?? 0;
+  const byHand = account.movements_since_minor ?? 0;
+  if (payments !== 0) lines.push(`+ ${formatAmount(payments)} payments`);
+  if (byHand > 0) lines.push(`+ ${formatAmount(byHand)} by hand`);
+  if (byHand < 0) lines.push(`− ${formatAmount(-byHand)} by hand`);
   if (lines.length === 0) return null;
   return (
     <ul

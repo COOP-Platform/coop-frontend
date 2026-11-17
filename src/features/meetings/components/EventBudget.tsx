@@ -1,19 +1,13 @@
 import { Link } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 
 import {
   Badge,
-  Button,
   EmptyState,
   ErrorState,
   IconBanknote,
-  IconCheckCircle,
   IconFlag,
   IconHandHeart,
   IconPiggyBank,
-  IconPlusCircle,
-  IconSend,
   IconUsers,
   IconWallet,
   LoadingState,
@@ -21,17 +15,8 @@ import {
   StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
-import {
-  BudgetFormDialog,
-  CampaignFormDialog,
-  Money,
-  RecordContributionDialog,
-  RecordExpenseDialog,
-  formatAmount,
-  useBudgetDetail,
-  useCampaigns,
-} from '@/features/finance';
-import type { BudgetDetail, Campaign } from '@/features/finance';
+import { Money, formatAmount, useBudgetDetail, useCampaigns } from '@/features/finance';
+import type { BudgetDetail } from '@/features/finance';
 import { errorMessage } from '@/lib/api/errors';
 
 import type { CommunityEvent } from '../api/events';
@@ -85,86 +70,52 @@ export function EventBudgetStats({ event }: { event: CommunityEvent }) {
 }
 
 /**
- * An event's money, on its page: the budget lines planned for it, and the
- * contributions members are asked for.
- *
- * - No budget yet: whoever manages budgets plans one for this event.
- * - Members pay into its dedicated contributions ("Contribute").
- * - Spending beyond what members raised comes from the community pocket;
- *   whoever records expenses takes it from there ("Use pocket money"),
- *   and someone else approves it as for any expense.
+ * An event's money, on its page: a report only. The budget lines planned for
+ * it and the contributions collected. Deciding about money (planning the
+ * budget, asking members, using pocket money) happens in Finance, which the
+ * "Manage in Finance" / "Plan in Finance" links open on this event's budget.
  */
 export function EventBudget({ event }: { event: CommunityEvent }) {
-  const { communityId, can } = useWorkspace();
-  const queryClient = useQueryClient();
-  const [planning, setPlanning] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-
+  const { can } = useWorkspace();
   const cancelled = event.status === 'cancelled';
   const canPlan = can('finance.budget.manage') && !cancelled;
 
-  // The event carries its budget's id; refresh it once a budget is planned.
-  function refreshEvent(message: string) {
-    setPlanning(false);
-    setNotice(message);
-    void queryClient.invalidateQueries({ queryKey: ['meetings', communityId] });
+  if (event.budget === null) {
+    return (
+      <SectionCard
+        title="Budget"
+        className="event-detail__wide"
+        actions={
+          canPlan ? (
+            <Link
+              to="/finance/planning"
+              search={{ plan: event.id, planTitle: event.title }}
+              className="btn btn--secondary btn--inline"
+            >
+              <IconFlag width={16} height={16} aria-hidden="true" />
+              Plan in Finance
+            </Link>
+          ) : undefined
+        }
+      >
+        <p className="table__muted">{cancelled ? 'Cancelled: no budget.' : 'No budget yet.'}</p>
+      </SectionCard>
+    );
   }
-
-  return (
-    <>
-      {notice && (
-        <div className="notice notice--success event-detail__wide" role="status">
-          <IconCheckCircle width={20} height={20} aria-hidden="true" />
-          <p className="notice__text">{notice}</p>
-        </div>
-      )}
-
-      {event.budget === null ? (
-        <SectionCard
-          title="Budget"
-          className="event-detail__wide"
-          actions={
-            canPlan ? (
-              <Button inline icon={<IconFlag />} onClick={() => setPlanning(true)}>
-                Plan a budget
-              </Button>
-            ) : undefined
-          }
-        >
-          <p className="table__muted">{cancelled ? 'Cancelled: no budget.' : 'No budget yet.'}</p>
-        </SectionCard>
-      ) : !can('finance.budget.view') ? (
-        <SectionCard title="Budget" className="event-detail__wide">
-          <p>{event.budget.title}</p>
-        </SectionCard>
-      ) : (
-        <BudgetBody budgetId={event.budget.id} onNotice={setNotice} />
-      )}
-
-      <BudgetFormDialog
-        open={planning}
-        budget={null}
-        event={{ id: event.id, title: event.title }}
-        onClose={() => setPlanning(false)}
-        onSaved={(message) => refreshEvent(message)}
-      />
-    </>
-  );
+  if (!can('finance.budget.view')) {
+    return (
+      <SectionCard title="Budget" className="event-detail__wide">
+        <p>{event.budget.title}</p>
+      </SectionCard>
+    );
+  }
+  return <BudgetBody budgetId={event.budget.id} />;
 }
 
-function BudgetBody({
-  budgetId,
-  onNotice,
-}: {
-  budgetId: string;
-  onNotice: (message: string) => void;
-}) {
+function BudgetBody({ budgetId }: { budgetId: string }) {
   const { communityId, can } = useWorkspace();
   const budget = useBudgetDetail(communityId, budgetId);
   const campaigns = useCampaigns(communityId, 'open');
-  const [asking, setAsking] = useState(false);
-  const [taking, setTaking] = useState(false);
-  const [paying, setPaying] = useState<Campaign | null>(null);
 
   if (budget.isPending || budget.error) {
     return (
@@ -178,11 +129,8 @@ function BudgetBody({
     );
   }
   const b = budget.data;
-  const open = b.status === 'active';
   // Open contributions for this budget, with the caller's own share.
   const mine = (campaigns.data?.items ?? []).filter((c) => c.budget?.id === b.id);
-  const canAsk = open && can('finance.campaign.manage');
-  const canTake = open && can('finance.expense.record');
 
   return (
     <>
@@ -193,24 +141,15 @@ function BudgetBody({
         className="event-detail__wide"
         flush={b.campaigns.length > 0}
         actions={
-          canAsk || canTake ? (
-            <>
-              {canAsk && (
-                <Button inline icon={<IconPlusCircle />} onClick={() => setAsking(true)}>
-                  Ask members
-                </Button>
-              )}
-              {canTake && (
-                <Button
-                  inline
-                  variant="secondary"
-                  icon={<IconSend />}
-                  onClick={() => setTaking(true)}
-                >
-                  Use pocket money
-                </Button>
-              )}
-            </>
+          can('finance.report.view') ? (
+            <Link
+              to="/finance/planning"
+              search={{ budget: b.id }}
+              className="btn btn--secondary btn--inline"
+            >
+              <IconWallet width={16} height={16} aria-hidden="true" />
+              Manage in Finance
+            </Link>
           ) : undefined
         }
       >
@@ -220,6 +159,11 @@ function BudgetBody({
           <ul className="event-budget__campaigns" role="list">
             {b.campaigns.map((c) => {
               const share = mine.find((m) => m.id === c.id)?.my_share;
+              const owes =
+                c.status === 'open' &&
+                share !== undefined &&
+                (share.outstanding_minor === null || share.outstanding_minor > 0) &&
+                can('finance.contribution.record');
               return (
                 <li key={c.id} className="event-budget__campaign">
                   <div>
@@ -249,15 +193,15 @@ function BudgetBody({
                       </p>
                     )}
                   </div>
-                  {c.status === 'open' && share && can('finance.contribution.record') && (
-                    <Button
-                      inline
-                      variant="secondary"
-                      icon={<IconHandHeart />}
-                      onClick={() => setPaying(mine.find((m) => m.id === c.id) ?? null)}
+                  {owes && (
+                    <Link
+                      to="/finance/my-contributions"
+                      search={{ record: true }}
+                      className="btn btn--secondary btn--inline"
                     >
-                      Contribute
-                    </Button>
+                      <IconHandHeart width={16} height={16} aria-hidden="true" />
+                      Pay
+                    </Link>
                   )}
                 </li>
               );
@@ -265,47 +209,6 @@ function BudgetBody({
           </ul>
         )}
       </SectionCard>
-
-      <CampaignFormDialog
-        open={asking}
-        campaign={null}
-        budgetId={b.id}
-        onClose={() => setAsking(false)}
-        onSaved={(message) => {
-          setAsking(false);
-          onNotice(message);
-        }}
-      />
-      <RecordExpenseDialog
-        open={taking}
-        budgetId={b.id}
-        onClose={() => setTaking(false)}
-        onRecorded={() => {
-          setTaking(false);
-          onNotice('Expense recorded. It counts once someone else approves it.');
-        }}
-      />
-      <RecordContributionDialog
-        open={paying !== null}
-        shares={undefined}
-        initial={
-          paying
-            ? {
-                type: 'dedicated',
-                campaignId: paying.id,
-                amountMinor:
-                  paying.my_share.outstanding_minor ??
-                  paying.my_share.owed_minor ??
-                  paying.amount_minor,
-              }
-            : undefined
-        }
-        onClose={() => setPaying(null)}
-        onRecorded={() => {
-          setPaying(null);
-          onNotice('Contribution sent. It counts once the Treasurer confirms it.');
-        }}
-      />
     </>
   );
 }
@@ -317,8 +220,8 @@ function BudgetLines({ budget: b }: { budget: BudgetDetail }) {
       className="event-detail__wide"
       flush={b.lines.length > 0}
       footer={
-        <Link to="/finance/planning" className="event-budget__more">
-          Open in Budgets
+        <Link to="/finance/planning" search={{ budget: b.id }} className="event-budget__more">
+          Open in Finance
         </Link>
       }
     >

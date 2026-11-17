@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import {
-  Badge,
   Button,
   EmptyState,
   ErrorState,
@@ -16,13 +15,10 @@ import {
   SectionCard,
   Select,
   StatCard,
-  TableFooter,
-  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 import { downloadCsv } from '@/lib/csv';
-import { formatDate } from '@/lib/format/date';
 
 import { MIN_REPORT_YEAR, useMembersReport } from '../api/reports';
 import type { MembersReport } from '../api/reports';
@@ -31,7 +27,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 /**
  * Community app, Reports: members now, who joined and who left in a year,
- * members by category, and the member list (also as CSV). Every member reads
+ * members by category, and the member list as a CSV download. Every member reads
  * it (member.view); invitation figures only for those who may invite.
  */
 export function CommunityReportsPage() {
@@ -175,8 +171,6 @@ function ReportBody({ data }: { data: MembersReport }) {
           )}
         </SectionCard>
       </div>
-
-      <RosterTable roster={data.roster} />
     </>
   );
 }
@@ -206,50 +200,6 @@ function CategoryList({ rows, total }: { rows: MembersReport['by_category']; tot
         </li>
       ))}
     </ul>
-  );
-}
-
-function RosterTable({ roster }: { roster: MembersReport['roster'] }) {
-  const paged = usePaged(roster);
-  return (
-    <SectionCard
-      title="Members"
-      flush
-      footer={roster.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined}
-    >
-      {roster.length === 0 ? (
-        <EmptyState icon={<IconUsers width={28} height={28} />} title="No members yet" />
-      ) : (
-        <div className="table-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Category</th>
-                <th scope="col">Positions</th>
-                <th scope="col">Joined</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paged.rows.map((m) => (
-                <tr key={m.membership_id}>
-                  <td>{m.full_name}</td>
-                  <td>{m.category ?? '—'}</td>
-                  <td className="table__muted">{m.positions.join(', ') || '—'}</td>
-                  <td>{m.join_date ? formatDate(m.join_date) : '—'}</td>
-                  <td>
-                    <Badge tone={m.status === 'active' ? 'success' : 'warning'}>
-                      {m.status === 'active' ? 'Active' : 'Suspended'}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </SectionCard>
   );
 }
 

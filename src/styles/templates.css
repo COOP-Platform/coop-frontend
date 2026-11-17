@@ -443,3 +443,86 @@
   font-weight: 700;
   color: var(--color-text);
 }
+
+/* ---------- Illustrations: empty, 404, error, coming soon ---------- */
+
+.illustration {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+.illustration--sm {
+  max-width: 9rem;
+}
+
+.illustration--md {
+  max-width: 14rem;
+}
+
+.illustration--lg {
+  max-width: 20rem;
+}
+
+.empty-state {
+  padding: var(--space-10, 2.5rem) var(--space-6);
+}
+
+.empty-state__art {
+  margin-bottom: var(--space-4);
+}
+
+/* Drawers, details panels and small cards: a smaller picture. */
+.empty-state--sm,
+.drawer .empty-state,
+.panel-section .empty-state {
+  padding-block: var(--space-6);
+}
+
+.empty-state--sm .empty-state__art,
+.drawer .empty-state__art,
+.panel-section .empty-state__art {
+  max-width: 6rem;
+  margin-bottom: var(--space-2);
+}
+
+.state-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+}
+
+.state-page .illustration {
+  margin-bottom: var(--space-4);
+}
+
+.state-page__title {
+  font-size: var(--text-2xl, 1.5rem);
+  font-weight: 700;
+}
+
+.state-page__message {
+  max-width: 30rem;
+  color: var(--color-text-muted);
+}
+
+.state-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* The 404 and error pages stand alone, centred on the screen. */
+.state-page-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background-color: var(--color-bg, var(--color-surface-muted));
+  padding: var(--space-4);
+}

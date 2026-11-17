@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import {
+  Avatar,
   Badge,
   Button,
   Drawer,
@@ -9,10 +10,8 @@ import {
   IconPlus,
   IconShieldCheck,
   IconTile,
-  IconUser,
   IconUserCheck,
   IconUserOff,
-  IconUserPlus,
   LoadingState,
   PageHeader,
   StatCard,
@@ -177,61 +176,50 @@ function PositionCard({
 
   return (
     <li className="position-card">
-      <div className="position-card__top">
-        <IconTile tone={position.is_admin ? 'brand' : 'neutral'} size="lg">
-          <PositionIcon name={position.name} />
-        </IconTile>
-        <span className="position-card__badges">
+      {/* The whole top of the card opens the details. */}
+      <button type="button" className="position-card__main" onClick={onView}>
+        <span className="position-card__head">
+          <IconTile tone={position.is_admin ? 'brand' : 'neutral'} size="md">
+            <PositionIcon name={position.name} />
+          </IconTile>
+          <span className="position-card__name" title={position.name}>
+            {position.name}
+          </span>
           {position.is_admin && <Badge tone="brand">Admin</Badge>}
-          {vacant ? (
-            <Badge tone="warning" dot>
-              Vacant
-            </Badge>
-          ) : (
-            <Badge tone="success" icon={<IconUser width={14} height={14} />}>
-              {position.holder_count} assigned
-            </Badge>
-          )}
         </span>
-      </div>
+        <span className="position-card__description">
+          {position.description ?? `${position.permissions.length} permissions`}
+        </span>
+      </button>
 
-      <h2 className="position-card__name">{position.name}</h2>
-      <p className="position-card__description">
-        {position.description ?? `${position.permissions.length} permissions`}
-      </p>
+      <div className="position-card__foot">
+        {vacant ? (
+          <Badge tone="warning" dot>
+            Vacant
+          </Badge>
+        ) : first && holdersKnown ? (
+          <span className="position-card__holder">
+            <Avatar name={first.fullName} size="sm" />
+            <span className="position-card__holder-name">{first.fullName}</span>
+            {position.holder_count > 1 && (
+              <span className="table__muted">+{position.holder_count - 1}</span>
+            )}
+          </span>
+        ) : (
+          <span className="position-card__holder table__muted">
+            {position.holder_count} {position.holder_count === 1 ? 'member' : 'members'}
+          </span>
+        )}
 
-      <dl className="position-card__holder">
-        <dt>Holder</dt>
-        <dd>
-          {vacant ? (
-            <span className="position-card__vacant">Open</span>
-          ) : first && holdersKnown ? (
-            <>
-              <span className="status-dot" aria-hidden="true" />
-              {first.fullName}
-              {position.holder_count > 1 && (
-                <span className="table__muted"> +{position.holder_count - 1}</span>
-              )}
-            </>
-          ) : (
-            `${position.holder_count} ${position.holder_count === 1 ? 'member' : 'members'}`
-          )}
-        </dd>
-      </dl>
-
-      <div className="position-card__actions">
-        <Button variant="secondary" size="sm" onClick={onView}>
-          View Details
-        </Button>
         {vacant && canAssign ? (
-          <Button variant="secondary" size="sm" icon={<IconUserPlus />} onClick={onAssign}>
+          <button type="button" className="link-action" onClick={onAssign}>
             Assign
-          </Button>
+          </button>
         ) : (
           canEdit && (
-            <Button variant="secondary" size="sm" onClick={onEdit}>
+            <button type="button" className="link-action" onClick={onEdit}>
               Edit
-            </Button>
+            </button>
           )
         )}
       </div>

@@ -42,37 +42,33 @@ export function CommitteeView() {
         <ul className="position-grid" role="list">
           {seats.map((seat) => (
             <li key={seat.id} className="position-card">
-              <div className="position-card__top">
-                <IconTile tone="neutral" size="lg">
-                  <PositionIcon name={seat.name} />
-                </IconTile>
-                {seat.holders.length === 0 && (
-                  <span className="position-card__badges">
-                    <Badge tone="warning" dot>
-                      Vacant
-                    </Badge>
-                  </span>
+              <div className="position-card__main">
+                <span className="position-card__head">
+                  <IconTile tone="neutral" size="md">
+                    <PositionIcon name={seat.name} />
+                  </IconTile>
+                  <h2 className="position-card__name">{seat.name}</h2>
+                </span>
+                {seat.description && (
+                  <p className="position-card__description">{seat.description}</p>
                 )}
               </div>
-              <h2 className="position-card__name">{seat.name}</h2>
-              {seat.description && <p className="position-card__description">{seat.description}</p>}
-              <dl className="position-card__holder">
-                <dt>{seat.holders.length > 1 ? 'Held by' : 'Holder'}</dt>
-                <dd>
-                  {seat.holders.length === 0 ? (
-                    <span className="position-card__vacant">Open</span>
-                  ) : (
-                    <ul className="committee-holders" role="list">
-                      {seat.holders.map((holder) => (
-                        <li key={holder.membership_id}>
-                          <Avatar name={holder.full_name} size="sm" />
-                          {holder.full_name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </dd>
-              </dl>
+              <div className="position-card__foot">
+                {seat.holders.length === 0 ? (
+                  <Badge tone="warning" dot>
+                    Vacant
+                  </Badge>
+                ) : (
+                  <ul className="committee-holders" role="list">
+                    {seat.holders.map((holder) => (
+                      <li key={holder.membership_id}>
+                        <Avatar name={holder.full_name} size="sm" />
+                        {holder.full_name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </li>
           ))}
         </ul>

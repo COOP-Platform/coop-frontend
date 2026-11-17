@@ -147,9 +147,9 @@ export interface OpenCampaign {
   id: string;
   title: string;
   budget: { id: string; title: string } | null;
-  charge: 'per_share' | 'fixed';
-  /** Per share when per_share, per member when fixed. */
-  amount_minor: number;
+  charge: 'per_share' | 'fixed' | 'any';
+  /** Per share when per_share, per member when fixed; null when any. */
+  amount_minor: number | null;
   currency: string;
   required: boolean;
   due_date: string | null;

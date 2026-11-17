@@ -15,7 +15,7 @@ import {
   StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
-import { Money, formatAmount, useBudgetDetail, useCampaigns } from '@/features/finance';
+import { Money, chargeText, formatAmount, useBudgetDetail, useCampaigns } from '@/features/finance';
 import type { BudgetDetail } from '@/features/finance';
 import { errorMessage } from '@/lib/api/errors';
 
@@ -175,8 +175,7 @@ function BudgetBody({ budgetId }: { budgetId: string }) {
                       <Badge tone="neutral">{c.required ? 'Required' : 'Voluntary'}</Badge>
                     </p>
                     <p className="table__muted">
-                      {formatAmount(c.amount_minor)} {b.currency}{' '}
-                      {c.charge === 'per_share' ? 'per share' : 'per member'}
+                      {chargeText(c.charge, c.amount_minor, b.currency)}
                       {c.due_date && ` · due ${c.due_date}`} · {formatAmount(c.collected_minor)}
                       {c.expected_minor !== null && ` of ${formatAmount(c.expected_minor)}`}{' '}
                       collected

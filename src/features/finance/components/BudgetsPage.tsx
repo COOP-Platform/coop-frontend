@@ -40,8 +40,8 @@ import {
   useUpdateBudget,
   useUpdateCampaign,
 } from '../api/budgets';
-import type { Budget, BudgetDetail, Campaign } from '../api/budgets';
-import { MINOR_PER_MAJOR, formatAmount } from '../format';
+import type { Budget, BudgetDetail, Campaign, CampaignCharge } from '../api/budgets';
+import { MINOR_PER_MAJOR, chargeText, formatAmount } from '../format';
 import { RecordExpenseDialog } from './RecordExpenseDialog';
 import { SuccessNotice } from './SuccessNotice';
 import { SectionHeader } from './SectionHeader';
@@ -816,8 +816,7 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
                 </Badge>
               </div>
               <p className="table__muted">
-                {formatAmount(c.amount_minor)} {c.currency}{' '}
-                {c.charge === 'per_share' ? 'per share' : 'per member'} ·{' '}
+                {chargeText(c.charge, c.amount_minor, c.currency)} ·{' '}
                 {c.required ? 'Required' : 'Voluntary'}
                 {c.due_date && ` · due ${formatDate(c.due_date)}`}
                 {c.budget && ` · for ${c.budget.title}`}
@@ -992,8 +991,11 @@ function CampaignForm({
   const [title, setTitle] = useState(campaign?.title ?? '');
   const [description, setDescription] = useState('');
   const [budgetId, setBudgetId] = useState(fixedBudget ?? campaign?.budget?.id ?? '');
-  const [charge, setCharge] = useState<'per_share' | 'fixed'>(campaign?.charge ?? 'per_share');
-  const [amount, setAmount] = useState(campaign ? toRwf(campaign.amount_minor) : '');
+  const [charge, setCharge] = useState<CampaignCharge>(campaign?.charge ?? 'per_share');
+  const [amount, setAmount] = useState(
+    campaign && campaign.amount_minor !== null ? toRwf(campaign.amount_minor) : '',
+  );
+  const anyAmount = charge === 'any';
   const [required, setRequired] = useState(campaign?.required ?? true);
   const [dueDate, setDueDate] = useState(campaign?.due_date ?? '');
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -1003,8 +1005,8 @@ function CampaignForm({
     event.preventDefault();
     const problems: Record<string, string> = {};
     if (title.trim().length < 3) problems.title = 'Give it a title of at least 3 characters.';
-    if (amount.trim() === '' || toMinor(amount) < 0)
-      problems.amount = 'Enter an amount, 0 or more.';
+    if (!anyAmount && (amount.trim() === '' || toMinor(amount) <= 0))
+      problems.amount = 'Enter the amount each member pays.';
     if (dueDate && dueDate < today()) problems.due_date = 'The due date is today or later.';
     setErrors(problems);
     if (Object.keys(problems).length > 0 || !communityId) return;
@@ -1014,7 +1016,7 @@ function CampaignForm({
       title: title.trim(),
       description: description.trim() || null,
       charge,
-      amount_minor: toMinor(amount),
+      amount_minor: anyAmount ? null : toMinor(amount),
       required,
       due_date: dueDate || null,
     };
@@ -1081,22 +1083,25 @@ function CampaignForm({
         <Select
           label="How much each member pays"
           value={charge}
-          onChange={(event) => setCharge(event.target.value as 'per_share' | 'fixed')}
+          onChange={(event) => setCharge(event.target.value as CampaignCharge)}
           options={[
             { value: 'per_share', label: 'An amount per share' },
             { value: 'fixed', label: 'The same amount per member' },
+            { value: 'any', label: 'Any amount (each member decides)' },
           ]}
         />
-        <Input
-          label={charge === 'per_share' ? 'Amount per share (RWF)' : 'Amount per member (RWF)'}
-          type="number"
-          min={0}
-          step="any"
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          error={errors.amount}
-          required
-        />
+        {!anyAmount && (
+          <Input
+            label={charge === 'per_share' ? 'Amount per share (RWF)' : 'Amount per member (RWF)'}
+            type="number"
+            min={1}
+            step="any"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            error={errors.amount}
+            required
+          />
+        )}
       </div>
       <Input
         label="Due date"

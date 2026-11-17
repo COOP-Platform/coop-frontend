@@ -16,6 +16,9 @@ import type { MemberRef } from './types';
  * finance.budget.manage / finance.campaign.manage change them.
  */
 
+/** per_share: amount x shares; fixed: the same per member; any: each member decides. */
+export type CampaignCharge = 'per_share' | 'fixed' | 'any';
+
 export interface Budget {
   id: string;
   title: string;
@@ -54,8 +57,9 @@ export interface BudgetDetail extends Budget {
     id: string;
     title: string;
     status: 'open' | 'closed';
-    charge: 'per_share' | 'fixed';
-    amount_minor: number;
+    charge: CampaignCharge;
+    /** Null when any amount. */
+    amount_minor: number | null;
     required: boolean;
     due_date: string | null;
     collected_minor: number;
@@ -137,9 +141,9 @@ export interface Campaign {
   id: string;
   title: string;
   budget: { id: string; title: string } | null;
-  charge: 'per_share' | 'fixed';
-  /** Per share when per_share, per member when fixed. */
-  amount_minor: number;
+  charge: CampaignCharge;
+  /** Per share when per_share, per member when fixed; null when any. */
+  amount_minor: number | null;
   currency: string;
   /** False: voluntary, nothing is owed. */
   required: boolean;
@@ -184,8 +188,9 @@ export interface CampaignInput {
   communityId: string;
   title?: string;
   description?: string | null;
-  charge?: 'per_share' | 'fixed';
-  amount_minor?: number;
+  charge?: CampaignCharge;
+  /** Left out for any amount. */
+  amount_minor?: number | null;
   required?: boolean;
   due_date?: string | null;
   budget_id?: string | null;

@@ -58,6 +58,14 @@ export function MeetingDetailPage({
 }) {
   const { communityId, can } = useWorkspace();
   const meeting = useMeeting(communityId, meetingId);
+  // Attendance is for whoever runs meetings (Secretary, admins); members see
+  // the agenda and the published minutes.
+  const runsMeetings =
+    can('meeting.attendance.record') ||
+    can('meeting.minutes.write') ||
+    can('meeting.minutes.publish');
+  const tabs = runsMeetings ? TABS : TABS.filter((t) => t.value !== 'attendance');
+  const shown: MeetingTab = !runsMeetings && tab === 'attendance' ? 'agenda' : tab;
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -154,11 +162,11 @@ export function MeetingDetailPage({
         </div>
       )}
 
-      <SegmentedControl label="Meeting" options={TABS} value={tab} onChange={onTabChange} />
+      <SegmentedControl label="Meeting" options={tabs} value={shown} onChange={onTabChange} />
 
-      {tab === 'agenda' && <AgendaTab meeting={m} />}
-      {tab === 'attendance' && <MeetingAttendance meeting={m} />}
-      {tab === 'minutes' && <MeetingMinutesTab meetingId={m.id} />}
+      {shown === 'agenda' && <AgendaTab meeting={m} />}
+      {shown === 'attendance' && <MeetingAttendance meeting={m} />}
+      {shown === 'minutes' && <MeetingMinutesTab meetingId={m.id} />}
 
       <MeetingFormDialog
         open={editing}

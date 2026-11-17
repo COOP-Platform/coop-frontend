@@ -215,12 +215,14 @@ export function FinanceDashboard() {
         </div>
       </div>
 
-      {summary.recent_activity !== null && (
-        <RecentFinancialActivity
-          entries={summary.recent_activity}
-          showAllLink={canViewContributions}
-        />
-      )}
+      {/* Recent activity is for whoever reviews money, not every member. */}
+      {summary.recent_activity !== null &&
+        (can('finance.contribution.confirm') || can('finance.expense.approve')) && (
+          <RecentFinancialActivity
+            entries={summary.recent_activity}
+            showAllLink={canViewContributions}
+          />
+        )}
     </div>
   );
 }

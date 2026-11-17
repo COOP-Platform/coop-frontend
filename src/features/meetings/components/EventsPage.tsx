@@ -75,6 +75,8 @@ export function EventsPage({
   onTabChange: (tab: EventsTab) => void;
 }) {
   const { communityId, can } = useWorkspace();
+  // Members see each event and its report; who is coming is for organisers.
+  const organises = can('event.create') || can('event.update');
   const navigate = useNavigate();
   const events = useEvents(communityId, FILTER[tab]);
   const [creating, setCreating] = useState(false);
@@ -127,19 +129,23 @@ export function EventsPage({
                   <th scope="col">Event</th>
                   <th scope="col">When</th>
                   <th scope="col">Place</th>
-                  <th scope="col" className="num">
-                    Yes
-                  </th>
-                  <th scope="col" className="num">
-                    No
-                  </th>
+                  {organises && (
+                    <>
+                      <th scope="col" className="num">
+                        Yes
+                      </th>
+                      <th scope="col" className="num">
+                        No
+                      </th>
+                    </>
+                  )}
                   <th scope="col">Status</th>
-                  <th scope="col">You</th>
+                  {organises && <th scope="col">You</th>}
                 </tr>
               </thead>
               <tbody>
                 {paged.rows.map((event) => (
-                  <EventRow key={event.id} event={event} />
+                  <EventRow key={event.id} event={event} organises={organises} />
                 ))}
               </tbody>
             </table>
@@ -160,7 +166,7 @@ export function EventsPage({
   );
 }
 
-function EventRow({ event }: { event: CommunityEvent }) {
+function EventRow({ event, organises }: { event: CommunityEvent; organises: boolean }) {
   const { confirmed, apologies, guests } = event.rsvp;
   const cancelled = event.status === 'cancelled';
   return (
@@ -185,30 +191,36 @@ function EventRow({ event }: { event: CommunityEvent }) {
         {formatMeetingDay(event.starts_at)} · {formatMeetingTime(event.starts_at)}
       </td>
       <td>{event.venue ?? <span className="table__muted">—</span>}</td>
-      <td className="num">
-        {cancelled ? '—' : confirmed}
-        {!cancelled && guests > 0 && <span className="table__muted"> +{guests}</span>}
-      </td>
-      <td className="num">{cancelled ? '—' : apologies}</td>
+      {organises && (
+        <>
+          <td className="num">
+            {cancelled ? '—' : confirmed}
+            {!cancelled && guests > 0 && <span className="table__muted"> +{guests}</span>}
+          </td>
+          <td className="num">{cancelled ? '—' : apologies}</td>
+        </>
+      )}
       <td>
         <span className="event-row__badges">
           <EventStatusBadge event={event} />
           <HiddenBadge event={event} />
         </span>
       </td>
-      <td>
-        {event.status === 'scheduled' ? (
-          <EventRsvp event={event} compact />
-        ) : (
-          <span className="table__muted">
-            {cancelled || !event.my_rsvp
-              ? '—'
-              : event.my_rsvp.response === 'confirmed'
-                ? 'Said yes'
-                : 'Said no'}
-          </span>
-        )}
-      </td>
+      {organises && (
+        <td>
+          {event.status === 'scheduled' ? (
+            <EventRsvp event={event} compact />
+          ) : (
+            <span className="table__muted">
+              {cancelled || !event.my_rsvp
+                ? '—'
+                : event.my_rsvp.response === 'confirmed'
+                  ? 'Said yes'
+                  : 'Said no'}
+            </span>
+          )}
+        </td>
+      )}
     </tr>
   );
 }

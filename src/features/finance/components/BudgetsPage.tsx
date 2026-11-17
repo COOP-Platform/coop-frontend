@@ -12,6 +12,7 @@ import {
   ErrorState,
   IconCalendar,
   IconFlag,
+  IconFile,
   IconHandHeart,
   IconPencil,
   IconPlus,
@@ -42,6 +43,7 @@ import {
 } from '../api/budgets';
 import type { Budget, BudgetDetail, Campaign, CampaignCharge } from '../api/budgets';
 import { MINOR_PER_MAJOR, chargeText, formatAmount } from '../format';
+import { CampaignPayments } from './CampaignPayments';
 import { RecordExpenseDialog } from './RecordExpenseDialog';
 import { SuccessNotice } from './SuccessNotice';
 import { SectionHeader } from './SectionHeader';
@@ -767,6 +769,7 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
   const [filter, setFilter] = useState<CampaignFilter>('open');
   const [editing, setEditing] = useState<Campaign | 'new' | null>(null);
   const [closingId, setClosingId] = useState<Campaign | null>(null);
+  const [paymentsOf, setPaymentsOf] = useState<Campaign | null>(null);
   const close = useCloseCampaign();
   const campaigns = useCampaigns(communityId, filter);
 
@@ -839,6 +842,7 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
               <p className="table__muted">
                 {c.paid_count} of {c.member_count} members have paid
                 {c.pending_minor > 0 &&
+                  can('finance.contribution.confirm') &&
                   ` · ${formatAmount(c.pending_minor)} ${c.currency} awaiting review`}
               </p>
               <div className="campaign-mine">
@@ -854,6 +858,15 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
                       }`}
               </div>
               <div className="review-actions">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  inline
+                  icon={<IconFile />}
+                  onClick={() => setPaymentsOf(c)}
+                >
+                  Payments
+                </Button>
                 {c.status === 'open' &&
                   can('finance.contribution.record') &&
                   (c.my_share.outstanding_minor ?? 1) > 0 && (
@@ -886,6 +899,14 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
           ))}
         </ul>
       )}
+
+      <Drawer
+        open={paymentsOf !== null}
+        onClose={() => setPaymentsOf(null)}
+        label="Payments into the dedicated contribution"
+      >
+        {paymentsOf && <CampaignPayments campaign={paymentsOf} />}
+      </Drawer>
 
       <CampaignFormDialog
         open={editing !== null}

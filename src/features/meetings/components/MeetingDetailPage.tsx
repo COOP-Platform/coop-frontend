@@ -18,7 +18,7 @@ import {
   SegmentedControl,
   Textarea,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { runsMeetings, useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
@@ -60,12 +60,9 @@ export function MeetingDetailPage({
   const meeting = useMeeting(communityId, meetingId);
   // Attendance is for whoever runs meetings (Secretary, admins); members see
   // the agenda and the published minutes.
-  const runsMeetings =
-    can('meeting.attendance.record') ||
-    can('meeting.minutes.write') ||
-    can('meeting.minutes.publish');
-  const tabs = runsMeetings ? TABS : TABS.filter((t) => t.value !== 'attendance');
-  const shown: MeetingTab = !runsMeetings && tab === 'attendance' ? 'agenda' : tab;
+  const runs = runsMeetings(can);
+  const tabs = runs ? TABS : TABS.filter((t) => t.value !== 'attendance');
+  const shown: MeetingTab = !runs && tab === 'attendance' ? 'agenda' : tab;
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);

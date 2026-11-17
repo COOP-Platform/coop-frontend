@@ -15,7 +15,7 @@ import {
   LoadingState,
   SectionCard,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { runsMeetings, useWorkspace } from '@/features/auth';
 import { ApiError, apiDownload } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatLongDate } from '@/lib/format/date';
@@ -137,7 +137,7 @@ function MinutesView({
 }) {
   const { communityId, can } = useWorkspace();
   // The roll-call figures are for whoever runs meetings; members read the minutes.
-  const seesAttendance = canWrite || canPublish || can('meeting.attendance.record');
+  const seesAttendance = canWrite || canPublish || runsMeetings(can);
   const [confirming, setConfirming] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);

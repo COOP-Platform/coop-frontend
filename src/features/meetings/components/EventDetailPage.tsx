@@ -22,7 +22,7 @@ import {
   SectionCard,
   Textarea,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { organisesEvents, useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatLongDate } from '@/lib/format/date';
@@ -111,7 +111,7 @@ function EventDetails({
     (event.hidden_from?.length ?? 0) > 0;
   const canCancel = can('event.cancel') && upcoming;
   // Members see the event and its money report; responses are for organisers.
-  const organises = can('event.create') || can('event.update');
+  const organises = organisesEvents(can);
   const { confirmed, apologies, expected, guests } = event.rsvp;
 
   return (

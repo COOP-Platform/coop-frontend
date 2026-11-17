@@ -10,7 +10,7 @@ interface Search {
 
 export const Route = createFileRoute('/meetings/reports')({
   // Same permission as the sidebar entry (MEETINGS_APP); without it, the dashboard.
-  beforeLoad: requirePermission('meeting.attendance.record', '/meetings'),
+  beforeLoad: requirePermission(['meeting.attendance.record', 'audit.view'], '/meetings'),
   validateSearch: (raw: Record<string, unknown>): Search => ({
     tab: raw.tab === 'summary' ? 'summary' : undefined,
   }),

@@ -19,7 +19,7 @@ import {
   Select,
   StatCard,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { seesAccountBalances, useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
@@ -73,7 +73,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
   const canManage = can('finance.account.manage');
   // Balances, the reconciliation and history are for the Treasurer; members
   // see which accounts to pay into.
-  const seesDetails = canManage || can('finance.contribution.confirm');
+  const seesDetails = seesAccountBalances(can);
   const accounts = useAccounts(communityId);
   const wallet = useCashFlow(communityId, THIS_MONTH, THIS_MONTH);
   const [notice, setNotice] = useState<string | null>(null);

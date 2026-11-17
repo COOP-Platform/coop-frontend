@@ -1,4 +1,13 @@
 // Public surface of the Auth module.
+export {
+  AUDIT,
+  organisesEvents,
+  reviewsContributions,
+  reviewsExpenses,
+  reviewsIncome,
+  runsMeetings,
+  seesAccountBalances,
+} from './oversight';
 export { AuthLayout } from './components/AuthLayout';
 export { LoginForm } from './components/LoginForm';
 export { SignUpForm } from './components/SignUpForm';

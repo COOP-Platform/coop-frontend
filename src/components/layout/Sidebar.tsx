@@ -17,7 +17,13 @@ export function Sidebar({ app, onNavigate }: SidebarProps) {
   const navigate = useNavigate();
   const { can, membership } = useWorkspace();
   // Pages a member has no use for are left out rather than shown and refused.
-  const items = app.nav.filter((item) => item.permission === undefined || can(item.permission));
+  const items = app.nav.filter(
+    (item) =>
+      item.permission === undefined ||
+      (typeof item.permission === 'string'
+        ? can(item.permission)
+        : item.permission.some((code) => can(code))),
+  );
 
   function handleLogout() {
     clearSession();

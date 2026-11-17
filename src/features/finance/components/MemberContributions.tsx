@@ -92,10 +92,7 @@ export function MonthOverview({ month, onMonthChange }: MonthProps) {
           <ErrorState message={errorMessage(summaryQuery.error)} />
         )
       ) : (
-        <MonthCards
-          summary={summaryQuery.data.summary}
-          showPending={rights.canConfirm || rights.canReject}
-        />
+        <MonthCards summary={summaryQuery.data.summary} showPending={rights.oversees} />
       )}
 
       <RemindersDialog
@@ -269,7 +266,7 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
   const rights = useReviewRights();
   // Only those who review payments see pending, rejected and reversed ones;
   // everyone else sees who paid.
-  const reviews = rights.canConfirm || rights.canReject;
+  const reviews = rights.oversees;
   const [chosenStatus, setStatus] = useState<StatusFilter>('all');
   const status: StatusFilter = reviews ? chosenStatus : 'confirmed';
   const [search, setSearch] = useState('');

@@ -7,6 +7,7 @@ import {
   EmptyState,
   ErrorState,
   IconBadgeCheck,
+  IconHistory,
   IconCheckCircle,
   IconDownload,
   IconEye,
@@ -113,6 +114,13 @@ export function MyContributions({
       (typeFilter === 'all' || item.contribution_type === typeFilter),
   );
   const filtering = statusFilter !== 'all' || typeFilter !== 'all';
+  // Ibirarane paid this year: arrears payments the Treasurer confirmed, and those still waiting.
+  const arrearsPayments = (items ?? []).filter((item) => item.contribution_type === 'arrears');
+  const arrearsPaid = arrearsPayments.filter((item) => item.status === 'confirmed');
+  const arrearsPaidMinor = arrearsPaid.reduce((sum, item) => sum + item.amount_minor, 0);
+  const arrearsWaitingMinor = arrearsPayments
+    .filter((item) => item.status === 'pending')
+    .reduce((sum, item) => sum + item.amount_minor, 0);
 
   function openRecord(initial: RecordInitial | undefined) {
     setPrefill(initial);
@@ -194,7 +202,7 @@ export function MyContributions({
         </p>
       )}
 
-      <div className="stat-grid stat-grid--three">
+      <div className="stat-grid my-contributions__stats">
         <StatCard
           variant="tint"
           label="Total Contributed"
@@ -206,6 +214,18 @@ export function MyContributions({
           }
           icon={<IconWallet />}
           tone="brand"
+        />
+        <StatCard
+          variant="tint"
+          label="Ibirarane Paid"
+          value={<Money minor={arrearsPaidMinor} currency={currency} />}
+          caption={
+            arrearsWaitingMinor > 0
+              ? `${arrearsPaid.length} payment${arrearsPaid.length === 1 ? '' : 's'} · ${formatAmount(arrearsWaitingMinor)} ${currency} awaiting the Treasurer`
+              : `${arrearsPaid.length} arrears payment${arrearsPaid.length === 1 ? '' : 's'} in ${year}`
+          }
+          icon={<IconHistory />}
+          tone="neutral"
         />
         <StatCard
           variant="tint"

@@ -71,6 +71,9 @@ const NUMBER_LABEL: Record<AccountKind, string | null> = {
 export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
   const { communityId, can } = useWorkspace();
   const canManage = can('finance.account.manage');
+  // Balances, the reconciliation and history are for the Treasurer; members
+  // see which accounts to pay into.
+  const seesDetails = canManage || can('finance.contribution.confirm');
   const accounts = useAccounts(communityId);
   const wallet = useCashFlow(communityId, THIS_MONTH, THIS_MONTH);
   const [notice, setNotice] = useState<string | null>(null);
@@ -108,38 +111,40 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
         )
       ) : (
         <>
-          <section className="stat-grid" aria-label="Accounts against the records">
-            <StatCard
-              label="In the accounts"
-              value={<Money minor={total} />}
-              caption={`${withBalance.length} account${withBalance.length === 1 ? '' : 's'}`}
-              icon={<IconInstitution />}
-              tone="info"
-            />
-            <StatCard
-              label="In the records"
-              value={walletMinor === undefined ? '…' : <Money minor={walletMinor} />}
-              caption="Community pocket"
-              icon={<IconWallet />}
-              tone="brand"
-            />
-            <StatCard
-              label="Difference"
-              value={
-                gap === null ? '—' : gap === 0 ? 'They match' : <Money minor={Math.abs(gap)} />
-              }
-              caption={
-                gap === null || gap === 0 ? undefined : (
-                  <b className="caption-warn">
-                    {gap > 0 ? 'Accounts hold more' : 'Accounts hold less'}
-                  </b>
-                )
-              }
-              icon={<IconHistory />}
-              tone={gap !== null && gap !== 0 ? 'warning' : 'neutral'}
-              emphasis={gap !== null && gap !== 0}
-            />
-          </section>
+          {seesDetails && (
+            <section className="stat-grid" aria-label="Accounts against the records">
+              <StatCard
+                label="In the accounts"
+                value={<Money minor={total} />}
+                caption={`${withBalance.length} account${withBalance.length === 1 ? '' : 's'}`}
+                icon={<IconInstitution />}
+                tone="info"
+              />
+              <StatCard
+                label="In the records"
+                value={walletMinor === undefined ? '…' : <Money minor={walletMinor} />}
+                caption="Community pocket"
+                icon={<IconWallet />}
+                tone="brand"
+              />
+              <StatCard
+                label="Difference"
+                value={
+                  gap === null ? '—' : gap === 0 ? 'They match' : <Money minor={Math.abs(gap)} />
+                }
+                caption={
+                  gap === null || gap === 0 ? undefined : (
+                    <b className="caption-warn">
+                      {gap > 0 ? 'Accounts hold more' : 'Accounts hold less'}
+                    </b>
+                  )
+                }
+                icon={<IconHistory />}
+                tone={gap !== null && gap !== 0 ? 'warning' : 'neutral'}
+                emphasis={gap !== null && gap !== 0}
+              />
+            </section>
+          )}
 
           {active.length === 0 ? (
             <section className="card">
@@ -167,34 +172,38 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
                       {account.holder_name && <p className="table__muted">{account.holder_name}</p>}
                     </div>
                   </div>
-                  <p className="account-card__balance">
-                    {account.balance_minor === null ? (
-                      <span className="table__muted">No balance yet</span>
-                    ) : (
-                      <>
-                        {formatAmount(account.balance_minor)}{' '}
-                        <span className="money__unit">{account.currency}</span>
-                      </>
-                    )}
-                  </p>
-                  <BalanceBreakdown account={account} />
-                  <div className="review-actions">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      inline
-                      icon={<IconHistory />}
-                      onClick={() => setHistory(account)}
-                    >
-                      History
-                    </Button>
-                  </div>
+                  {seesDetails && (
+                    <>
+                      <p className="account-card__balance">
+                        {account.balance_minor === null ? (
+                          <span className="table__muted">No balance yet</span>
+                        ) : (
+                          <>
+                            {formatAmount(account.balance_minor)}{' '}
+                            <span className="money__unit">{account.currency}</span>
+                          </>
+                        )}
+                      </p>
+                      <BalanceBreakdown account={account} />
+                      <div className="review-actions">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          inline
+                          icon={<IconHistory />}
+                          onClick={() => setHistory(account)}
+                        >
+                          History
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
           )}
 
-          {retired.length > 0 && (
+          {seesDetails && retired.length > 0 && (
             <p className="table__muted">Retired: {retired.map((a) => a.name).join(', ')}</p>
           )}
         </>

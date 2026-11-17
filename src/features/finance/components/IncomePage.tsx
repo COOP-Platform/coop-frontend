@@ -82,7 +82,10 @@ export function IncomePage({
 
   const [month, setMonth] = useState(THIS_MONTH);
   const [source, setSource] = useState<SourceFilter>('all');
-  const [status, setStatus] = useState<StatusFilter>('all');
+  // Only approvers see pending, rejected and reversed income.
+  const reviews = can('finance.income.approve');
+  const [chosenStatus, setStatus] = useState<StatusFilter>('all');
+  const status: StatusFilter = reviews ? chosenStatus : 'recorded';
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Income | null>(null);
@@ -139,27 +142,31 @@ export function IncomePage({
           icon={<IconWallet />}
           tone="brand"
         />
-        <StatCard
-          label="Waiting for approval"
-          value={<Money minor={summary.pending_minor} currency={summary.currency} />}
-          caption={
-            summary.pending_count > 0 ? (
-              <b className="caption-warn">{summary.pending_count} pending</b>
-            ) : (
-              'None pending'
-            )
-          }
-          icon={<IconClipboardClock />}
-          tone="warning"
-          emphasis={summary.pending_count > 0}
-        />
-        <StatCard
-          label="Reversed"
-          value={summary.reversed_count}
-          caption="Kept on record"
-          icon={<IconHistory />}
-          tone="neutral"
-        />
+        {reviews && (
+          <StatCard
+            label="Waiting for approval"
+            value={<Money minor={summary.pending_minor} currency={summary.currency} />}
+            caption={
+              summary.pending_count > 0 ? (
+                <b className="caption-warn">{summary.pending_count} pending</b>
+              ) : (
+                'None pending'
+              )
+            }
+            icon={<IconClipboardClock />}
+            tone="warning"
+            emphasis={summary.pending_count > 0}
+          />
+        )}
+        {reviews && (
+          <StatCard
+            label="Reversed"
+            value={summary.reversed_count}
+            caption="Kept on record"
+            icon={<IconHistory />}
+            tone="neutral"
+          />
+        )}
       </div>
 
       <SectionCard
@@ -185,16 +192,18 @@ export function IncomePage({
                 }}
               />
             </div>
-            <Select
-              label="Status"
-              labelHidden
-              options={STATUS_OPTIONS}
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value as StatusFilter);
-                setPage(1);
-              }}
-            />
+            {reviews && (
+              <Select
+                label="Status"
+                labelHidden
+                options={STATUS_OPTIONS}
+                value={status}
+                onChange={(event) => {
+                  setStatus(event.target.value as StatusFilter);
+                  setPage(1);
+                }}
+              />
+            )}
             <Select
               label="Source"
               labelHidden

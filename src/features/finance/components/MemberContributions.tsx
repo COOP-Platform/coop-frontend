@@ -92,7 +92,10 @@ export function MonthOverview({ month, onMonthChange }: MonthProps) {
           <ErrorState message={errorMessage(summaryQuery.error)} />
         )
       ) : (
-        <MonthCards summary={summaryQuery.data.summary} />
+        <MonthCards
+          summary={summaryQuery.data.summary}
+          showPending={rights.canConfirm || rights.canReject}
+        />
       )}
 
       <RemindersDialog
@@ -107,8 +110,11 @@ export function MonthOverview({ month, onMonthChange }: MonthProps) {
 
 function MonthCards({
   summary,
+  showPending,
 }: {
   summary: NonNullable<ReturnType<typeof useCommunityContributions>['data']>['summary'];
+  /** Only for those who review payments. */
+  showPending: boolean;
 }) {
   const currency = summary.currency;
   return (
@@ -131,14 +137,16 @@ function MonthCards({
         icon={<IconBadgeCheck />}
         tone="brand"
       />
-      <StatCard
-        label="Pending"
-        value={<Money minor={summary.pending_minor} currency={currency} />}
-        caption="Not yet confirmed"
-        icon={<IconClipboardClock />}
-        tone="warning"
-        emphasis={summary.pending_minor > 0}
-      />
+      {showPending && (
+        <StatCard
+          label="Pending"
+          value={<Money minor={summary.pending_minor} currency={currency} />}
+          caption="Not yet confirmed"
+          icon={<IconClipboardClock />}
+          tone="warning"
+          emphasis={summary.pending_minor > 0}
+        />
+      )}
       <StatCard
         label="Members paid"
         value={`${summary.paid_count} / ${summary.member_count}`}
@@ -258,7 +266,12 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
 export function AllPayments({ month, onMonthChange }: MonthProps) {
   const searchId = useId();
   const { communityId } = useWorkspace();
-  const [status, setStatus] = useState<StatusFilter>('all');
+  const rights = useReviewRights();
+  // Only those who review payments see pending, rejected and reversed ones;
+  // everyone else sees who paid.
+  const reviews = rights.canConfirm || rights.canReject;
+  const [chosenStatus, setStatus] = useState<StatusFilter>('all');
+  const status: StatusFilter = reviews ? chosenStatus : 'confirmed';
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Contribution | null>(null);
@@ -287,7 +300,7 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
       {notice && <SuccessNotice text={notice} />}
 
       <SectionCard
-        title={`Payments · ${label}`}
+        title={reviews ? `Payments · ${label}` : `Paid · ${label}`}
         flush
         actions={
           <>
@@ -310,16 +323,18 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
                 }}
               />
             </div>
-            <Select
-              label="Status"
-              labelHidden
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value as StatusFilter);
-                setPage(1);
-              }}
-              options={STATUS_OPTIONS}
-            />
+            {reviews && (
+              <Select
+                label="Status"
+                labelHidden
+                value={status}
+                onChange={(event) => {
+                  setStatus(event.target.value as StatusFilter);
+                  setPage(1);
+                }}
+                options={STATUS_OPTIONS}
+              />
+            )}
             <MonthPicker
               value={month}
               labelHidden

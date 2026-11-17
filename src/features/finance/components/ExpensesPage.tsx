@@ -77,7 +77,10 @@ export function ExpensesPage({
   const canRecord = can('finance.expense.record');
 
   const [month, setMonth] = useState(THIS_MONTH);
-  const [status, setStatus] = useState<StatusFilter>('all');
+  // Only approvers see pending, rejected and reversed expenses.
+  const reviews = can('finance.expense.approve');
+  const [chosenStatus, setStatus] = useState<StatusFilter>('all');
+  const status: StatusFilter = reviews ? chosenStatus : 'approved';
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Expense | null>(null);
@@ -160,20 +163,22 @@ export function ExpensesPage({
           icon={<IconBadgeCheck />}
           tone="info"
         />
-        <StatCard
-          label="Awaiting approval"
-          value={<Money minor={summary.pending_minor} currency={currency} />}
-          caption={
-            summary.pending_count > 0 ? (
-              <b className="caption-warn">{summary.pending_count} pending</b>
-            ) : (
-              'None pending'
-            )
-          }
-          icon={<IconClipboardClock />}
-          tone="warning"
-          emphasis={summary.pending_count > 0}
-        />
+        {reviews && (
+          <StatCard
+            label="Awaiting approval"
+            value={<Money minor={summary.pending_minor} currency={currency} />}
+            caption={
+              summary.pending_count > 0 ? (
+                <b className="caption-warn">{summary.pending_count} pending</b>
+              ) : (
+                'None pending'
+              )
+            }
+            icon={<IconClipboardClock />}
+            tone="warning"
+            emphasis={summary.pending_count > 0}
+          />
+        )}
         <StatCard
           label="Recorded"
           value={summary.count}
@@ -208,16 +213,18 @@ export function ExpensesPage({
                 }}
               />
             </div>
-            <Select
-              label="Status"
-              labelHidden
-              options={STATUS_OPTIONS}
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value as StatusFilter);
-                setPage(1);
-              }}
-            />
+            {reviews && (
+              <Select
+                label="Status"
+                labelHidden
+                options={STATUS_OPTIONS}
+                value={status}
+                onChange={(event) => {
+                  setStatus(event.target.value as StatusFilter);
+                  setPage(1);
+                }}
+              />
+            )}
           </>
         }
         flush

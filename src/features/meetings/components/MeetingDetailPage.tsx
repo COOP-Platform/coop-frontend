@@ -14,6 +14,7 @@ import {
   IconTile,
   LoadingState,
   PageHeader,
+  SectionCard,
   SegmentedControl,
   Textarea,
 } from '@/components/ui';
@@ -64,7 +65,7 @@ export function MeetingDetailPage({
   const back = (
     <Link to="/meetings/list" className="meeting-back">
       <IconArrowLeft aria-hidden="true" />
-      All meetings
+      Meetings
     </Link>
   );
 
@@ -83,11 +84,7 @@ export function MeetingDetailPage({
         {back}
         <ErrorState
           title={missing ? 'Meeting not found' : 'Could not load this meeting'}
-          message={
-            missing
-              ? 'It may have been removed, or it belongs to another community.'
-              : errorMessage(meeting.error)
-          }
+          message={missing ? 'It may have been removed.' : errorMessage(meeting.error)}
         />
       </div>
     );
@@ -100,9 +97,6 @@ export function MeetingDetailPage({
     <div className="page">
       {back}
       <PageHeader
-        eyebrow={
-          <span className="eyebrow eyebrow--muted">{MEETING_TYPE_LABELS[m.meeting_type]}</span>
-        }
         title={m.title}
         badge={<MeetingStatusBadge meeting={m} />}
         subtitle={`${formatMeetingDay(m.scheduled_at)} · ${formatMeetingTimes(m)}${m.location ? ` · ${m.location}` : ''}`}
@@ -142,10 +136,7 @@ export function MeetingDetailPage({
       {notice && (
         <div className="notice notice--success" role="status">
           <IconCheckCircle width={20} height={20} aria-hidden="true" />
-          <div>
-            <p className="notice__title">Done</p>
-            <p className="notice__text">{notice}</p>
-          </div>
+          <p className="notice__text">{notice}</p>
         </div>
       )}
 
@@ -153,12 +144,12 @@ export function MeetingDetailPage({
         <div className="notice notice--warning" role="note">
           <IconBan width={20} height={20} aria-hidden="true" />
           <div>
-            <p className="notice__title">This meeting was cancelled</p>
-            <p className="notice__text">
-              {m.cancel_reason ?? 'No reason given.'}
-              {m.cancelled_by &&
-                ` Cancelled by ${m.cancelled_by.full_name}${m.cancelled_at ? ` on ${formatDate(m.cancelled_at)}` : ''}.`}
+            <p className="notice__title">
+              Cancelled
+              {m.cancelled_by && ` by ${m.cancelled_by.full_name}`}
+              {m.cancelled_at && ` on ${formatDate(m.cancelled_at)}`}
             </p>
+            {m.cancel_reason && <p className="notice__text">{m.cancel_reason}</p>}
           </div>
         </div>
       )}
@@ -192,83 +183,68 @@ export function MeetingDetailPage({
 }
 
 function AgendaTab({ meeting: m }: { meeting: MeetingDetail }) {
+  const agenda = [...m.agenda].sort((a, b) => a.position - b.position);
   return (
     <div className="meeting-detail">
-      <section className="card meeting-detail__facts">
-        <h2 className="section-title">Details</h2>
-        <dl className="details__list">
-          <div>
-            <dt>Starts</dt>
-            <dd>{formatMeetingDateTime(m.scheduled_at)}</dd>
-          </div>
-          <div>
-            <dt>Ends</dt>
-            <dd>{m.ends_at ? formatMeetingDateTime(m.ends_at) : 'Not set'}</dd>
-          </div>
-          <div>
-            <dt>Place</dt>
-            <dd>{m.location ?? 'Not set'}</dd>
-          </div>
-          <div>
-            <dt>Online</dt>
-            <dd>
-              {m.online_link ? (
-                <a
-                  href={m.online_link}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="meeting-link"
-                >
-                  Join the call <IconExternalLink aria-hidden="true" />
-                </a>
-              ) : (
-                'No online link'
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>Kind</dt>
-            <dd>{MEETING_TYPE_LABELS[m.meeting_type]}</dd>
-          </div>
-          <div>
-            <dt>Quorum</dt>
-            <dd>{m.quorum_threshold_percent}% of members must be present</dd>
-          </div>
-          <div>
-            <dt>Scheduled by</dt>
-            <dd>{m.created_by.full_name}</dd>
-          </div>
+      <SectionCard title="Details">
+        <dl className="meeting-kv">
+          <dt>Starts</dt>
+          <dd>{formatMeetingDateTime(m.scheduled_at)}</dd>
+          <dt>Ends</dt>
+          <dd>{m.ends_at ? formatMeetingDateTime(m.ends_at) : '—'}</dd>
+          <dt>Place</dt>
+          <dd>{m.location ?? '—'}</dd>
+          <dt>Online</dt>
+          <dd>
+            {m.online_link ? (
+              <a
+                href={m.online_link}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="meeting-link"
+              >
+                Join the call <IconExternalLink aria-hidden="true" />
+              </a>
+            ) : (
+              '—'
+            )}
+          </dd>
+          <dt>Type</dt>
+          <dd>{MEETING_TYPE_LABELS[m.meeting_type]}</dd>
+          <dt>Quorum</dt>
+          <dd>{m.quorum_threshold_percent}%</dd>
+          <dt>Scheduled by</dt>
+          <dd>{m.created_by.full_name}</dd>
         </dl>
         {m.description && <p className="meeting-detail__description">{m.description}</p>}
-      </section>
+      </SectionCard>
 
-      <section className="card meeting-detail__agenda">
-        <h2 className="section-title">Agenda</h2>
-        {m.agenda.length === 0 ? (
+      <SectionCard
+        title="Agenda"
+        flush={agenda.length > 0}
+        actions={agenda.length > 0 ? <Badge tone="neutral">{agenda.length}</Badge> : undefined}
+      >
+        {agenda.length === 0 ? (
           <p className="table__muted">Nothing on the agenda yet.</p>
         ) : (
           <ol className="agenda-list">
-            {[...m.agenda]
-              .sort((a, b) => a.position - b.position)
-              .map((item) => (
-                <li key={item.id} className="agenda-list__item">
-                  <span className="agenda-list__number" aria-hidden="true">
-                    {item.position}
-                  </span>
-                  <div className="table__stack">
-                    <span className="agenda-list__title">{item.title}</span>
-                    {item.description && <span className="table__muted">{item.description}</span>}
-                    {item.presenter && (
-                      <span className="agenda-list__presenter">
-                        <Badge tone="neutral">Presented by {item.presenter.full_name}</Badge>
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
+            {agenda.map((item) => (
+              <li key={item.id} className="agenda-list__item">
+                <span className="agenda-list__number" aria-hidden="true">
+                  {item.position}
+                </span>
+                <div className="table__stack">
+                  <span className="agenda-list__title">{item.title}</span>
+                  {item.description && <span className="table__muted">{item.description}</span>}
+                </div>
+                {item.presenter && (
+                  <span className="agenda-list__presenter">{item.presenter.full_name}</span>
+                )}
+              </li>
+            ))}
           </ol>
         )}
-      </section>
+      </SectionCard>
     </div>
   );
 }
@@ -308,7 +284,7 @@ function CancelMeetingDialog({
       {
         onSuccess: () => {
           setReason('');
-          onDone(`${meeting.title} is cancelled. Members can see why.`);
+          onDone(`${meeting.title} is cancelled.`);
         },
         onError: (e) =>
           setError(
@@ -323,7 +299,7 @@ function CancelMeetingDialog({
       open={open}
       onClose={close}
       title="Cancel this meeting?"
-      subtitle="It stays in the list marked as cancelled, with your reason. This cannot be undone."
+      subtitle="Members will see it is cancelled, and why. This cannot be undone."
       icon={
         <IconTile tone="danger" round>
           <IconBan />

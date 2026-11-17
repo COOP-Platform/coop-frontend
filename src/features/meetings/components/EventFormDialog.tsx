@@ -38,8 +38,7 @@ function toIso(local: string): string {
 const sameSet = (a: string[], b: string[]) =>
   a.length === b.length && a.every((id) => b.includes(id));
 
-export const HIDDEN_EXPLAINER =
-  "Hidden members won't see this event, its RSVP list or its budget. Use it for a surprise.";
+export const HIDDEN_EXPLAINER = "Hidden members won't see this event, its answers or its budget.";
 
 /**
  * Create or edit an event. `hiddenOnly` edits nothing but who the event is
@@ -63,11 +62,7 @@ export function EventFormDialog({
       open={open}
       onClose={onClose}
       title={hiddenOnly ? 'Who can see this event' : event ? 'Edit event' : 'Create event'}
-      subtitle={
-        hiddenOnly
-          ? HIDDEN_EXPLAINER
-          : 'A celebration, a fundraiser, a visit: anything the family gathers for that is not a meeting.'
-      }
+      subtitle={hiddenOnly ? HIDDEN_EXPLAINER : undefined}
       icon={
         <IconTile tone="brand" round>
           {hiddenOnly ? <IconEyeOff /> : <IconCalendar />}
@@ -287,8 +282,8 @@ function EventForm({
         event.hidden_from &&
         event.hidden_from.length > 0 && (
           <p className="details__note event-form__hidden-note">
-            Hidden from {event.hidden_from.map((m) => m.full_name).join(', ')}. Only the organiser,{' '}
-            {event.created_by.full_name}, can change this.
+            Hidden from {event.hidden_from.map((m) => m.full_name).join(', ')}. Only{' '}
+            {event.created_by.full_name} can change this.
           </p>
         )
       )}

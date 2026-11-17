@@ -1,4 +1,12 @@
-import { EmptyState, ErrorState, IconUsers, LoadingState } from '@/components/ui';
+import {
+  EmptyState,
+  ErrorState,
+  IconUsers,
+  LoadingState,
+  SectionCard,
+  TableFooter,
+  usePaged,
+} from '@/components/ui';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatShortDate } from '@/lib/format/date';
 
@@ -8,7 +16,7 @@ import type { AttendanceMark } from '../api/reports';
 /** The same letters as the register PDF. */
 const MARK: Record<AttendanceMark, { symbol: string; label: string }> = {
   present: { symbol: 'P', label: 'Present' },
-  apology: { symbol: 'A', label: 'Apology (excused)' },
+  apology: { symbol: 'A', label: 'Apology' },
   absent: { symbol: 'X', label: 'Absent' },
 };
 
@@ -30,6 +38,7 @@ export function AttendanceRegister({
 }) {
   const report = useMeetingReport(communityId, 'attendance', year, month);
   const locked = (report.data?.rows ?? []).filter((row) => row.locked);
+  const paged = usePaged(report.data?.members ?? []);
 
   if (report.error) return <ErrorState message={errorMessage(report.error)} />;
   if (!report.data) return <LoadingState />;
@@ -39,15 +48,13 @@ export function AttendanceRegister({
 
   if (locked.length === 0 || data.members.length === 0) {
     return (
-      <EmptyState
-        icon={<IconUsers />}
-        title={`No attendance recorded for ${label}`}
-        message={
-          open > 0
-            ? `${open} meeting${open === 1 ? ' has' : 's have'} a roll-call that is not locked yet. The register shows locked roll-calls only.`
-            : 'Once a meeting has taken place and its roll-call is locked, it appears here.'
-        }
-      />
+      <SectionCard title={`Register · ${label}`}>
+        <EmptyState
+          icon={<IconUsers />}
+          title="No locked roll-calls"
+          message={open > 0 ? `${open} roll-call${open === 1 ? '' : 's'} still open.` : undefined}
+        />
+      </SectionCard>
     );
   }
 
@@ -60,15 +67,10 @@ export function AttendanceRegister({
   );
 
   return (
-    <section className="card table-card" aria-labelledby="register-title">
-      <header className="table-card__head">
-        <h2 id="register-title" className="section-head__title">
-          Attendance register · {label}
-        </h2>
-        <p className="table__muted">
-          {locked.length} meeting{locked.length === 1 ? '' : 's'} with a locked roll-call
-          {open > 0 && `; ${open} still open and not shown`}.
-        </p>
+    <SectionCard
+      title={`Register · ${label}`}
+      flush
+      actions={
         <ul className="register-legend" aria-label="Key">
           {MARKS.map((mark) => (
             <li key={mark}>
@@ -78,14 +80,19 @@ export function AttendanceRegister({
               {MARK[mark].label}
             </li>
           ))}
-          <li>
-            <span className="register-mark register-mark--none" aria-hidden="true">
-              –
-            </span>
-            Not on the roll-call
-          </li>
         </ul>
-      </header>
+      }
+      footer={
+        <>
+          <TableFooter {...paged} onPage={paged.setPage} />
+          {open > 0 && (
+            <span className="table__muted">
+              {open} open roll-call{open === 1 ? '' : 's'} not shown
+            </span>
+          )}
+        </>
+      }
+    >
       <div className="table-scroll register-scroll" tabIndex={0} aria-label="Register table">
         <table className="table table--compact register-table">
           <thead>
@@ -106,13 +113,13 @@ export function AttendanceRegister({
                   <span className="register-table__title">{row.meeting.title}</span>
                 </th>
               ))}
-              <th scope="col" className="statement-table__num">
+              <th scope="col" className="num">
                 Attended
               </th>
             </tr>
           </thead>
           <tbody>
-            {data.members.map((entry) => (
+            {paged.rows.map((entry) => (
               <tr key={entry.member.membership_id}>
                 <th scope="row" className="register-table__member">
                   {entry.member.full_name}
@@ -133,7 +140,7 @@ export function AttendanceRegister({
                     </td>
                   );
                 })}
-                <td className="statement-table__num">
+                <td className="num">
                   <strong>{entry.percent}%</strong>
                   <span className="table__muted register-table__count">
                     {' '}
@@ -145,6 +152,6 @@ export function AttendanceRegister({
           </tbody>
         </table>
       </div>
-    </section>
+    </SectionCard>
   );
 }

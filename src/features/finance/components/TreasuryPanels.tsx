@@ -12,7 +12,7 @@ import {
   IconPlusCircle,
   IconSend,
   IconTile,
-  IconWallet,
+  SectionCard,
 } from '@/components/ui';
 import { formatDate } from '@/lib/format/date';
 
@@ -31,14 +31,7 @@ export interface QuickAction {
 /** The shortcuts a member is allowed to use; the caller filters by permission. */
 export function QuickTreasuryActions({ actions }: { actions: readonly QuickAction[] }) {
   return (
-    <section className="card finance-panel" aria-labelledby="quick-actions-title">
-      <header className="section-head">
-        <div className="section-head__text">
-          <h2 id="quick-actions-title" className="section-head__title">
-            Quick Treasury Actions
-          </h2>
-        </div>
-      </header>
+    <SectionCard title="Quick actions">
       <ul className="finance-actions" role="list">
         {actions.map((action) => (
           <li key={action.label}>
@@ -52,7 +45,7 @@ export function QuickTreasuryActions({ actions }: { actions: readonly QuickActio
           </li>
         ))}
       </ul>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -83,17 +76,7 @@ export function AccountBalances({
   currency,
 }: AccountBalancesProps) {
   return (
-    <section className="card finance-panel" aria-labelledby="accounts-title">
-      <header className="section-head">
-        <div className="section-head__text">
-          <h2 id="accounts-title" className="section-head__title">
-            Account Balances
-          </h2>
-          <p className="section-head__subtitle">Updated by confirmed payments and the Treasurer</p>
-        </div>
-        <IconWallet width={22} height={22} aria-hidden="true" />
-      </header>
-
+    <SectionCard title="Accounts">
       <ul className="finance-accounts" role="list">
         {accounts.map((account) => {
           const mobile = account.kind === 'mobile_money';
@@ -137,7 +120,7 @@ export function AccountBalances({
           </p>
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }
 
@@ -148,12 +131,12 @@ export function MembersActiveCard({ members }: { members: FinanceSummary['member
         <IconCommunity />
       </IconTile>
       <div className="finance-members__body">
-        <p className="finance-members__title">{members.active} Members Active</p>
-        <p className="finance-members__detail">{members.up_to_date} up to date this year</p>
+        <p className="finance-members__title">{members.active} active members</p>
+        <p className="finance-members__detail">{members.up_to_date} up to date</p>
       </div>
       {members.compliance_rate !== null && (
         <Badge tone={members.compliance_rate >= 100 ? 'success' : 'warning'}>
-          {Math.round(members.compliance_rate)}% Compliant
+          {Math.round(members.compliance_rate)}% compliant
         </Badge>
       )}
     </section>

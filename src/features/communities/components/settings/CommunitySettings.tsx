@@ -8,6 +8,7 @@ import {
   IconPencil,
   LoadingState,
   PageHeader,
+  SectionCard,
   SegmentedControl,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -73,13 +74,7 @@ export function CommunitySettings({ tab, editing, onNavigate }: CommunitySetting
     body = (
       <>
         {canEditProfile && (
-          <section className="card cs-block" aria-labelledby="cs-images">
-            <h2 id="cs-images" className="cs-block__title">
-              Logo and cover banner
-            </h2>
-            <p className="cs-text cs-muted">
-              Each image saves as soon as it has uploaded — no need to press Save.
-            </p>
+          <SectionCard title="Logo and cover" footer="Images save on upload.">
             <div className="cs-uploads">
               <ImageUpload communityId={data.id} kind="logo" currentUrl={data.logo_url}>
                 <CommunityLogo name={data.name} url={data.logo_url} size="lg" />
@@ -88,7 +83,7 @@ export function CommunitySettings({ tab, editing, onNavigate }: CommunitySetting
                 <CommunityCover name={data.name} url={data.cover_url} />
               </ImageUpload>
             </div>
-          </section>
+          </SectionCard>
         )}
         <section className="card cs-block">
           <ProfileForm
@@ -96,11 +91,7 @@ export function CommunitySettings({ tab, editing, onNavigate }: CommunitySetting
             can={can}
             onCancel={() => edit(false)}
             onSaved={(_, count) => {
-              setSaved(
-                count === 0
-                  ? 'Nothing had changed, so there was nothing to save.'
-                  : 'Your changes are saved. Every member now sees the updated profile.',
-              );
+              setSaved(count === 0 ? 'Nothing to save.' : 'Profile saved.');
               onNavigate({ tab: 'profile', editing: false });
             }}
           />
@@ -123,11 +114,6 @@ export function CommunitySettings({ tab, editing, onNavigate }: CommunitySetting
     <div className="page">
       <PageHeader
         title={isEditing ? 'Edit community profile' : 'Settings'}
-        subtitle={
-          isEditing
-            ? 'Changes are visible to every member once saved.'
-            : 'Who we are, what we stand for, and who can see what.'
-        }
         actions={
           tab === 'profile' && canEdit && community.data ? (
             isEditing ? (

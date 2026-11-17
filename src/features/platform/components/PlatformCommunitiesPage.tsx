@@ -10,6 +10,9 @@ import {
   IconHistory,
   IconSearch,
   LoadingState,
+  SectionCard,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 import { errorMessage } from '@/lib/api/errors';
@@ -32,6 +35,17 @@ export function PlatformCommunitiesPage() {
   const [search, setSearch] = useState('');
   const searchId = useId();
 
+  const all = communities.data ?? [];
+  const query = search.trim().toLowerCase();
+  const rows = all.filter(
+    (c) =>
+      query === '' ||
+      c.name.toLowerCase().includes(query) ||
+      c.slug.toLowerCase().includes(query) ||
+      typeLabel(c.type).toLowerCase().includes(query),
+  );
+  const paged = usePaged(rows);
+
   if (communities.isPending) {
     return <LoadingState label="Loading communities…" />;
   }
@@ -41,58 +55,37 @@ export function PlatformCommunitiesPage() {
     );
   }
 
-  const query = search.trim().toLowerCase();
-  const rows = communities.data.filter(
-    (c) =>
-      query === '' ||
-      c.name.toLowerCase().includes(query) ||
-      c.slug.toLowerCase().includes(query) ||
-      typeLabel(c.type).toLowerCase().includes(query),
-  );
-
   return (
     <div className="page">
-      <PlatformHeader
-        title="Communities"
-        subtitle="Name, type, status and size — enough to find the community a request is about. Members' details are only in the read-only support view, and opening it is logged."
-      />
+      <PlatformHeader title="Communities" />
 
-      <div className="toolbar card">
-        <div className="search-field">
-          <label htmlFor={searchId} className="visually-hidden">
-            Search communities
-          </label>
-          <span className="search-field__icon" aria-hidden="true">
-            <IconSearch />
-          </span>
-          <input
-            id={searchId}
-            type="search"
-            className="search-field__input"
-            placeholder="Search by name or type..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </div>
-      </div>
-
-      <section className="card table-card" aria-labelledby="platform-communities-title">
-        <header className="table-card__head">
-          <h2 id="platform-communities-title" className="section-head__title">
-            All communities
-          </h2>
-          <p className="section-head__subtitle">Member counts include active members only.</p>
-        </header>
-
+      <SectionCard
+        title="All communities"
+        flush
+        actions={
+          <div className="search-field search-field--compact">
+            <label htmlFor={searchId} className="visually-hidden">
+              Search communities
+            </label>
+            <span className="search-field__icon" aria-hidden="true">
+              <IconSearch />
+            </span>
+            <input
+              id={searchId}
+              type="search"
+              className="search-field__input"
+              placeholder="Search by name or type..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+        }
+        footer={<TableFooter {...paged} onPage={paged.setPage} />}
+      >
         {rows.length === 0 ? (
           <EmptyState
             icon={<IconCommunity width={28} height={28} />}
-            title={communities.data.length === 0 ? 'No communities yet' : 'No matches'}
-            message={
-              communities.data.length === 0
-                ? 'Communities appear here as soon as someone founds one.'
-                : 'No community matches that search.'
-            }
+            title={all.length === 0 ? 'No communities yet' : 'No matches'}
           />
         ) : (
           <div className="table-scroll">
@@ -102,16 +95,16 @@ export function PlatformCommunitiesPage() {
                   <th scope="col">Community</th>
                   <th scope="col">Status</th>
                   <th scope="col" className="platform-num">
-                    Members
+                    Active members
                   </th>
-                  <th scope="col">Founded on the platform</th>
+                  <th scope="col">Founded</th>
                   <th scope="col" className="table__action-col">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((community) => (
+                {paged.rows.map((community) => (
                   <tr key={community.id}>
                     <td>
                       <span className="table__stack">
@@ -152,14 +145,7 @@ export function PlatformCommunitiesPage() {
             </table>
           </div>
         )}
-
-        <footer className="table-footer">
-          <p className="table-footer__summary">
-            Showing <strong>{rows.length}</strong> of <strong>{communities.data.length}</strong>{' '}
-            communities
-          </p>
-        </footer>
-      </section>
+      </SectionCard>
     </div>
   );
 }

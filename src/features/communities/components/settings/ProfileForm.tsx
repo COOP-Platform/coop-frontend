@@ -41,7 +41,7 @@ function withCurrent(options: readonly SelectOption[], current: string): readonl
 
 const TYPE_OPTIONS: readonly SelectOption[] = COMMUNITY_TYPES.map((t) => ({
   value: t.value,
-  label: `${t.title} — ${t.description}`,
+  label: t.title,
 }));
 
 /** Checks the server would make, run first so the member gets them at once. */
@@ -142,7 +142,7 @@ export function ProfileForm({ community, can, onCancel, onSaved }: ProfileFormPr
   return (
     <form className="cs-form" onSubmit={(event) => void submit(event)} noValidate>
       <fieldset className="cs-form__section">
-        <legend className="cs-form__legend">About the community</legend>
+        <legend className="cs-form__legend">About</legend>
         <Input
           label="Community name"
           required
@@ -194,7 +194,7 @@ export function ProfileForm({ community, can, onCancel, onSaved }: ProfileFormPr
       </fieldset>
 
       <fieldset className="cs-form__section">
-        <legend className="cs-form__legend">Contact and preferences</legend>
+        <legend className="cs-form__legend">Contact &amp; preferences</legend>
         <div className="cs-form__grid">
           <Input
             label="Contact email"
@@ -213,11 +213,7 @@ export function ProfileForm({ community, can, onCancel, onSaved }: ProfileFormPr
             autoComplete="tel"
             placeholder="+250788123456"
             {...field('contact_phone')}
-            hint={
-              editable('contact_phone')
-                ? 'With the country code, e.g. +250788123456.'
-                : readOnlyHint
-            }
+            hint={editable('contact_phone') ? 'Include the country code.' : readOnlyHint}
             onChange={(event) => set('contact_phone', event.target.value)}
           />
         </div>
@@ -234,7 +230,7 @@ export function ProfileForm({ community, can, onCancel, onSaved }: ProfileFormPr
             label="Currency"
             options={withCurrent(CURRENCIES, form.currency)}
             {...field('currency')}
-            hint={editable('currency') ? 'Used for every amount in the Finance app.' : readOnlyHint}
+            hint={editable('currency') ? 'Used for all amounts.' : readOnlyHint}
             onChange={(event) => set('currency', event.target.value)}
           />
           <Select

@@ -2,48 +2,26 @@
 
 /* ---------- List ---------- */
 
-.event-card {
-  gap: var(--space-2);
-}
-
-.event-card__type {
-  font-size: 0.8125rem;
+.event-row__link {
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
-}
-
-.event-card__link {
   color: inherit;
   text-decoration: none;
 }
 
-.event-card__link:hover,
-.event-card__link:focus-visible {
+.event-row__link:hover,
+.event-row__link:focus-visible {
   color: var(--color-brand-text);
   text-decoration: underline;
 }
 
-.event-card__meta {
+.event-row__when {
+  white-space: nowrap;
+}
+
+.event-row__badges {
   display: inline-flex;
-  align-items: flex-start;
+  flex-wrap: wrap;
   gap: var(--space-1);
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-}
-
-.event-card__meta > svg {
-  flex-shrink: 0;
-  margin-top: 0.15em;
-}
-
-.event-card .event-rsvp {
-  margin-top: auto;
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
-  width: 100%;
 }
 
 /* ---------- RSVP ---------- */
@@ -66,6 +44,10 @@
   gap: var(--space-2);
 }
 
+.event-rsvp--compact .event-rsvp__buttons {
+  flex-wrap: nowrap;
+}
+
 .event-rsvp__guests {
   max-width: 8rem;
 }
@@ -76,7 +58,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--color-text-muted);
   text-decoration: none;
 }
@@ -85,30 +68,118 @@
   color: var(--color-brand-text);
 }
 
+.event-detail__meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.event-detail__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.event-detail__meta svg {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+/* Details (3) and Who is coming (2) side by side; everything else full width. */
 .event-detail {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: var(--space-4);
-  align-items: start;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-5);
+  align-items: stretch;
 }
 
-.event-detail > .card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-5);
-}
-
-.event-detail__hidden,
-.event-detail__answers {
+.event-detail > .event-detail__wide {
   grid-column: 1 / -1;
 }
 
-.event-detail__description {
+.event-kv {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--space-3) var(--space-4);
   margin: 0;
+  font-size: 0.875rem;
+}
+
+.event-kv dt {
+  color: var(--color-text-muted);
+}
+
+.event-kv dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.event-detail__description {
+  margin: var(--space-4) 0 0;
   white-space: pre-line;
 }
 
+.event-coming {
+  display: flex;
+  flex-direction: column;
+}
+
+.event-coming .section-card__body {
+  flex: 1;
+}
+
+.event-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  text-align: center;
+}
+
+.event-counts > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+}
+
+.event-counts > div + div {
+  border-left: 1px solid var(--color-border);
+}
+
+.event-counts dt {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.event-counts dd {
+  margin: 0;
+  font-size: 1.625rem;
+  font-weight: 700;
+}
+
+.event-counts__yes {
+  color: var(--color-success);
+}
+
+.event-counts__no {
+  color: var(--color-warning);
+}
+
+.event-coming .section-card__foot .event-rsvp {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.event-answers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  gap: var(--space-5);
+}
+
+.event-answer-list,
 .event-hidden-list {
   display: flex;
   flex-wrap: wrap;
@@ -118,6 +189,7 @@
   list-style: none;
 }
 
+.event-answer-list > li,
 .event-hidden-list > li {
   display: inline-flex;
   align-items: center;
@@ -193,81 +265,24 @@
 
 /* ---------- Budget and contributions (an event's money) ---------- */
 
-.event-budget {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+.event-budget__used-col {
+  width: 11rem;
 }
 
-.event-budget__notice {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-}
-
-.event-budget__empty,
-.event-budget__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.event-budget__empty {
-  justify-content: space-between;
-}
-
-.event-budget__figures {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
-  gap: var(--space-3);
-}
-
-.event-budget__figure {
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.event-budget__figure-label {
-  margin: 0;
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
-}
-
-.event-budget__figure-value {
-  margin: var(--space-1) 0 0;
-  font-size: 1.25rem;
+.event-budget__total th,
+.event-budget__total td {
+  border-top: 1px solid var(--color-border);
   font-weight: 700;
+  text-align: left;
 }
 
-.event-budget__figure-hint {
-  margin: var(--space-1) 0 0;
-  font-size: 0.75rem;
-}
-
-.event-budget__figure.is-warn .event-budget__figure-value {
-  color: var(--color-danger);
-}
-
-.event-budget__meters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
-  gap: var(--space-4);
-}
-
-.event-budget__block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.event-budget__total td.num {
+  text-align: right;
 }
 
 .event-budget__campaigns {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -279,9 +294,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border);
 }
 
 .event-budget__campaign p {
@@ -294,10 +308,11 @@
 
 .event-budget__mine {
   margin-top: var(--space-1);
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
-.event-budget__explain,
 .event-budget__more {
-  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }

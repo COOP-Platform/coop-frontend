@@ -5,11 +5,6 @@
   gap: var(--space-4);
 }
 
-.arrears__translation {
-  color: var(--color-text-muted);
-  font-weight: 400;
-}
-
 .arrears__summary {
   display: flex;
   flex-wrap: wrap;
@@ -53,4 +48,11 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+}
+
+/* Inside a flush section card (the table runs edge to edge): keep the
+   summary and the "up to date" notice off the card's edges. */
+.section-card__body--flush > .arrears__summary,
+.section-card__body--flush > .arrears__notice {
+  margin: 0 var(--space-6) var(--space-4);
 }

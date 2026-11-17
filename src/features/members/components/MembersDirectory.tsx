@@ -5,24 +5,25 @@ import {
   Avatar,
   Badge,
   Button,
-  Dropdown,
   Drawer,
   EmptyState,
   ErrorState,
   IconAward,
-  IconChevronLeft,
   IconChevronRight,
   IconClipboardClock,
   IconDownload,
-  IconFilter,
+  IconMail,
   IconSearch,
   IconShieldCheck,
   IconUserPlus,
   IconUsers,
   LoadingState,
+  PAGE_SIZE,
   PageHeader,
-  SegmentedControl,
+  SectionCard,
+  Select,
   StatCard,
+  TableFooter,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { useCommittee, usePositions } from '@/features/positions';
@@ -37,12 +38,11 @@ import { useMemberCategories } from '../api/member-categories';
 import { MemberPanel } from './MemberProfile';
 import type { MembersSearch, MemberStatusFilter } from '../search';
 
-const PAGE_SIZE = 8;
 /** `role` value for members holding no position at all. */
 const NO_POSITION = 'none';
 
 const STATUS_OPTIONS = [
-  { value: 'all', label: 'All Members' },
+  { value: 'all', label: 'All statuses' },
   { value: 'active', label: 'Active' },
   { value: 'suspended', label: 'Suspended' },
 ] as const;
@@ -80,8 +80,6 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
 
   const members = directory.members;
   const status: MemberStatusFilter = search.status ?? 'all';
-  const role = positions.data?.find((p) => p.id === search.role);
-  const roleLabel = search.role === NO_POSITION ? 'No position' : (role?.name ?? 'All');
   const query = (search.q ?? '').trim().toLowerCase();
 
   const filtered = members.filter(
@@ -125,13 +123,14 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
     m.positions.some((p) => !isPlainMemberPosition(p.name)),
   ).length;
   const reviewCount = members.filter((m) => m.status === 'suspended').length;
+  const invitedCount = members.filter((m) => m.status === 'invited').length;
+  const from = filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
 
   return (
     <div className="page">
       <PageHeader
         title="Members"
-        badge={<Badge tone="info">{members.length} Total</Badge>}
-        subtitle={`View and manage registered members of ${membership?.community.name ?? 'your'} community.`}
+        subtitle={`${members.length} total`}
         actions={
           can('member.invite') && (
             <Button
@@ -149,110 +148,108 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
 
       <div className="stat-grid">
         <StatCard
-          variant="tint"
-          label="Active Roster"
+          label="Active"
           value={activeCount}
+          caption="In good standing"
           icon={<IconShieldCheck />}
           tone="brand"
         />
         <StatCard
-          variant="tint"
-          label="Executive Officers"
+          label="Officers"
           value={directory.positionsPending ? '…' : officerCount}
+          caption="Hold a position"
           icon={<IconAward />}
           tone="info"
         />
         <StatCard
-          variant="tint"
-          label="Requires Review"
+          label="Invited"
+          value={invitedCount}
+          caption="Not yet joined"
+          icon={<IconMail />}
+          tone="accent"
+        />
+        <StatCard
+          label="Suspended"
           value={reviewCount}
+          caption="Need review"
           icon={<IconClipboardClock />}
           tone="warning"
-          emphasis
+          emphasis={reviewCount > 0}
         />
       </div>
 
-      <div className="toolbar card">
-        <div className="search-field">
-          <label htmlFor={searchId} className="visually-hidden">
-            Search member by name or email
-          </label>
-          <span className="search-field__icon" aria-hidden="true">
-            <IconSearch />
-          </span>
-          <input
-            id={searchId}
-            type="search"
-            className="search-field__input"
-            placeholder="Search member by name..."
-            value={search.q ?? ''}
-            onChange={(event) => update({ q: event.target.value || undefined })}
+      <SectionCard
+        title="Member list"
+        flush
+        actions={
+          <>
+            <div className="search-field search-field--compact">
+              <label htmlFor={searchId} className="visually-hidden">
+                Search member by name or email
+              </label>
+              <span className="search-field__icon" aria-hidden="true">
+                <IconSearch />
+              </span>
+              <input
+                id={searchId}
+                type="search"
+                className="search-field__input"
+                placeholder="Search…"
+                value={search.q ?? ''}
+                onChange={(event) => update({ q: event.target.value || undefined })}
+              />
+            </div>
+
+            <Select
+              label="Filter by status"
+              labelHidden
+              options={STATUS_OPTIONS}
+              value={status}
+              onChange={(event) => {
+                const value = event.target.value as MemberStatusFilter;
+                update({ status: value === 'all' ? undefined : value });
+              }}
+            />
+
+            {positions.data && (
+              <Select
+                label="Filter by position"
+                labelHidden
+                options={[
+                  { value: '', label: 'All positions' },
+                  ...positions.data.map((p) => ({ value: p.id, label: p.name })),
+                  { value: NO_POSITION, label: 'No position' },
+                ]}
+                value={search.role ?? ''}
+                onChange={(event) => update({ role: event.target.value || undefined })}
+              />
+            )}
+
+            {/* Exporting the roster is an admin task; members only read the list. */}
+            {isAdmin && (
+              <button
+                type="button"
+                className="toolbar__button toolbar__button--icon"
+                aria-label="Export members as CSV"
+                title="Export CSV"
+                onClick={exportCsv}
+              >
+                <IconDownload width={18} height={18} />
+              </button>
+            )}
+          </>
+        }
+        footer={
+          <TableFooter
+            from={from}
+            to={from === 0 ? 0 : from + visible.length - 1}
+            total={filtered.length}
+            page={page}
+            pageCount={pageCount}
+            onPage={(n) => onSearchChange({ ...search, page: n })}
           />
-        </div>
-
-        <div className="toolbar__controls">
-          <SegmentedControl
-            label="Filter by status"
-            options={STATUS_OPTIONS}
-            value={status}
-            onChange={(value) => update({ status: value === 'all' ? undefined : value })}
-          />
-
-          {positions.data && (
-            <Dropdown
-              align="end"
-              chevron={false}
-              triggerClassName="toolbar__button"
-              label={`Filter by position, currently ${roleLabel}`}
-              trigger={
-                <>
-                  <IconFilter width={16} height={16} />
-                  Role: {roleLabel}
-                </>
-              }
-            >
-              {(close) => (
-                <div className="menu">
-                  <p className="menu__heading">Filter by position</p>
-                  {[
-                    { id: undefined, name: 'All positions' },
-                    ...positions.data.map((p) => ({ id: p.id, name: p.name })),
-                    { id: NO_POSITION, name: 'No position' },
-                  ].map((option) => (
-                    <button
-                      key={option.id ?? 'all'}
-                      type="button"
-                      className="menu__item"
-                      aria-current={option.id === search.role ? 'true' : undefined}
-                      onClick={() => {
-                        update({ role: option.id });
-                        close();
-                      }}
-                    >
-                      <span className="menu__item-title">{option.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </Dropdown>
-          )}
-
-          {/* Exporting the roster is an admin task; members only read the list. */}
-          {isAdmin && (
-            <button
-              type="button"
-              className="toolbar__button toolbar__button--icon"
-              aria-label="Export members as CSV"
-              title="Export CSV"
-              onClick={exportCsv}
-            >
-              <IconDownload width={18} height={18} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      <section className="card table-card" aria-label="Members">
+        }
+      >
         {directory.isPending ? (
           <LoadingState label="Loading members…" />
         ) : directory.error ? (
@@ -260,8 +257,7 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
         ) : visible.length === 0 ? (
           <EmptyState
             icon={<IconUsers width={28} height={28} />}
-            title="No members match these filters"
-            message="Try another name, or clear the status and role filters."
+            title="No matches"
             action={
               <Button variant="tint" inline onClick={() => onSearchChange({})}>
                 Clear filters
@@ -283,7 +279,7 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
                 <tr>
                   <th scope="col">Member</th>
                   <th scope="col">Position</th>
-                  <th scope="col">Contribution category</th>
+                  <th scope="col">Category</th>
                   <th scope="col" className={isAdmin ? undefined : 'table__status-col'}>
                     Status
                   </th>
@@ -313,47 +309,7 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
             </table>
           </div>
         )}
-
-        <footer className="table-footer">
-          <p className="table-footer__summary">
-            Showing <strong>{visible.length}</strong> of <strong>{filtered.length}</strong> members
-          </p>
-          {pageCount > 1 && (
-            <nav className="pagination" aria-label="Pagination">
-              <button
-                type="button"
-                className="pagination__step"
-                disabled={page === 1}
-                onClick={() => onSearchChange({ ...search, page: page - 1 })}
-              >
-                <IconChevronLeft width={16} height={16} />
-                Previous
-              </button>
-              {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className="pagination__page"
-                  aria-current={n === page ? 'page' : undefined}
-                  aria-label={`Page ${n}`}
-                  onClick={() => onSearchChange({ ...search, page: n })}
-                >
-                  {n}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="pagination__step"
-                disabled={page === pageCount}
-                onClick={() => onSearchChange({ ...search, page: page + 1 })}
-              >
-                Next
-                <IconChevronRight width={16} height={16} />
-              </button>
-            </nav>
-          )}
-        </footer>
-      </section>
+      </SectionCard>
 
       <Drawer
         open={search.selected !== undefined}
@@ -452,7 +408,7 @@ function MemberRow({
             aria-label={`View details for ${member.fullName}`}
             onClick={onOpen}
           >
-            View details
+            View
             <IconChevronRight width={16} height={16} aria-hidden="true" />
           </button>
         </td>

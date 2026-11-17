@@ -9,7 +9,9 @@ import {
   IconFile,
   IconTile,
   LoadingState,
-  SegmentedControl,
+  SectionCard,
+  Select,
+  TableFooter,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { apiDownload } from '@/lib/api/client';
@@ -49,33 +51,41 @@ export function MinutesList() {
   const { items, total, counts } = data;
   const lastPage = Math.max(1, Math.ceil(total / MINUTES_PAGE_SIZE));
 
+  const from = total === 0 ? 0 : (page - 1) * MINUTES_PAGE_SIZE + 1;
+  const to = Math.min(page * MINUTES_PAGE_SIZE, total);
+
   return (
-    <section className="card table-card minutes-list" aria-labelledby="minutes-list-title">
-      <header className="table-card__head minutes-list__head">
-        <div>
-          <h2 id="minutes-list-title" className="section-head__title">
-            Minutes
-          </h2>
-          <p className="section-head__subtitle">
-            {seesDrafts
-              ? 'The written record of each meeting. Drafts are seen only by those who write or finalise minutes.'
-              : 'The written record of each meeting, once the secretary has finalised it.'}
-          </p>
-        </div>
-        {seesDrafts && counts.total > 0 && (
-          <SegmentedControl
+    <SectionCard
+      title="Minutes"
+      flush
+      actions={
+        seesDrafts && counts.total > 0 ? (
+          <Select
             label="Show minutes"
+            labelHidden
             value={filter}
-            onChange={changeFilter}
+            onChange={(event) => changeFilter(event.target.value as Filter)}
             options={[
               { value: 'all', label: `All (${counts.total})` },
               { value: 'draft', label: `Drafts (${counts.draft})` },
               { value: 'final', label: `Final (${counts.final})` },
             ]}
           />
-        )}
-      </header>
-
+        ) : undefined
+      }
+      footer={
+        items.length > 0 ? (
+          <TableFooter
+            from={from}
+            to={to}
+            total={total}
+            page={page}
+            pageCount={lastPage}
+            onPage={setPage}
+          />
+        ) : undefined
+      }
+    >
       {items.length === 0 ? (
         <EmptyState
           icon={
@@ -87,13 +97,8 @@ export function MinutesList() {
             filter === 'draft'
               ? 'No draft minutes'
               : filter === 'final'
-                ? 'No final minutes yet'
+                ? 'No final minutes'
                 : 'No minutes yet'
-          }
-          message={
-            seesDrafts
-              ? 'Open a meeting and choose "Write minutes" to start its record.'
-              : 'Minutes appear here once a meeting’s record has been finalised.'
           }
         />
       ) : (
@@ -117,35 +122,7 @@ export function MinutesList() {
           </table>
         </div>
       )}
-
-      {lastPage > 1 && (
-        <footer className="table-footer">
-          <p className="table-footer__summary">
-            Page <strong>{page}</strong> of <strong>{lastPage}</strong> · {total} minutes
-          </p>
-          <div className="review-actions">
-            <Button
-              variant="secondary"
-              size="sm"
-              inline
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              Newer
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              inline
-              disabled={page >= lastPage}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Older
-            </Button>
-          </div>
-        </footer>
-      )}
-    </section>
+    </SectionCard>
   );
 }
 
@@ -197,8 +174,8 @@ function MinutesRow({ row, communityId }: { row: MinutesSummary; communityId: st
           <span>{parts.join(' · ')}</span>
           <span className="table__muted">
             {final && row.finalized_at
-              ? `Finalised ${formatDate(row.finalized_at)}${row.finalized_by ? ` by ${row.finalized_by.full_name}` : ''}`
-              : `Last changed ${formatDate(row.updated_at)}`}
+              ? `Final ${formatDate(row.finalized_at)}${row.finalized_by ? ` · ${row.finalized_by.full_name}` : ''}`
+              : `Changed ${formatDate(row.updated_at)}`}
           </span>
         </span>
       </td>
@@ -214,7 +191,7 @@ function MinutesRow({ row, communityId }: { row: MinutesSummary; communityId: st
               onClick={() => void download()}
               aria-label={`Download PDF of the minutes of ${row.meeting.title}`}
             >
-              {downloading ? 'Preparing…' : 'Download PDF'}
+              {downloading ? 'Preparing…' : 'PDF'}
             </Button>
             {downloadError && (
               <span className="field__error" role="alert">
@@ -223,7 +200,7 @@ function MinutesRow({ row, communityId }: { row: MinutesSummary; communityId: st
             )}
           </span>
         ) : (
-          <span className="table__muted">PDF once final</span>
+          <span className="table__muted">—</span>
         )}
       </td>
     </tr>

@@ -18,6 +18,7 @@ import {
   Input,
   LoadingState,
   Select,
+  StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
@@ -39,6 +40,7 @@ import { useCashFlow } from '../api/cashflow';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { THIS_MONTH } from '../month';
 import { SuccessNotice } from './SuccessNotice';
+import { Money } from './Money';
 import { SectionHeader } from './SectionHeader';
 
 const KINDS: { value: AccountKind; label: string }[] = [
@@ -92,9 +94,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
     <div className="page">
       <SectionHeader
         embedded={embedded}
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title="Bank & MoMo Accounts"
-        subtitle="Where the community's money actually sits. Payments confirmed into an account add to it automatically; the Treasurer can also add, take out or type in a balance."
+        title="Bank & MoMo"
         actions={
           canManage && (
             <Button inline icon={<IconPlus />} onClick={() => setAdding(true)}>
@@ -114,43 +114,42 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
         )
       ) : (
         <>
-          <section className="card accounts-check" aria-label="Accounts against the records">
-            <div>
-              <p className="kpi__label">In the accounts</p>
-              <p className="kpi__value">RWF {formatAmount(total)}</p>
-            </div>
-            <div>
-              <p className="kpi__label">In the records (community pocket)</p>
-              <p className="kpi__value">
-                {walletMinor === undefined ? '…' : `RWF ${formatAmount(walletMinor)}`}
-              </p>
-            </div>
-            <div>
-              <p className="kpi__label">Difference</p>
-              <p className="kpi__value">
-                {gap === null
-                  ? '—'
-                  : gap === 0
-                    ? 'They match'
-                    : `RWF ${formatAmount(Math.abs(gap))}`}
-              </p>
-              {gap !== null && gap !== 0 && (
-                <p className="kpi__note">
-                  {gap > 0
-                    ? 'The accounts hold more than the records say.'
-                    : 'The accounts hold less than the records say. Check for unrecorded expenses.'}
-                </p>
-              )}
-            </div>
+          <section className="stat-grid" aria-label="Accounts against the records">
+            <StatCard
+              label="In the accounts"
+              value={<Money minor={total} />}
+              caption={`${withBalance.length} account${withBalance.length === 1 ? '' : 's'}`}
+              icon={<IconInstitution />}
+              tone="info"
+            />
+            <StatCard
+              label="In the records"
+              value={walletMinor === undefined ? '…' : <Money minor={walletMinor} />}
+              caption="Community pocket"
+              icon={<IconWallet />}
+              tone="brand"
+            />
+            <StatCard
+              label="Difference"
+              value={
+                gap === null ? '—' : gap === 0 ? 'They match' : <Money minor={Math.abs(gap)} />
+              }
+              caption={
+                gap === null || gap === 0 ? undefined : (
+                  <b className="caption-warn">
+                    {gap > 0 ? 'Accounts hold more' : 'Accounts hold less'}
+                  </b>
+                )
+              }
+              icon={<IconHistory />}
+              tone={gap !== null && gap !== 0 ? 'warning' : 'neutral'}
+              emphasis={gap !== null && gap !== 0}
+            />
           </section>
 
           {active.length === 0 ? (
             <section className="card">
-              <EmptyState
-                icon={<IconInstitution />}
-                title="No accounts yet"
-                message="Add the community's bank account, MoMo number or cash box, then enter what each holds."
-              />
+              <EmptyState icon={<IconInstitution />} title="No accounts yet" />
             </section>
           ) : (
             <ul className="account-cards" role="list">
@@ -171,14 +170,12 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
                           </>
                         )}
                       </p>
-                      {account.holder_name && (
-                        <p className="table__muted">In the name of {account.holder_name}</p>
-                      )}
+                      {account.holder_name && <p className="table__muted">{account.holder_name}</p>}
                     </div>
                   </div>
                   <p className="account-card__balance">
                     {account.balance_minor === null ? (
-                      <span className="table__muted">Nothing in it yet</span>
+                      <span className="table__muted">No balance yet</span>
                     ) : (
                       <>
                         {formatAmount(account.balance_minor)}{' '}
@@ -236,9 +233,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
           )}
 
           {retired.length > 0 && (
-            <p className="table__muted">
-              Retired: {retired.map((a) => a.name).join(', ')}. Their history is kept.
-            </p>
+            <p className="table__muted">Retired: {retired.map((a) => a.name).join(', ')}</p>
           )}
         </>
       )}
@@ -247,7 +242,6 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
         open={adding}
         onClose={() => setAdding(false)}
         title="Add account"
-        subtitle="A bank account, MoMo number or cash box the community keeps money in."
         icon={
           <IconTile tone="brand" round>
             <IconInstitution />
@@ -270,7 +264,6 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
         open={renaming !== null}
         onClose={() => setRenaming(null)}
         title="Edit account"
-        subtitle="Rename it, change its kind, or retire it once it is closed."
         icon={
           <IconTile tone="brand" round>
             <IconPencil />
@@ -293,9 +286,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
         open={entering !== null}
         onClose={() => setEntering(null)}
         title="Enter balance"
-        subtitle={
-          entering ? `What ${entering.name} holds, as you read it on a statement or phone.` : ''
-        }
+        subtitle={entering?.name}
         icon={
           <IconTile tone="brand" round>
             <IconWallet />
@@ -318,11 +309,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
         open={moving !== null}
         onClose={() => setMoving(null)}
         title="Money in / out"
-        subtitle={
-          moving
-            ? `Money put into, or taken out of, ${moving.name} that no payment records: meeting cash deposited, a transfer, a withdrawal.`
-            : ''
-        }
+        subtitle={moving?.name}
         icon={
           <IconTile tone="brand" round>
             <IconPlus />
@@ -500,7 +487,7 @@ function AccountForm({
               retire.mutate(
                 { communityId, accountId: account.id },
                 {
-                  onSuccess: () => onSaved(`${account.name} retired. Its history is kept.`),
+                  onSuccess: () => onSaved(`${account.name} retired.`),
                   onError: (error) => setErrors({ form: errorMessage(error) }),
                 },
               )
@@ -539,7 +526,7 @@ function BalanceForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (balance.trim() === '' || !Number.isFinite(Number(balance))) {
-      setErrors({ balance: 'Enter what the account holds (it may be negative for an overdraft).' });
+      setErrors({ balance: 'Enter the balance (negative for an overdraft).' });
       return;
     }
     if (!communityId) return;
@@ -616,21 +603,15 @@ function BalanceBreakdown({ account }: { account: Account }) {
   const lines: string[] = [];
   if (account.latest_balance) {
     lines.push(
-      `${formatAmount(account.latest_balance.balance_minor)} typed in on ${formatDate(account.latest_balance.as_of)}` +
-        (account.latest_balance.entered_by
-          ? ` by ${account.latest_balance.entered_by.full_name}`
-          : ''),
+      `${formatAmount(account.latest_balance.balance_minor)} on ${formatDate(account.latest_balance.as_of)}`,
     );
   }
-  const since = account.latest_balance ? ' since' : '';
   if (account.contributions_since_minor !== 0)
-    lines.push(
-      `+ ${formatAmount(account.contributions_since_minor)} from confirmed payments${since}`,
-    );
+    lines.push(`+ ${formatAmount(account.contributions_since_minor)} payments`);
   if (account.movements_since_minor > 0)
-    lines.push(`+ ${formatAmount(account.movements_since_minor)} added by hand${since}`);
+    lines.push(`+ ${formatAmount(account.movements_since_minor)} by hand`);
   if (account.movements_since_minor < 0)
-    lines.push(`− ${formatAmount(-account.movements_since_minor)} taken out by hand${since}`);
+    lines.push(`− ${formatAmount(-account.movements_since_minor)} by hand`);
   if (lines.length === 0) return null;
   return (
     <ul
@@ -757,15 +738,9 @@ function BalanceHistory({ account }: { account: Account }) {
   return (
     <section className="details" aria-labelledby="history-title">
       <header className="details__head">
-        <div>
-          <p className="section-head__eyebrow">{KIND_LABEL[account.kind]}</p>
-          <h2 id="history-title" className="section-head__title">
-            {account.name}
-          </h2>
-          <p className="section-head__subtitle">
-            Every balance typed in, and money added or taken out by hand, newest first.
-          </p>
-        </div>
+        <h2 id="history-title" className="section-head__title">
+          {account.name}
+        </h2>
         {!account.is_active && <Badge tone="neutral">Retired</Badge>}
       </header>
       {balances.data === undefined ? (
@@ -775,14 +750,14 @@ function BalanceHistory({ account }: { account: Account }) {
           <ErrorState message={errorMessage(balances.error)} />
         )
       ) : balances.data.items.length === 0 ? (
-        <p className="table__muted">No balance typed in yet.</p>
+        <p className="table__muted">None yet</p>
       ) : (
         <div className="table-scroll">
           <table className="table table--compact">
             <thead>
               <tr>
                 <th scope="col">As of</th>
-                <th scope="col" className="statement-table__num">
+                <th scope="col" className="num">
                   Balance (RWF)
                 </th>
                 <th scope="col">Entered by</th>
@@ -795,7 +770,7 @@ function BalanceHistory({ account }: { account: Account }) {
                     {formatDate(b.as_of)}
                     {b.note && <span className="table__muted"> · {b.note}</span>}
                   </td>
-                  <td className="statement-table__num">{formatAmount(b.balance_minor)}</td>
+                  <td className="num">{formatAmount(b.balance_minor)}</td>
                   <td>{b.entered_by?.full_name ?? '—'}</td>
                 </tr>
               ))}
@@ -804,7 +779,7 @@ function BalanceHistory({ account }: { account: Account }) {
         </div>
       )}
 
-      <h3 className="section-head__title account-history__title">Money in / out by hand</h3>
+      <h3 className="section-head__title account-history__title">In / out by hand</h3>
       {movements.data === undefined ? (
         movements.isPending ? (
           <LoadingState />
@@ -812,14 +787,14 @@ function BalanceHistory({ account }: { account: Account }) {
           <ErrorState message={errorMessage(movements.error)} />
         )
       ) : movements.data.items.length === 0 ? (
-        <p className="table__muted">Nothing added or taken out by hand yet.</p>
+        <p className="table__muted">None yet</p>
       ) : (
         <div className="table-scroll">
           <table className="table table--compact">
             <thead>
               <tr>
                 <th scope="col">Date</th>
-                <th scope="col" className="statement-table__num">
+                <th scope="col" className="num">
                   Amount (RWF)
                 </th>
                 <th scope="col">Entered by</th>
@@ -832,7 +807,7 @@ function BalanceHistory({ account }: { account: Account }) {
                     {formatDate(m.on)}
                     {m.note && <span className="table__muted"> · {m.note}</span>}
                   </td>
-                  <td className="statement-table__num">
+                  <td className="num">
                     {m.direction === 'in' ? '+' : '−'} {formatAmount(m.amount_minor)}
                   </td>
                   <td>{m.entered_by?.full_name ?? '—'}</td>

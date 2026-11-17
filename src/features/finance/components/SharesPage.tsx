@@ -16,10 +16,13 @@ import {
   IconWallet,
   Input,
   LoadingState,
+  SectionCard,
   SegmentedControl,
   Select,
+  TableFooter,
   Textarea,
   Checkbox,
+  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { useMemberships } from '@/features/members';
@@ -60,12 +63,7 @@ export function SharesPage({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <div className="page">
-      <SectionHeader
-        embedded={embedded}
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
-        title="Shares"
-        subtitle="What one share costs each month, and how many shares each member holds. Members owe shares × price every month."
-      />
+      <SectionHeader embedded={embedded} title="Shares" />
 
       <SegmentedControl label="Section" options={SECTIONS} value={section} onChange={setSection} />
 
@@ -112,13 +110,7 @@ function CategoriesSection({
   return (
     <div className="money-section">
       <div className="section-bar">
-        <div>
-          <h2 className="section-title">Share categories</h2>
-          <p className="table__muted">
-            Each category has its own price for one share a month. A stipend category receives money
-            instead of paying.
-          </p>
-        </div>
+        <h2 className="section-title">Share categories</h2>
         {canManage && (
           <div className="section-bar__actions">
             <Button inline icon={<IconPlus />} onClick={() => setEditing('new')}>
@@ -130,11 +122,7 @@ function CategoriesSection({
 
       {categories.length === 0 ? (
         <section className="card">
-          <EmptyState
-            icon={<IconWallet />}
-            title="No share categories yet"
-            message="Add one, e.g. Standard at 10,000 RWF a share."
-          />
+          <EmptyState icon={<IconWallet />} title="No share categories yet" />
         </section>
       ) : (
         <ul className="share-cards" role="list">
@@ -199,8 +187,8 @@ function CategoryDialog({
       title={isNew ? 'Add share category' : 'Edit share category'}
       subtitle={
         isNew
-          ? 'Members in this category owe their shares × this price every month.'
-          : 'A new price is owed from this month on; earlier months keep the old price.'
+          ? 'Members owe shares × price every month.'
+          : 'A new price applies from this month on.'
       }
       icon={
         <IconTile tone="brand" round>
@@ -304,7 +292,7 @@ function CategoryForm({
       />
       {!category && (
         <Checkbox
-          label="Members in this category receive a stipend instead of paying"
+          label="Receives a stipend instead of paying"
           checked={stipend}
           onChange={(event) => setStipend(event.target.checked)}
         />
@@ -339,6 +327,10 @@ function MembersSection({
   const members = useMemberships(communityId, 'active');
   const [editing, setEditing] = useState<Membership | null>(null);
   const byId = new Map(categories.map((c) => [c.id, c]));
+  const rows = [...(members.data ?? [])].sort((a, b) =>
+    (a.full_name ?? '').localeCompare(b.full_name ?? ''),
+  );
+  const paged = usePaged(rows);
 
   if (members.data === undefined) {
     return members.isPending ? (
@@ -347,9 +339,6 @@ function MembersSection({
       <ErrorState message={errorMessage(members.error)} />
     );
   }
-  const rows = [...members.data].sort((a, b) =>
-    (a.full_name ?? '').localeCompare(b.full_name ?? ''),
-  );
   const totalPerMonth = rows.reduce((sum, m) => {
     const category = byId.get(m.member_category);
     if (!category || category.is_stipend_recipient) return sum;
@@ -358,27 +347,25 @@ function MembersSection({
 
   return (
     <div className="money-section">
-      <div className="section-bar">
-        <div>
-          <h2 className="section-title">Members' shares</h2>
-          <p className="table__muted">
-            Together, active members owe {formatAmount(totalPerMonth)} RWF a month.
-          </p>
-        </div>
-      </div>
-
-      <section className="card table-card" aria-label="Members' shares">
+      <SectionCard
+        title="Members' shares"
+        actions={
+          <span className="table__muted">{formatAmount(totalPerMonth)} RWF a month in total</span>
+        }
+        flush
+        footer={<TableFooter {...paged} onPage={paged.setPage} />}
+      >
         <div className="table-scroll">
           <table className="table">
             <thead>
               <tr>
                 <th scope="col">Member</th>
                 <th scope="col">Category</th>
-                <th scope="col" className="statement-table__num">
+                <th scope="col" className="num">
                   Shares
                 </th>
-                <th scope="col" className="statement-table__num">
-                  Owes a month (RWF)
+                <th scope="col" className="num">
+                  Monthly (RWF)
                 </th>
                 {canManage && (
                   <th scope="col" className="table__action-col">
@@ -388,7 +375,7 @@ function MembersSection({
               </tr>
             </thead>
             <tbody>
-              {rows.map((member) => {
+              {paged.rows.map((member) => {
                 const category = byId.get(member.member_category);
                 const shares = member.shares ?? 1;
                 return (
@@ -400,8 +387,8 @@ function MembersSection({
                       </span>
                     </td>
                     <td>{category?.name ?? '—'}</td>
-                    <td className="statement-table__num">{shares}</td>
-                    <td className="statement-table__num table__amount">
+                    <td className="num">{shares}</td>
+                    <td className="num table__amount">
                       {category?.is_stipend_recipient
                         ? 'Stipend'
                         : category
@@ -426,7 +413,7 @@ function MembersSection({
             </tbody>
           </table>
         </div>
-      </section>
+      </SectionCard>
 
       <Dialog
         open={editing !== null}

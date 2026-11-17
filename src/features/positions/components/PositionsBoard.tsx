@@ -5,14 +5,17 @@ import {
   Button,
   Drawer,
   ErrorState,
+  IconIdBadge,
   IconPlus,
   IconShieldCheck,
   IconTile,
   IconUser,
   IconUserCheck,
+  IconUserOff,
   IconUserPlus,
   LoadingState,
   PageHeader,
+  StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import type { DirectoryMember } from '@/features/members';
@@ -34,7 +37,7 @@ interface PositionsBoardProps {
 }
 
 export function PositionsBoard({ selected, onSelect }: PositionsBoardProps) {
-  const { membership, communityId, can } = useWorkspace();
+  const { communityId, can } = useWorkspace();
   const positions = usePositions(communityId, can('position.view'));
   const directory = useMemberDirectory();
   const [editing, setEditing] = useState<Editing>(null);
@@ -45,20 +48,14 @@ export function PositionsBoard({ selected, onSelect }: PositionsBoardProps) {
 
   const list = positions.data ?? [];
   const adminCount = list.filter((p) => p.is_admin).length;
+  const vacantCount = list.filter((p) => p.holder_count === 0).length;
   const holdersOf = (positionId: string) =>
     directory.members.filter((m) => m.positions.some((p) => p.id === positionId));
 
   return (
     <div className="page">
       <PageHeader
-        eyebrow={
-          <span className="eyebrow eyebrow--muted">
-            <IconShieldCheck width={16} height={16} aria-hidden="true" />
-            Governance &amp; Authority
-          </span>
-        }
         title="Positions"
-        subtitle="Define and manage governance positions and roles within this community."
         actions={
           can('position.create') && (
             <Button inline icon={<IconPlus />} onClick={() => setEditing({ mode: 'create' })}>
@@ -68,26 +65,37 @@ export function PositionsBoard({ selected, onSelect }: PositionsBoardProps) {
         }
       />
 
-      <section className="card matrix">
-        <IconTile tone="brand" size="lg">
-          <IconUserCheck />
-        </IconTile>
-        <div className="matrix__text">
-          <h2 className="matrix__title">Elected Leadership &amp; Membership Matrix</h2>
-          <p className="matrix__subtitle">
-            {list.length} designated positions active across {directory.members.length} registered
-            community stakeholders
-          </p>
-        </div>
-        <div className="matrix__meta">
-          <span className={adminCount > 0 ? 'matrix__quorum' : 'matrix__quorum is-short'}>
-            <span className="matrix__quorum-dot" aria-hidden="true" />
-            {adminCount} admin {adminCount === 1 ? 'position' : 'positions'}
-          </span>
-          <span className="matrix__divider" aria-hidden="true" />
-          <span className="matrix__cycle">{membership?.community.name}</span>
-        </div>
-      </section>
+      <div className="stat-grid">
+        <StatCard
+          label="Positions"
+          value={list.length}
+          caption="In this community"
+          icon={<IconIdBadge />}
+          tone="brand"
+        />
+        <StatCard
+          label="Filled"
+          value={list.length - vacantCount}
+          caption="Have a holder"
+          icon={<IconUserCheck />}
+          tone="info"
+        />
+        <StatCard
+          label="Admin"
+          value={adminCount}
+          caption="Run the community"
+          icon={<IconShieldCheck />}
+          tone="accent"
+        />
+        <StatCard
+          label="Vacant"
+          value={vacantCount}
+          caption="Seats open"
+          icon={<IconUserOff />}
+          tone="warning"
+          emphasis={vacantCount > 0}
+        />
+      </div>
 
       {positions.isPending ? (
         <LoadingState label="Loading positions…" />
@@ -193,10 +201,10 @@ function PositionCard({
       </p>
 
       <dl className="position-card__holder">
-        <dt>Assigned Member</dt>
+        <dt>Holder</dt>
         <dd>
           {vacant ? (
-            <span className="position-card__vacant">Seat open</span>
+            <span className="position-card__vacant">Open</span>
           ) : first && holdersKnown ? (
             <>
               <span className="status-dot" aria-hidden="true" />

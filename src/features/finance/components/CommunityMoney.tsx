@@ -73,9 +73,7 @@ export function CommunityMoney({
   return (
     <div className="page">
       <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Community Money"
-        subtitle="Member contributions, and all the money the community has and where it comes from."
         actions={
           canRecordForMember && (
             <Button
@@ -86,7 +84,7 @@ export function CommunityMoney({
                 setRecordingForMember(true);
               }}
             >
-              Record a payment for a member
+              Record for a member
             </Button>
           )
         }
@@ -103,7 +101,7 @@ export function CommunityMoney({
           onRecorded={(contribution) => {
             setRecordingForMember(false);
             setNotice(
-              `${formatAmount(contribution.amount_minor)} ${contribution.currency} recorded for ${contribution.member.full_name}. It stays pending until someone else confirms it.`,
+              `${contribution.currency} ${formatAmount(contribution.amount_minor)} recorded for ${contribution.member.full_name}. Pending until someone else confirms it.`,
             );
           }}
         />

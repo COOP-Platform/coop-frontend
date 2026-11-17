@@ -9,7 +9,10 @@ import {
   IconCheckCircle,
   IconClock,
   LoadingState,
+  SectionCard,
   Select,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
@@ -25,10 +28,10 @@ import { Money } from './Money';
 type MonthState = 'all' | 'unpaid' | 'partly' | 'waiting';
 
 const MONTH_STATES: { value: MonthState; label: string }[] = [
-  { value: 'all', label: 'All unpaid months' },
-  { value: 'unpaid', label: 'Nothing paid yet' },
+  { value: 'all', label: 'All months' },
+  { value: 'unpaid', label: 'Unpaid' },
   { value: 'partly', label: 'Partly paid' },
-  { value: 'waiting', label: 'Waiting for the Treasurer' },
+  { value: 'waiting', label: 'Pending' },
 ];
 
 function matchesState(month: ArrearsMonth, state: MonthState): boolean {
@@ -70,22 +73,15 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
   };
 
   return (
-    <section className="card arrears" aria-labelledby="arrears-title">
-      <header className="table-card__head my-contributions__head">
-        <div>
-          <h2 id="arrears-title" className="section-head__title">
-            Ibirarane <span className="arrears__translation">(arrears)</span>
-          </h2>
-          <p className="section-head__subtitle">
-            Months you still owe since you joined, oldest first. A payment for a month pays that
-            month; an arrears payment pays the oldest month first.
-          </p>
-        </div>
-
-        {data && (
-          <div className="my-contributions__filters">
+    <SectionCard
+      title="Ibirarane"
+      flush
+      actions={
+        data && (
+          <>
             <Select
-              label="Period"
+              label="Year"
+              labelHidden
               value={year}
               onChange={(event) => setYear(event.target.value)}
               options={periodOptions}
@@ -93,6 +89,7 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
             {hasMonths && (
               <Select
                 label="Status"
+                labelHidden
                 value={state}
                 onChange={(event) => setState(event.target.value as MonthState)}
                 options={MONTH_STATES}
@@ -100,12 +97,13 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
             )}
             {filtering && (
               <Button inline variant="tint" onClick={() => setState('all')}>
-                Clear filters
+                Clear
               </Button>
             )}
-          </div>
-        )}
-      </header>
+          </>
+        )
+      }
+    >
       {arrears.isPending ? (
         <LoadingState label="Working out what is left to pay…" />
       ) : arrears.error ? (
@@ -113,7 +111,7 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
       ) : (
         shown && <ArrearsBody data={shown} onPay={onPay} who="you" scope={year} />
       )}
-    </section>
+    </SectionCard>
   );
 }
 
@@ -146,15 +144,17 @@ function ArrearsBody({
 }) {
   if (data.total_minor === 0) {
     return (
-      <div className="notice notice--success" role="status">
+      <div className="notice notice--success arrears__notice" role="status">
         <IconCheckCircle width={20} height={20} aria-hidden="true" />
         <div>
-          <p className="notice__title">Nta birarane: up to date</p>
-          <p className="notice__text">
-            {who === 'you' ? 'You owe' : `${who} owes`} nothing for {scope}.
-            {data.pending_minor > 0 &&
-              ` ${formatAmount(data.pending_minor)} ${data.currency} is waiting for the Treasurer to confirm.`}
+          <p className="notice__title">
+            Nta birarane: {who === 'you' ? 'you owe' : `${who} owes`} nothing for {scope}
           </p>
+          {data.pending_minor > 0 && (
+            <p className="notice__text">
+              {data.currency} {formatAmount(data.pending_minor)} pending
+            </p>
+          )}
         </div>
       </div>
     );
@@ -170,12 +170,11 @@ function ArrearsBody({
           </p>
         </div>
         <p className="arrears__facts">
-          {plural(data.months_behind, 'month')} behind, since {since(data.oldest)}.
+          {plural(data.months_behind, 'month')} behind, since {since(data.oldest)}
           {data.pending_minor > 0 && (
             <>
-              {' '}
-              {formatAmount(data.pending_minor)} {data.currency} recorded and waiting for the
-              Treasurer.
+              {' · '}
+              {data.currency} {formatAmount(data.pending_minor)} pending
             </>
           )}
         </p>
@@ -186,13 +185,13 @@ function ArrearsBody({
           <thead>
             <tr>
               <th scope="col">Month</th>
-              <th scope="col" className="table__amount">
+              <th scope="col" className="num">
                 Owed
               </th>
-              <th scope="col" className="table__amount">
+              <th scope="col" className="num">
                 Paid
               </th>
-              <th scope="col" className="table__amount">
+              <th scope="col" className="num">
                 Left
               </th>
               {onPay && (
@@ -206,7 +205,7 @@ function ArrearsBody({
             {data.months.length === 0 && (
               <tr>
                 <td colSpan={onPay ? 5 : 4} className="table__muted">
-                  No months match these filters. Try another year or clear the filters.
+                  No matching months
                 </td>
               </tr>
             )}
@@ -248,7 +247,7 @@ function YearRows({
       {showYear && (
         <tr className="arrears__year">
           <th scope="rowgroup" colSpan={onPay ? 5 : 4}>
-            {year} · {formatAmount(remaining)} {currency} left
+            {year} · {currency} {formatAmount(remaining)} left
           </th>
         </tr>
       )}
@@ -259,13 +258,13 @@ function YearRows({
             {m.pending_minor > 0 && (
               <Badge tone="warning">
                 <IconClock width={12} height={12} aria-hidden="true" />{' '}
-                {formatAmount(m.pending_minor)} awaiting
+                {formatAmount(m.pending_minor)} pending
               </Badge>
             )}
           </td>
-          <td className="table__amount">{formatAmount(m.owed_minor)}</td>
-          <td className="table__amount">{formatAmount(m.paid_minor)}</td>
-          <td className="table__amount arrears__left">{formatAmount(m.remaining_minor)}</td>
+          <td className="num">{formatAmount(m.owed_minor)}</td>
+          <td className="num">{formatAmount(m.paid_minor)}</td>
+          <td className="num arrears__left">{formatAmount(m.remaining_minor)}</td>
           {onPay && (
             <td className="table__action-col">
               {m.record_as === null ? (
@@ -296,6 +295,7 @@ export function CommunityArrearsSection() {
   const { communityId } = useWorkspace();
   const arrears = useCommunityArrears(communityId);
   const [open, setOpen] = useState<ArrearsRow | null>(null);
+  const paged = usePaged(arrears.data?.items ?? []);
 
   if (arrears.isPending) return <LoadingState label="Working out who is behind…" />;
   if (arrears.error)
@@ -304,21 +304,17 @@ export function CommunityArrearsSection() {
 
   return (
     <div className="money-section">
-      <section className="card arrears" aria-labelledby="community-arrears-title">
-        <header className="table-card__head">
-          <h2 id="community-arrears-title" className="section-head__title">
-            Ibirarane <span className="arrears__translation">(arrears)</span>
-          </h2>
-          <p className="section-head__subtitle">
-            Members who still owe for past months, every year included, most owed first.
-          </p>
-        </header>
-
+      <SectionCard
+        title="Ibirarane"
+        flush
+        footer={
+          data.items.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined
+        }
+      >
         {data.items.length === 0 ? (
           <EmptyState
             icon={<IconCheckCircle width={28} height={28} />}
             title="Nta birarane: everyone is up to date"
-            message={`All ${plural(data.active_members, 'paying member')} have paid every month so far.`}
           />
         ) : (
           <>
@@ -330,7 +326,7 @@ export function CommunityArrearsSection() {
                 </p>
               </div>
               <p className="arrears__facts">
-                {data.members_behind} of {plural(data.active_members, 'paying member')} behind.
+                {data.members_behind} of {plural(data.active_members, 'member')} behind
               </p>
             </div>
             <div className="table-scroll">
@@ -338,10 +334,10 @@ export function CommunityArrearsSection() {
                 <thead>
                   <tr>
                     <th scope="col">Member</th>
-                    <th scope="col">Behind since</th>
+                    <th scope="col">Since</th>
                     <th scope="col">Months</th>
-                    <th scope="col" className="table__amount">
-                      Still to pay
+                    <th scope="col" className="num">
+                      Owed
                     </th>
                     <th scope="col" className="table__action-col">
                       <span className="visually-hidden">Details</span>
@@ -349,21 +345,17 @@ export function CommunityArrearsSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.items.map((row) => (
+                  {paged.rows.map((row) => (
                     <tr key={row.member.membership_id}>
                       <td>
                         {row.member.full_name}
                         {row.pending_minor > 0 && (
-                          <Badge tone="warning">
-                            {formatAmount(row.pending_minor)} awaiting review
-                          </Badge>
+                          <Badge tone="warning">{formatAmount(row.pending_minor)} pending</Badge>
                         )}
                       </td>
                       <td>{since(row.oldest)}</td>
                       <td>{row.months_behind}</td>
-                      <td className="table__amount arrears__left">
-                        {formatAmount(row.total_minor)}
-                      </td>
+                      <td className="num arrears__left">{formatAmount(row.total_minor)}</td>
                       <td className="table__action-col">
                         <Button inline variant="secondary" onClick={() => setOpen(row)}>
                           See months
@@ -376,7 +368,7 @@ export function CommunityArrearsSection() {
             </div>
           </>
         )}
-      </section>
+      </SectionCard>
 
       <Drawer
         open={open !== null}
@@ -397,13 +389,9 @@ function MemberArrearsDetails({ row }: { row: ArrearsRow }) {
   return (
     <section className="details" aria-labelledby="member-arrears-title">
       <header className="details__head">
-        <div>
-          <p className="section-head__eyebrow">Ibirarane</p>
-          <h2 id="member-arrears-title" className="section-head__title">
-            {row.member.full_name}
-          </h2>
-          <p className="section-head__subtitle">Every month still owed, oldest first.</p>
-        </div>
+        <h2 id="member-arrears-title" className="section-head__title">
+          {row.member.full_name}
+        </h2>
       </header>
       {arrears.isPending ? (
         <LoadingState label="Loading months…" />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 
 import {
   Avatar,
@@ -14,8 +15,11 @@ import {
   IconUsers,
   Input,
   LoadingState,
+  SectionCard,
   SegmentedControl,
   StatCard,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -98,17 +102,14 @@ export function MeetingAttendance({ meeting }: { meeting: MeetingDetail }) {
       {notice && !editing && (
         <div className="notice notice--success" role="status">
           <IconCheckCircle width={20} height={20} aria-hidden="true" />
-          <div>
-            <p className="notice__title">Saved</p>
-            <p className="notice__text">{notice}</p>
-          </div>
+          <p className="notice__text">{notice}</p>
         </div>
       )}
 
       {cancelled ? (
         <div className="notice notice--info" role="note">
           <IconBan width={20} height={20} aria-hidden="true" />
-          <p className="notice__text">This meeting was cancelled, so there is no roll-call.</p>
+          <p className="notice__text">Cancelled: no roll-call.</p>
         </div>
       ) : (
         <RollCallStatus
@@ -131,25 +132,25 @@ export function MeetingAttendance({ meeting }: { meeting: MeetingDetail }) {
           }}
         />
       ) : (
-        <>
-          {rc.can_edit && !cancelled && (
-            <div className="section-bar">
-              <div />
-              <div className="section-bar__actions">
+        !cancelled && (
+          <RollCallTable
+            rollCall={rc}
+            action={
+              rc.can_edit ? (
                 <Button
+                  inline
                   icon={rc.recorded_by ? <IconPencil /> : <IconUserCheck />}
                   onClick={() => {
                     setNotice(null);
                     setEditing(true);
                   }}
                 >
-                  {rc.recorded_by ? 'Change the roll-call' : 'Take the roll-call'}
+                  {rc.recorded_by ? 'Change' : 'Take the roll-call'}
                 </Button>
-              </div>
-            </div>
-          )}
-          {!cancelled && <RollCallTable rollCall={rc} />}
-        </>
+              ) : undefined
+            }
+          />
+        )
       )}
     </div>
   );
@@ -158,35 +159,21 @@ export function MeetingAttendance({ meeting }: { meeting: MeetingDetail }) {
 function RollCallSummary({ rollCall: rc }: { rollCall: RollCall }) {
   const { summary, quorum } = rc;
   return (
-    <div className="stat-grid stat-grid--four">
+    <div className="stat-grid">
       <StatCard
         label="Present"
         value={`${summary.present} of ${summary.expected}`}
-        caption={
-          summary.unrecorded > 0 ? `${summary.unrecorded} not recorded yet` : 'Everyone recorded'
-        }
+        caption={summary.unrecorded > 0 ? `${summary.unrecorded} not recorded` : 'All recorded'}
         icon={<IconUsers />}
       />
-      <StatCard
-        label="Excused"
-        value={summary.apology}
-        caption="Sent an apology"
-        icon={<IconInfoCircle />}
-        tone="warning"
-      />
-      <StatCard
-        label="Absent"
-        value={summary.absent}
-        caption="Did not come"
-        icon={<IconBan />}
-        tone="danger"
-      />
+      <StatCard label="Excused" value={summary.apology} icon={<IconInfoCircle />} tone="warning" />
+      <StatCard label="Absent" value={summary.absent} icon={<IconBan />} tone="danger" />
       <StatCard
         label="Quorum"
         value={`${quorum.percent}%`}
         caption={`${quorum.threshold}% needed`}
         icon={<IconCheckCircle />}
-        tone={quorum.reached ? 'brand' : 'neutral'}
+        tone="info"
         badge={
           <Badge tone={quorum.reached ? 'success' : 'neutral'}>
             {quorum.reached ? 'Reached' : 'Not reached'}
@@ -214,27 +201,25 @@ function RollCallStatus({
   const lines: string[] = [];
   if (rc.recorded_by) {
     lines.push(
-      `Recorded by ${mine ? 'you' : rc.recorded_by.full_name}${lastRecorded ? `, last changed ${when(lastRecorded)}` : ''}.`,
+      `By ${mine ? 'you' : rc.recorded_by.full_name}${lastRecorded ? `, ${when(lastRecorded)}` : ''}.`,
     );
   } else {
-    lines.push('Nobody has taken the roll-call yet.');
+    lines.push('Not taken yet.');
   }
   if (rc.locked && rc.locked_at) {
     lines.push(
-      `Finished on ${formatDate(rc.locked_at)}${rc.locked_by ? ` by ${rc.locked_by.full_name}` : ''}.`,
+      `Locked ${formatDate(rc.locked_at)}${rc.locked_by ? ` by ${rc.locked_by.full_name}` : ''}.`,
     );
   }
   if (meeting.minutes_published) {
-    lines.push('The minutes are final, so the roll-call can no longer change.');
+    lines.push('Minutes are final.');
   } else if (canRecord && !rc.can_edit && rc.recorded_by && !mine) {
     lines.push(`Only ${rc.recorded_by.full_name} can change it.`);
   } else if (rc.can_edit && !hasStarted(meeting)) {
-    lines.push('The meeting has not started yet. You can note apologies now.');
+    lines.push('You can note apologies now.');
   }
   if (!rc.locked && !meeting.minutes_published) {
-    lines.push(
-      'You can keep changing it, even after the meeting. It locks when the minutes are final, and anyone not marked is recorded absent.',
-    );
+    lines.push('Locks when the minutes are final; anyone unmarked is then absent.');
   }
 
   return (
@@ -244,57 +229,64 @@ function RollCallStatus({
       ) : (
         <IconClock width={20} height={20} aria-hidden="true" />
       )}
-      <div>
-        <p className="notice__title">
-          {rc.locked ? 'Roll-call locked' : rc.recorded_by ? 'Roll-call open' : 'Roll-call'}
-        </p>
-        <p className="notice__text">{lines.join(' ')}</p>
-      </div>
+      <p className="notice__text">
+        <strong>{rc.locked ? 'Locked.' : 'Open.'}</strong> {lines.join(' ')}
+      </p>
     </div>
   );
 }
 
-function RollCallTable({ rollCall: rc }: { rollCall: RollCall }) {
-  if (rc.records.length === 0) {
-    return <p className="table__muted">No members on this roll-call.</p>;
-  }
+function RollCallTable({ rollCall: rc, action }: { rollCall: RollCall; action?: ReactNode }) {
+  const paged = usePaged(rc.records);
   return (
-    <div className="card table-card">
-      <div className="table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th scope="col">Member</th>
-              <th scope="col">Attendance</th>
-              <th scope="col">How</th>
-              <th scope="col">Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rc.records.map((record) => (
-              <tr key={record.member.membership_id}>
-                <td>
-                  <MemberCell name={record.member.full_name} positions={record.member.positions} />
-                </td>
-                <td>
-                  {record.status ? (
-                    <Badge tone={STATUS_TONES[record.status]} dot>
-                      {ATTENDANCE_STATUS_LABELS[record.status]}
-                    </Badge>
-                  ) : (
-                    <span className="table__muted">Not recorded</span>
-                  )}
-                </td>
-                <td className="table__muted">
-                  {record.channel ? ATTENDANCE_CHANNEL_LABELS[record.channel] : '—'}
-                </td>
-                <td>{record.note ?? <span className="table__muted">—</span>}</td>
+    <SectionCard
+      title="Roll-call"
+      actions={action}
+      flush={rc.records.length > 0}
+      footer={rc.records.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined}
+    >
+      {rc.records.length === 0 ? (
+        <p className="table__muted">No members on this roll-call.</p>
+      ) : (
+        <div className="table-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Status</th>
+                <th scope="col">How</th>
+                <th scope="col">Note</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {paged.rows.map((record) => (
+                <tr key={record.member.membership_id}>
+                  <td>
+                    <MemberCell
+                      name={record.member.full_name}
+                      positions={record.member.positions}
+                    />
+                  </td>
+                  <td>
+                    {record.status ? (
+                      <Badge tone={STATUS_TONES[record.status]} dot>
+                        {ATTENDANCE_STATUS_LABELS[record.status]}
+                      </Badge>
+                    ) : (
+                      <span className="table__muted">Not recorded</span>
+                    )}
+                  </td>
+                  <td className="table__muted">
+                    {record.channel ? ATTENDANCE_CHANNEL_LABELS[record.channel] : '—'}
+                  </td>
+                  <td>{record.note ?? <span className="table__muted">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
@@ -412,25 +404,21 @@ function RollCallForm({
   }
 
   return (
-    <section className="card roll-call-form" aria-label="Take the roll-call">
-      <div className="section-bar">
-        <div>
-          <h2 className="section-title">{rc.locked ? 'Correct the roll-call' : 'Roll-call'}</h2>
-          <p className="table__muted">
-            {present} present · {unmarked} not marked yet
-            {rc.locked
-              ? '. Members you leave unmarked are recorded absent.'
-              : '. Notes are visible to every member.'}
-          </p>
-        </div>
-        {unmarked > 0 && (
-          <div className="section-bar__actions">
-            <Button variant="secondary" size="sm" inline onClick={markRestPresent}>
-              Mark the rest present
-            </Button>
-          </div>
-        )}
-      </div>
+    <SectionCard
+      title={rc.locked ? 'Correct the roll-call' : 'Take the roll-call'}
+      className="roll-call-form"
+      actions={
+        unmarked > 0 ? (
+          <Button variant="secondary" size="sm" inline onClick={markRestPresent}>
+            Mark the rest present
+          </Button>
+        ) : undefined
+      }
+    >
+      <p className="table__muted roll-call-form__status">
+        {present} present · {unmarked} not marked
+        {rc.locked ? ' · unmarked members are recorded absent' : ' · notes are seen by all members'}
+      </p>
 
       <ul className="roll-call-form__list">
         {rc.records.map((record) => {
@@ -488,12 +476,6 @@ function RollCallForm({
           {save.isPending ? 'Saving…' : rc.locked ? 'Save corrections' : 'Save roll-call'}
         </Button>
       </div>
-      {!rc.locked && (
-        <p className="table__muted roll-call-form__hint">
-          You can come back and change it any time until the minutes are final. Then it locks, and
-          anyone not marked is recorded absent.
-        </p>
-      )}
-    </section>
+    </SectionCard>
   );
 }

@@ -51,7 +51,6 @@ export function MeetingFormDialog({
       open={open}
       onClose={onClose}
       title={meeting ? 'Edit meeting' : 'Schedule a meeting'}
-      subtitle="Say when and where it is, and what will be discussed. Members see it straight away."
       icon={
         <IconTile tone="brand" round>
           <IconCalendar />
@@ -320,7 +319,6 @@ function MeetingForm({
         value={onlineLink}
         onChange={(event) => setOnlineLink(event.target.value)}
         error={errors.onlineLink}
-        hint="For members joining by video call."
       />
       <Textarea
         label="Description"
@@ -334,9 +332,7 @@ function MeetingForm({
 
       <fieldset className="agenda-editor">
         <legend className="field__label">Agenda</legend>
-        {agenda.length === 0 && (
-          <p className="table__muted">No items yet. Add what the meeting will discuss.</p>
-        )}
+        {agenda.length === 0 && <p className="table__muted">No items yet.</p>}
         <ol className="agenda-editor__list">
           {agenda.map((item, index) => (
             <li key={item.key} className="agenda-editor__item">

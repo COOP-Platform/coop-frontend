@@ -21,7 +21,10 @@ import {
   IconUserPlus,
   LoadingState,
   PageHeader,
-  SegmentedControl,
+  SectionCard,
+  Select,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -78,6 +81,7 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
         i.full_name.toLowerCase().includes(query) ||
         i.email.toLowerCase().includes(query)),
   );
+  const paged = usePaged(filtered);
 
   // Details open only for an explicit selection (a row click, or a just-sent invite).
   const selected = all.find((i) => i.id === search.selected);
@@ -104,8 +108,8 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
         <section className="card">
           <EmptyState
             icon={<IconMail width={28} height={28} />}
-            title="You can't manage invitations here"
-            message="Seeing and sending invitations needs the member.invite permission. Ask an admin for a position that has it."
+            title="You can't manage invitations"
+            message="Ask an admin for access."
           />
         </section>
       </div>
@@ -116,8 +120,7 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
     <div className="page">
       <PageHeader
         title="Invitations"
-        badge={<Badge tone="info">{all.length} Sent</Badge>}
-        subtitle="Track and manage invitations sent to prospective cooperative members. Accepted invitations stay here for 24 hours; after that the person is on Members."
+        subtitle={`${all.length} sent`}
         actions={
           <>
             <Button variant="tint" inline icon={<IconDownload />} onClick={exportCsv}>
@@ -134,46 +137,56 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
         }
       />
 
-      <div className="toolbar card">
-        <SegmentedControl
-          label="Filter by status"
-          appearance="solid"
-          value={status}
-          onChange={(value) =>
-            onSearchChange({
-              ...search,
-              status: value === 'all' ? undefined : value,
-              selected: undefined,
-            })
-          }
-          options={[
-            { value: 'all', label: `All (${all.length})` },
-            { value: 'pending', label: `Pending (${count('pending')})` },
-            { value: 'accepted', label: `Accepted (${count('accepted')})` },
-            { value: 'expired', label: `Expired (${count('expired')})` },
-          ]}
-        />
-        <div className="search-field search-field--compact">
-          <label htmlFor={filterId} className="visually-hidden">
-            Filter by name or email
-          </label>
-          <span className="search-field__icon" aria-hidden="true">
-            <IconSearch />
-          </span>
-          <input
-            id={filterId}
-            type="search"
-            className="search-field__input"
-            placeholder="Filter by name or email..."
-            value={search.q ?? ''}
-            onChange={(event) =>
-              onSearchChange({ ...search, q: event.target.value || undefined, selected: undefined })
-            }
-          />
-        </div>
-      </div>
-
-      <section className="card table-card" aria-label="Invitations">
+      <SectionCard
+        title="Sent invitations"
+        flush
+        actions={
+          <>
+            <div className="search-field search-field--compact">
+              <label htmlFor={filterId} className="visually-hidden">
+                Filter by name or email
+              </label>
+              <span className="search-field__icon" aria-hidden="true">
+                <IconSearch />
+              </span>
+              <input
+                id={filterId}
+                type="search"
+                className="search-field__input"
+                placeholder="Search…"
+                value={search.q ?? ''}
+                onChange={(event) =>
+                  onSearchChange({
+                    ...search,
+                    q: event.target.value || undefined,
+                    selected: undefined,
+                  })
+                }
+              />
+            </div>
+            <Select
+              label="Filter by status"
+              labelHidden
+              value={status}
+              onChange={(event) => {
+                const value = event.target.value as InvitationStatusFilter;
+                onSearchChange({
+                  ...search,
+                  status: value === 'all' ? undefined : value,
+                  selected: undefined,
+                });
+              }}
+              options={[
+                { value: 'all', label: `All (${all.length})` },
+                { value: 'pending', label: `Pending (${count('pending')})` },
+                { value: 'accepted', label: `Accepted (${count('accepted')})` },
+                { value: 'expired', label: `Expired (${count('expired')})` },
+              ]}
+            />
+          </>
+        }
+        footer={<TableFooter {...paged} onPage={paged.setPage} />}
+      >
         {invitations.isPending ? (
           <LoadingState label="Loading invitations…" />
         ) : invitations.error ? (
@@ -181,12 +194,7 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<IconMail width={28} height={28} />}
-            title={all.length === 0 ? 'No invitations yet' : 'No invitations here'}
-            message={
-              all.length === 0
-                ? 'Invite your first member to get the community started.'
-                : 'Nothing matches this status or filter.'
-            }
+            title={all.length === 0 ? 'No invitations yet' : 'No matches'}
           />
         ) : (
           <div className="table-scroll">
@@ -195,14 +203,14 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
                 <tr>
                   <th scope="col">Invitee</th>
                   <th scope="col">Status</th>
-                  <th scope="col">Sent / Timeline</th>
+                  <th scope="col">Sent</th>
                   <th scope="col" className="table__action-col">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((invitation) => (
+                {paged.rows.map((invitation) => (
                   <InvitationRow
                     key={invitation.id}
                     invitation={invitation}
@@ -215,7 +223,7 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
             </table>
           </div>
         )}
-      </section>
+      </SectionCard>
 
       <InviteMemberDialog
         key={search.invite ? 'open' : 'closed'}
@@ -396,13 +404,9 @@ function InvitationDetails({
   return (
     <section className="details" aria-labelledby="invitation-details-title">
       <header className="details__head">
-        <div>
-          <p className="section-head__eyebrow">Selection</p>
-          <h2 id="invitation-details-title" className="section-head__title">
-            Invitation Details
-          </h2>
-          <p className="section-head__subtitle">Details for {invitation.full_name}</p>
-        </div>
+        <h2 id="invitation-details-title" className="section-head__title">
+          Invitation
+        </h2>
         <Badge tone={status.tone} dot={current === 'pending'}>
           {status.label}
         </Badge>
@@ -422,7 +426,7 @@ function InvitationDetails({
           <dd className={`details__status details__status--${status.tone}`}>{status.detail}</dd>
         </div>
         <div>
-          <dt>Date Sent</dt>
+          <dt>Sent</dt>
           <dd>
             {formatDate(invitation.created_at)} ({formatRelative(invitation.created_at)})
           </dd>
@@ -444,7 +448,7 @@ function InvitationDetails({
           </div>
         ) : (
           <div>
-            <dt>Expiration</dt>
+            <dt>Expires</dt>
             <dd>
               {formatDate(invitation.expires_at)} ({formatRelative(invitation.expires_at)})
             </dd>
@@ -510,19 +514,14 @@ function InvitationDetails({
                 </div>
               </div>
             ) : (
-              <>
-                <button
-                  type="button"
-                  className="details__action details__action--danger"
-                  onClick={() => setConfirmCancel(true)}
-                >
-                  <IconBan aria-hidden="true" />
-                  Cancel Invitation
-                </button>
-                <p className="details__note">
-                  Canceling will immediately revoke secure tokens and join link authorization.
-                </p>
-              </>
+              <button
+                type="button"
+                className="details__action details__action--danger"
+                onClick={() => setConfirmCancel(true)}
+              >
+                <IconBan aria-hidden="true" />
+                Cancel Invitation
+              </button>
             )}
           </>
         )}

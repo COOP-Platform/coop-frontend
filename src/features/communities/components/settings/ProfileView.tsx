@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react';
 
-import { Badge, Button, IconMail, IconMapPin, IconPencil, IconPhone } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  IconMail,
+  IconMapPin,
+  IconPencil,
+  IconPhone,
+  SectionCard,
+} from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 
 import type { Community, CommunityStatus } from '../../api/communities';
@@ -50,7 +58,7 @@ export function ProfileView({
       <div className="cs-empty">
         <p className="cs-empty__text">{prompt}</p>
         <Button variant="tint" size="sm" inline icon={<IconPencil />} onClick={onEdit}>
-          Add it now
+          Add
         </Button>
       </div>
     ) : (
@@ -101,44 +109,25 @@ export function ProfileView({
           <div className="cs-hero__prompt">
             {empty(
               !community.logo_url && !community.cover_url
-                ? 'Add a logo and a cover banner so members recognise the community at a glance.'
+                ? 'No logo or cover banner yet.'
                 : !community.logo_url
-                  ? 'Add a logo so members recognise the community at a glance.'
-                  : 'Add a cover banner to finish the look of your profile.',
+                  ? 'No logo yet.'
+                  : 'No cover banner yet.',
             )}
           </div>
         )}
       </section>
 
       <div className="cs-grid">
-        <section className="card cs-block" aria-labelledby="cs-about">
-          <h2 id="cs-about" className="cs-block__title">
-            About us
-          </h2>
-          {text(
-            community.description,
-            'Add a short description: who you are and what brings you together.',
-          )}
-        </section>
+        <SectionCard title="About us">
+          {text(community.description, 'No description yet.')}
+        </SectionCard>
 
-        <section className="card cs-block" aria-labelledby="cs-vision">
-          <h2 id="cs-vision" className="cs-block__title">
-            Vision
-          </h2>
-          {text(community.vision, 'Add your vision: the future your community is working towards.')}
-        </section>
+        <SectionCard title="Vision">{text(community.vision, 'No vision yet.')}</SectionCard>
 
-        <section className="card cs-block" aria-labelledby="cs-mission">
-          <h2 id="cs-mission" className="cs-block__title">
-            Mission
-          </h2>
-          {text(community.mission, 'Add your mission: what you do, day to day, to get there.')}
-        </section>
+        <SectionCard title="Mission">{text(community.mission, 'No mission yet.')}</SectionCard>
 
-        <section className="card cs-block" aria-labelledby="cs-contact">
-          <h2 id="cs-contact" className="cs-block__title">
-            Contact
-          </h2>
+        <SectionCard title="Contact">
           {contacts.length > 0 ? (
             <dl className="cs-facts">
               {contacts.map((contact) => (
@@ -152,14 +141,11 @@ export function ProfileView({
               ))}
             </dl>
           ) : (
-            empty('Add an email, phone number or meeting place so people can reach you.')
+            empty('No contact details yet.')
           )}
-        </section>
+        </SectionCard>
 
-        <section className="card cs-block" aria-labelledby="cs-prefs">
-          <h2 id="cs-prefs" className="cs-block__title">
-            Preferences
-          </h2>
+        <SectionCard title="Preferences">
           <dl className="cs-facts">
             <div className="cs-fact">
               <dt className="cs-fact__label">Currency</dt>
@@ -170,7 +156,7 @@ export function ProfileView({
               <dd className="cs-fact__value">{labelFor(LANGUAGES, community.language)}</dd>
             </div>
           </dl>
-        </section>
+        </SectionCard>
       </div>
     </div>
   );

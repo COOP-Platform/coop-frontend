@@ -65,7 +65,7 @@ export function RecordExpenseDialog({
       open={open}
       onClose={onClose}
       title="Record Expense"
-      subtitle="Money paid out of the community. It is approved by someone else before it counts."
+      subtitle="Counts once someone else approves it."
       icon={
         <IconTile tone="warning" round>
           <IconSend />
@@ -266,18 +266,14 @@ function ExpenseForm({
         value={budgetId}
         onChange={(event) => setBudgetId(event.target.value)}
         options={sourceOptions}
-        hint={
-          chosen
-            ? 'Covered first by what its dedicated contribution raised; anything beyond comes from the cash box.'
-            : 'General community funds: contributions and income, less what was already spent.'
-        }
+        hint={chosen ? 'Anything beyond what it raised comes from the cash box.' : undefined}
         error={errors.budget_id}
       />
       {amountMinorNow > 0 && shortBy > 0 && (
         <p className="notice notice--warning cash-warning" role="status">
           {chosen
-            ? `This is ${formatAmount(shortBy)} RWF more than "${chosen.title}" has raised; the rest will come from the cash box.`
-            : `This is ${formatAmount(shortBy)} RWF more than the cash box holds. Check the amount before recording.`}
+            ? `${formatAmount(shortBy)} RWF more than "${chosen.title}" raised; the rest comes from the cash box.`
+            : `${formatAmount(shortBy)} RWF more than the cash box holds. Check the amount.`}
         </p>
       )}
       <Textarea

@@ -8,7 +8,10 @@ import {
   IconClose,
   IconUsers,
   LoadingState,
+  SectionCard,
   StatCard,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
@@ -44,58 +47,50 @@ export function ReportSummary({
 
   if (m.total === 0) {
     return (
-      <EmptyState
-        icon={<IconCalendar />}
-        title={`No meetings in ${label}`}
-        message="Choose another year or month to see its meetings."
-      />
+      <SectionCard title="Summary">
+        <EmptyState icon={<IconCalendar />} title={`No meetings in ${label}`} />
+      </SectionCard>
     );
   }
 
   return (
-    <div className="money-section">
-      <div className="stat-grid stat-grid--four">
+    <div className="report-summary">
+      <div className="stat-grid">
         <StatCard
           label="Meetings held"
           value={a.meetings}
-          caption={`${a.recorded} with attendance recorded`}
+          caption={`${a.recorded} recorded`}
           icon={<IconCheckCircle />}
         />
         <StatCard
           label="Cancelled"
           value={m.cancelled}
-          caption={`of ${m.total} scheduled in ${label}`}
+          caption={`of ${m.total} scheduled`}
           icon={<IconClose />}
-          tone="neutral"
+          tone="danger"
         />
         <StatCard
           label="Average attendance"
           value={a.average_attendance === null ? '—' : `${a.average_attendance}%`}
-          caption={a.recorded ? 'Over locked roll-calls' : 'No roll-call locked yet'}
+          caption={a.recorded ? undefined : 'No locked roll-calls'}
           icon={<IconUsers />}
           tone="info"
         />
         <StatCard
           label="Quorum reached"
           value={`${a.quorum_met} of ${a.recorded}`}
-          caption="Meetings with a locked roll-call"
           icon={<IconBarChart />}
           tone="warning"
         />
       </div>
 
       <div className="report-summary-grid">
-        <section className="card table-card" aria-labelledby="summary-status">
-          <header className="table-card__head">
-            <h2 id="summary-status" className="section-head__title">
-              Meetings by status
-            </h2>
-          </header>
+        <SectionCard title="By status" flush>
           <div className="table-scroll">
             <table className="table table--compact">
               <tbody>
                 <CountRow label="Completed" value={m.completed} />
-                <CountRow label="Upcoming or in progress" value={m.upcoming} />
+                <CountRow label="Upcoming" value={m.upcoming} />
                 <CountRow label="Cancelled" value={m.cancelled} />
               </tbody>
               <tfoot>
@@ -103,13 +98,8 @@ export function ReportSummary({
               </tfoot>
             </table>
           </div>
-        </section>
-        <section className="card table-card" aria-labelledby="summary-type">
-          <header className="table-card__head">
-            <h2 id="summary-type" className="section-head__title">
-              Meetings by type
-            </h2>
-          </header>
+        </SectionCard>
+        <SectionCard title="By type" flush>
           <div className="table-scroll">
             <table className="table table--compact">
               <tbody>
@@ -119,7 +109,7 @@ export function ReportSummary({
               </tbody>
             </table>
           </div>
-        </section>
+        </SectionCard>
       </div>
 
       <MeetingAttendanceTable rows={attendance.data.rows} />
@@ -131,24 +121,21 @@ function CountRow({ label, value }: { label: string; value: number }) {
   return (
     <tr>
       <th scope="row">{label}</th>
-      <td className="statement-table__num">{value}</td>
+      <td className="num">{value}</td>
     </tr>
   );
 }
 
 function MeetingAttendanceTable({ rows }: { rows: AttendanceReportRow[] }) {
+  const paged = usePaged(rows);
   return (
-    <section className="card table-card" aria-labelledby="summary-meetings">
-      <header className="table-card__head">
-        <h2 id="summary-meetings" className="section-head__title">
-          Attendance at each meeting
-        </h2>
-        <p className="table__muted">
-          Meetings that have taken place. A roll-call that is still open may change.
-        </p>
-      </header>
+    <SectionCard
+      title="Attendance by meeting"
+      flush={rows.length > 0}
+      footer={rows.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined}
+    >
       {rows.length === 0 ? (
-        <p className="table-card__foot">No meeting has taken place in this period yet.</p>
+        <p className="table__muted">No meetings held yet.</p>
       ) : (
         <div className="table-scroll">
           <table className="table table--compact">
@@ -156,21 +143,21 @@ function MeetingAttendanceTable({ rows }: { rows: AttendanceReportRow[] }) {
               <tr>
                 <th scope="col">Date</th>
                 <th scope="col">Meeting</th>
-                <th scope="col" className="statement-table__num">
+                <th scope="col" className="num">
                   Present
                 </th>
-                <th scope="col" className="statement-table__num">
+                <th scope="col" className="num">
                   Apologies
                 </th>
-                <th scope="col" className="statement-table__num">
+                <th scope="col" className="num">
                   Absent
                 </th>
-                <th scope="col">Attendance</th>
+                <th scope="col">Rate</th>
                 <th scope="col">Quorum</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {paged.rows.map((row) => (
                 <tr key={row.meeting.id}>
                   <td className="statement-table__date">{formatDate(row.meeting.scheduled_at)}</td>
                   <td>
@@ -181,11 +168,11 @@ function MeetingAttendanceTable({ rows }: { rows: AttendanceReportRow[] }) {
                       </span>
                     </span>
                   </td>
-                  <td className="statement-table__num">
+                  <td className="num">
                     {row.present} of {row.expected}
                   </td>
-                  <td className="statement-table__num">{row.apology}</td>
-                  <td className="statement-table__num">{row.absent}</td>
+                  <td className="num">{row.apology}</td>
+                  <td className="num">{row.absent}</td>
                   <td>
                     <span className="report-bar">
                       <span className="report-bar__track" aria-hidden="true">
@@ -203,7 +190,7 @@ function MeetingAttendanceTable({ rows }: { rows: AttendanceReportRow[] }) {
                   </td>
                   <td>
                     {!row.locked ? (
-                      <Badge tone="neutral">Roll-call open</Badge>
+                      <Badge tone="neutral">Open</Badge>
                     ) : row.quorum_reached ? (
                       <Badge tone="success">Reached ({row.threshold}%)</Badge>
                     ) : (
@@ -216,6 +203,6 @@ function MeetingAttendanceTable({ rows }: { rows: AttendanceReportRow[] }) {
           </table>
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }

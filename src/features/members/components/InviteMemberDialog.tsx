@@ -98,7 +98,6 @@ export function InviteMemberDialog({
       open={open}
       onClose={onClose}
       title="Invite Member"
-      subtitle="They receive an email with a link to join."
       icon={
         <IconTile tone="brand" round>
           <IconUserPlus />
@@ -142,9 +141,7 @@ export function InviteMemberDialog({
           disabled={activeCategories.length === 0}
           hint={
             chosen?.description ??
-            (categories.isError
-              ? 'Categories could not be loaded; the community default is used.'
-              : 'What they are expected to contribute. You can change it later.')
+            (categories.isError ? 'Could not load; the default is used.' : undefined)
           }
           error={errors.category}
           required

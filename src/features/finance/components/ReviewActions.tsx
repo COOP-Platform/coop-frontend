@@ -33,13 +33,12 @@ type ReasonKind = 'reject' | 'reverse';
 const REASON_COPY: Record<ReasonKind, { title: string; subtitle: string; button: string }> = {
   reject: {
     title: 'Reject payment',
-    subtitle: 'The member is emailed your reason and can record the payment again.',
+    subtitle: 'The member is emailed your reason.',
     button: 'Reject payment',
   },
   reverse: {
     title: 'Reverse payment',
-    subtitle:
-      'For a payment that bounced or was recorded twice. It is taken out of every total; the record stays.',
+    subtitle: 'Taken out of every total. The record stays.',
     button: 'Reverse payment',
   },
 };
@@ -73,9 +72,7 @@ export function ReviewActions({
       return compact ? (
         <span className="table__muted">Your own payment</span>
       ) : (
-        <p className="details__note">
-          This is your own payment, so another reviewer has to confirm it.
-        </p>
+        <p className="details__note">Your own payment: another reviewer must confirm it.</p>
       );
     }
     return (
@@ -83,7 +80,7 @@ export function ReviewActions({
         {rights.canConfirm && !compact && channels.length > 0 && (
           <Select
             label="Paid into"
-            hint="Check where the money arrived before approving."
+            hint="Check before approving."
             placeholder="Not given"
             value={channel}
             onChange={(event) => setChannel(event.target.value)}
@@ -312,7 +309,7 @@ export function RemindersDialog({
       open={open}
       onClose={close}
       title="Remind unpaid members"
-      subtitle={`Email every member who has not paid for ${monthLabel}.`}
+      subtitle={`Email members who have not paid for ${monthLabel}.`}
       icon={
         <IconTile tone="warning" round>
           <IconBellAlert />
@@ -341,12 +338,7 @@ export function RemindersDialog({
               </p>
             </div>
           </div>
-        ) : (
-          <p className="table__muted">
-            Members who have paid, whose payment is waiting for review, or who were reminded in the
-            last 24 hours are skipped.
-          </p>
-        )}
+        ) : null}
 
         {send.error && <p className="form-error">{errorMessage(send.error)}</p>}
 

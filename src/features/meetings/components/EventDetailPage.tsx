@@ -10,13 +10,16 @@ import {
   IconArrowLeft,
   IconBan,
   IconCheckCircle,
+  IconClock,
   IconEyeOff,
   IconFlag,
   IconLock,
+  IconMapPin,
   IconPencil,
   IconTile,
   LoadingState,
   PageHeader,
+  SectionCard,
   Textarea,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -26,15 +29,15 @@ import { formatLongDate } from '@/lib/format/date';
 
 import { eventTypeLabel, formatEventWhen, useCancelEvent, useEvent } from '../api/events';
 import type { CommunityEventDetail } from '../api/events';
-import { EventBudget } from './EventBudget';
-import { EventFormDialog, HIDDEN_EXPLAINER } from './EventFormDialog';
+import { EventBudget, EventBudgetStats } from './EventBudget';
+import { EventFormDialog } from './EventFormDialog';
 import { EventResponses, EventRsvp } from './EventRsvp';
 import { EventStatusBadge, HiddenBadge } from './EventsPage';
 
 function BackLink() {
   return (
     <Link to="/meetings/events" className="event-detail__back">
-      <IconArrowLeft width={16} height={16} aria-hidden="true" /> All events
+      <IconArrowLeft width={16} height={16} aria-hidden="true" /> Events
     </Link>
   );
 }
@@ -65,7 +68,6 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                 </IconTile>
               }
               title="This event isn't available"
-              message="It may have been removed, or it is not shared with you. Check the events list for what is coming up."
               action={
                 <Link to="/meetings/events" className="btn btn--secondary btn--inline">
                   See all events
@@ -108,16 +110,26 @@ function EventDetails({
     event.status === 'cancelled' &&
     (event.hidden_from?.length ?? 0) > 0;
   const canCancel = can('event.cancel') && upcoming;
-  const { confirmed, apologies, pending, expected, guests } = event.rsvp;
+  const { confirmed, apologies, expected, guests } = event.rsvp;
 
   return (
     <div className="page">
       <BackLink />
       <PageHeader
-        eyebrow={<span className="eyebrow eyebrow--muted">{eventTypeLabel(event.event_type)}</span>}
         title={event.title}
         badge={<EventStatusBadge event={event} />}
-        subtitle={`Organised by ${event.created_by.full_name}`}
+        subtitle={
+          <span className="event-detail__meta">
+            <span>
+              <IconClock width={16} height={16} aria-hidden="true" /> {formatEventWhen(event)}
+            </span>
+            {event.venue && (
+              <span>
+                <IconMapPin width={16} height={16} aria-hidden="true" /> {event.venue}
+              </span>
+            )}
+          </span>
+        }
         actions={
           canEdit || canCancel || canEditHiddenOnly ? (
             <div className="review-actions">
@@ -159,10 +171,7 @@ function EventDetails({
       {notice && (
         <div className="notice notice--success" role="status">
           <IconCheckCircle width={20} height={20} aria-hidden="true" />
-          <div>
-            <p className="notice__title">Done</p>
-            <p className="notice__text">{notice}</p>
-          </div>
+          <p className="notice__text">{notice}</p>
         </div>
       )}
 
@@ -171,85 +180,72 @@ function EventDetails({
           <IconBan width={20} height={20} aria-hidden="true" />
           <div>
             <p className="notice__title">
-              This event was cancelled
-              {event.cancelled_at ? ` on ${formatLongDate(event.cancelled_at)}` : ''}
+              Cancelled{event.cancelled_at ? ` on ${formatLongDate(event.cancelled_at)}` : ''}
             </p>
             {event.cancel_reason && <p className="notice__text">{event.cancel_reason}</p>}
           </div>
         </div>
       )}
 
+      <EventBudgetStats event={event} />
+
       <div className="event-detail">
-        <section className="card event-detail__main" aria-labelledby="event-about">
-          <h2 id="event-about" className="section-title">
-            Details
-          </h2>
-          <dl className="details__list">
-            <div>
-              <dt>When</dt>
-              <dd>{formatEventWhen(event)}</dd>
-            </div>
-            <div>
-              <dt>Place</dt>
-              <dd>{event.venue ?? 'Not set yet'}</dd>
-            </div>
-            <div>
-              <dt>Guests</dt>
-              <dd>{event.guests_allowed ? 'Members may bring guests' : 'Members only'}</dd>
-            </div>
+        <SectionCard title="Details">
+          <dl className="event-kv">
+            <dt>When</dt>
+            <dd>{formatEventWhen(event)}</dd>
+            <dt>Place</dt>
+            <dd>{event.venue ?? 'Not set'}</dd>
+            <dt>Type</dt>
+            <dd>{eventTypeLabel(event.event_type)}</dd>
+            <dt>Guests</dt>
+            <dd>{event.guests_allowed ? 'Allowed' : 'Members only'}</dd>
+            <dt>Organiser</dt>
+            <dd>{event.created_by.full_name}</dd>
           </dl>
           {event.description && <p className="event-detail__description">{event.description}</p>}
-        </section>
+        </SectionCard>
 
-        <section className="card event-detail__side" aria-labelledby="event-answers">
-          <h2 id="event-answers" className="section-title">
-            Who is coming
-          </h2>
-          <dl className="details__list">
-            <div>
-              <dt>Coming</dt>
-              <dd>
-                {confirmed}
-                {guests > 0 && (
-                  <span className="table__muted">
-                    {' '}
-                    + {guests} guest{guests === 1 ? '' : 's'}
-                  </span>
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>Can&apos;t make it</dt>
-              <dd>{apologies}</dd>
-            </div>
-            <div>
-              <dt>Not answered yet</dt>
-              <dd>{pending}</dd>
-            </div>
+        <SectionCard
+          title="Who is coming"
+          className="event-coming"
+          footer={
+            <EventRsvp key={event.my_rsvp?.responded_at ?? 'none'} event={event} withGuests />
+          }
+        >
+          <dl className="event-counts">
             <div>
               <dt>Invited</dt>
-              <dd>
-                {expected} member{expected === 1 ? '' : 's'}
-              </dd>
+              <dd>{expected}</dd>
+            </div>
+            <div>
+              <dt>Yes{guests > 0 ? ` · +${guests} guest${guests === 1 ? '' : 's'}` : ''}</dt>
+              <dd className="event-counts__yes">{confirmed}</dd>
+            </div>
+            <div>
+              <dt>No</dt>
+              <dd className="event-counts__no">{apologies}</dd>
             </div>
           </dl>
-          <h3 className="details__subhead">Your answer</h3>
-          <EventRsvp key={event.my_rsvp?.responded_at ?? 'none'} event={event} withGuests />
-        </section>
-
-        <EventResponses event={event} />
+        </SectionCard>
 
         <EventBudget event={event} />
 
+        <EventResponses event={event} />
+
         {event.hidden_from && event.hidden_from.length > 0 && (
-          <section className="card event-detail__hidden" aria-labelledby="event-hidden">
-            <div className="section-bar">
-              <h2 id="event-hidden" className="section-title">
-                Hidden from
-              </h2>
-              <HiddenBadge event={event} />
-            </div>
-            <p className="table__muted">{HIDDEN_EXPLAINER}</p>
+          <SectionCard
+            title="Hidden from"
+            className="event-detail__wide"
+            actions={<HiddenBadge event={event} />}
+            footer={
+              !isOrganiser ? (
+                <span className="table__muted">
+                  Only {event.created_by.full_name} can change this.
+                </span>
+              ) : undefined
+            }
+          >
             <ul className="event-hidden-list" role="list">
               {event.hidden_from.map((m) => (
                 <li key={m.membership_id}>
@@ -257,12 +253,7 @@ function EventDetails({
                 </li>
               ))}
             </ul>
-            {!isOrganiser && (
-              <p className="table__muted">
-                Only the organiser, {event.created_by.full_name}, can change this list.
-              </p>
-            )}
-          </section>
+          </SectionCard>
         )}
       </div>
 
@@ -316,7 +307,7 @@ function CancelEventDialog({
     cancel.mutate(
       { communityId, eventId: event.id, reason: reason.trim() },
       {
-        onSuccess: () => onDone(`${event.title} was cancelled. Members can see the reason.`),
+        onSuccess: () => onDone(`${event.title} was cancelled.`),
         onError: (e) =>
           setError(
             e instanceof ApiError && e.fieldErrors.reason ? e.fieldErrors.reason : errorMessage(e),
@@ -330,7 +321,7 @@ function CancelEventDialog({
       open={open}
       onClose={onClose}
       title="Cancel event"
-      subtitle="Members will see that it is cancelled, and why. This cannot be undone."
+      subtitle="Members will see it is cancelled, and why. This cannot be undone."
       icon={
         <IconTile tone="warning" round>
           <IconFlag />

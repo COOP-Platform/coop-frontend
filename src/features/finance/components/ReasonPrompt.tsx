@@ -60,7 +60,7 @@ function ReasonForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (reason.trim() === '') {
-      setError('A reason is required. It is kept on the record.');
+      setError('A reason is required.');
       return;
     }
     onSubmit(reason.trim()).catch((failure: unknown) =>

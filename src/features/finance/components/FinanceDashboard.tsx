@@ -11,15 +11,19 @@ import {
   IconSend,
   IconWallet,
   PageHeader,
+  SectionCard,
   StatCard,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 
+import { useCashFlow } from '../api/cashflow';
 import { useFinanceSummary } from '../api/summary';
-import { formatAmount } from '../format';
+import { THIS_MONTH } from '../month';
+import { addMonths } from '../period';
 import { Money } from './Money';
 import { RecentFinancialActivity } from './RecentFinancialActivity';
+import { CashFlowBars } from './StatementCharts';
 import {
   ACTION_ICONS,
   AccountBalances,
@@ -29,11 +33,16 @@ import {
 import type { QuickAction } from './TreasuryPanels';
 
 const THIS_YEAR = new Date().getFullYear();
+/** The chart and the trend lines: the last six months, this one included. */
+const CHART_FROM = addMonths(THIS_MONTH, -5);
 
 export function FinanceDashboard() {
   const navigate = useNavigate();
   const { membership, communityId, can } = useWorkspace();
   const { data: summary, isPending, error } = useFinanceSummary(communityId, THIS_YEAR);
+  // Every member reads the cash box (finance.cashflow.view); without it, no request.
+  const canViewCashFlow = can('finance.cashflow.view');
+  const cashFlow = useCashFlow(canViewCashFlow ? communityId : undefined, CHART_FROM, THIS_MONTH);
 
   // Every member may record their own payment; spending the community's money
   // is the Treasurer's. The backend refuses it for anyone else regardless.
@@ -48,7 +57,7 @@ export function FinanceDashboard() {
   const actions: QuickAction[] = [];
   if (canRecordContribution) {
     actions.push({
-      label: 'Record New Contribution',
+      label: 'Record contribution',
       to: '/finance/my-contributions',
       search: { record: true },
       icon: ACTION_ICONS.contribution,
@@ -57,7 +66,7 @@ export function FinanceDashboard() {
   }
   if (canRecordExpense) {
     actions.push({
-      label: 'Record Community Expense',
+      label: 'Record expense',
       to: '/finance/expenses-income',
       search: { record: true },
       icon: ACTION_ICONS.expense,
@@ -65,30 +74,23 @@ export function FinanceDashboard() {
     });
   }
   actions.push({
-    label: 'Generate Monthly Statement',
+    label: 'Monthly statement',
     to: '/finance/reports',
     icon: ACTION_ICONS.statement,
     tone: 'info',
   });
 
   const behind = summary.outstanding_count;
+  const months = cashFlow.data?.months ?? [];
+  const trendIn = months.map((m) => m.money_in.total_minor);
+  const trendOut = months.map((m) => m.money_out.total_minor);
+  const trendBalance = months.map((m) => m.closing_balance_minor);
 
   return (
     <div className="page">
       <PageHeader
-        eyebrow={
-          <span className="eyebrow eyebrow--muted">
-            Ledger Overview
-            <span className="eyebrow__live">
-              <span className="eyebrow__dot" aria-hidden="true" />
-              Live
-            </span>
-          </span>
-        }
         title="Finance"
-        subtitle={`Keep track of contributions, expenses, and financial records${
-          membership ? ` for ${membership.community.name}` : ''
-        }.`}
+        subtitle={membership?.community.name}
         actions={
           <>
             {canRecordExpense && (
@@ -118,57 +120,88 @@ export function FinanceDashboard() {
         }
       />
 
-      <div className="stat-grid stat-grid--four">
+      <div className="stat-grid">
         <StatCard
-          label="Total Contributions"
-          value={<Money minor={summary.total_contributions_minor} currency={currency} />}
-          caption={
-            summary.total_income_minor > 0
-              ? `Confirmed in ${summary.year}, plus ${formatAmount(summary.total_income_minor)} ${currency} other income`
-              : `Confirmed payments in ${summary.year}`
-          }
-          icon={<IconWallet />}
-          tone="info"
+          label="Balance"
+          value={<Money minor={summary.current_balance_minor} currency={currency} />}
+          caption="Community wallet"
+          icon={<IconInstitution />}
+          tone="brand"
+          trend={trendBalance}
         />
         <StatCard
-          label="Total Expenses"
-          value={<Money minor={summary.total_expenses_minor} currency={currency} />}
-          caption={`Approved spending in ${summary.year}`}
-          icon={<IconFile />}
+          label="Money in"
+          value={
+            <Money
+              minor={summary.total_contributions_minor + summary.total_income_minor}
+              currency={currency}
+            />
+          }
+          caption={`In ${summary.year}`}
+          icon={<IconWallet />}
           tone="info"
+          trend={trendIn}
+        />
+        <StatCard
+          label="Money out"
+          value={<Money minor={summary.total_expenses_minor} currency={currency} />}
+          caption={`In ${summary.year}`}
+          icon={<IconFile />}
+          tone="warning"
+          trend={trendOut}
         />
         <StatCard
           label="Outstanding"
           value={<Money minor={summary.outstanding_minor} currency={currency} />}
           caption={
-            behind === 0
-              ? 'Every member is up to date'
-              : `${behind} member${behind === 1 ? '' : 's'} still owe for ${summary.year}`
+            behind === 0 ? (
+              'Everyone up to date'
+            ) : (
+              <>
+                <b className="caption-warn">
+                  {behind} member{behind === 1 ? '' : 's'}
+                </b>{' '}
+                behind
+              </>
+            )
           }
           icon={<IconClipboardClock />}
-          tone="warning"
-        />
-        <StatCard
-          label="Current Balance"
-          value={<Money minor={summary.current_balance_minor} currency={currency} />}
-          caption="Community wallet: money in less money out, to date"
-          icon={<IconInstitution />}
-          tone="brand"
-          highlight
+          tone="accent"
         />
       </div>
 
-      <div className="finance-grid">
-        <div className="finance-grid__main">
-          {summary.recent_activity !== null && (
-            <RecentFinancialActivity
-              entries={summary.recent_activity}
-              showAllLink={canViewContributions}
-            />
-          )}
-        </div>
+      <div className="statement-grid">
+        {canViewCashFlow && (
+          <SectionCard
+            title="Money in and out"
+            actions={
+              <p className="chart-legend">
+                <span>
+                  <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> In
+                </span>
+                <span>
+                  <span className="legend-swatch legend-swatch--out" aria-hidden="true" /> Out
+                </span>
+              </p>
+            }
+          >
+            {cashFlow.data ? (
+              <CashFlowBars
+                months={cashFlow.data.months.map((m) => ({
+                  month: m.month,
+                  in_minor: m.money_in.total_minor,
+                  out_minor: m.money_out.total_minor,
+                }))}
+              />
+            ) : cashFlow.error ? (
+              <ErrorState message={errorMessage(cashFlow.error)} />
+            ) : (
+              <LoadingState />
+            )}
+          </SectionCard>
+        )}
 
-        <aside className="finance-grid__side">
+        <div className="finance-grid__side">
           <QuickTreasuryActions actions={actions} />
           {summary.accounts !== null && summary.accounts.length > 0 && (
             <AccountBalances
@@ -179,8 +212,15 @@ export function FinanceDashboard() {
             />
           )}
           <MembersActiveCard members={summary.members} />
-        </aside>
+        </div>
       </div>
+
+      {summary.recent_activity !== null && (
+        <RecentFinancialActivity
+          entries={summary.recent_activity}
+          showAllLink={canViewContributions}
+        />
+      )}
     </div>
   );
 }

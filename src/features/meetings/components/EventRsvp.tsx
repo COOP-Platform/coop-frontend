@@ -1,6 +1,14 @@
 import { useState } from 'react';
 
-import { Avatar, Badge, Button, IconUserCheck, IconUserOff, Input } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  IconUserCheck,
+  IconUserOff,
+  Input,
+  SectionCard,
+} from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 
@@ -16,9 +24,12 @@ import type { CommunityEvent, CommunityEventDetail, RsvpResponse } from '../api/
 export function EventRsvp({
   event,
   withGuests = false,
+  compact = false,
 }: {
   event: CommunityEvent;
   withGuests?: boolean;
+  /** Buttons only (a table cell): the pressed button already shows the answer. */
+  compact?: boolean;
 }) {
   const { communityId, can } = useWorkspace();
   const rsvp = useRsvp();
@@ -55,11 +66,11 @@ export function EventRsvp({
   const apology = mine?.response === 'apology';
 
   return (
-    <div className="event-rsvp">
-      <p className="event-rsvp__mine">{myRsvpLabel(event)}</p>
+    <div className={compact ? 'event-rsvp event-rsvp--compact' : 'event-rsvp'}>
+      {!compact && <p className="event-rsvp__mine">{myRsvpLabel(event)}</p>}
       {showGuests && (
         <Input
-          label="Guests you bring"
+          label="Guests"
           type="number"
           min={0}
           max={MAX_GUESTS}
@@ -68,7 +79,6 @@ export function EventRsvp({
           value={guests}
           onChange={(e) => setGuests(e.target.value)}
           error={guestError ?? undefined}
-          hint="Leave at 0 if you come alone."
         />
       )}
       <div className="event-rsvp__buttons" role="group" aria-label="Your answer">
@@ -111,21 +121,16 @@ export function EventResponses({ event }: { event: CommunityEventDetail }) {
   const showApologies = event.responses_include_apologies;
 
   return (
-    <section className="card event-detail__answers" aria-labelledby="event-who">
-      <h2 id="event-who" className="section-title">
-        {showApologies ? 'Who answered' : 'Who is coming'}
-      </h2>
+    <SectionCard title="Who answered" className="event-detail__wide">
       {event.responses.length === 0 ? (
-        <p className="table__muted">Nobody has answered yet.</p>
+        <p className="table__muted">No answers yet.</p>
       ) : (
         <div className="event-answers">
           <div>
             <h3 className="details__subhead">
-              Coming <Badge tone="success">{coming.length}</Badge>
+              Yes <Badge tone="success">{coming.length}</Badge>
             </h3>
-            {coming.length === 0 ? (
-              <p className="table__muted">Nobody has said they are coming yet.</p>
-            ) : (
+            {coming.length > 0 && (
               <ul className="event-answer-list" role="list">
                 {coming.map((r) => (
                   <li key={r.membership_id}>
@@ -133,7 +138,7 @@ export function EventResponses({ event }: { event: CommunityEventDetail }) {
                     <span>{r.full_name}</span>
                     {r.guests > 0 && (
                       <span className="table__muted">
-                        + {r.guests} guest{r.guests === 1 ? '' : 's'}
+                        +{r.guests} guest{r.guests === 1 ? '' : 's'}
                       </span>
                     )}
                   </li>
@@ -144,11 +149,9 @@ export function EventResponses({ event }: { event: CommunityEventDetail }) {
           {showApologies && (
             <div>
               <h3 className="details__subhead">
-                Can&apos;t make it <Badge tone="neutral">{apologies.length}</Badge>
+                No <Badge tone="neutral">{apologies.length}</Badge>
               </h3>
-              {apologies.length === 0 ? (
-                <p className="table__muted">No apologies so far.</p>
-              ) : (
+              {apologies.length > 0 && (
                 <ul className="event-answer-list" role="list">
                   {apologies.map((r) => (
                     <li key={r.membership_id}>
@@ -162,6 +165,6 @@ export function EventResponses({ event }: { event: CommunityEventDetail }) {
           )}
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }

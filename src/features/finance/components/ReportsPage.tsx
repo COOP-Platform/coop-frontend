@@ -9,8 +9,12 @@ import {
   IconFile,
   Input,
   LoadingState,
+  SectionCard,
   SegmentedControl,
   Select,
+  StatCard,
+  TableFooter,
+  usePaged,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { apiDownload } from '@/lib/api/client';
@@ -22,6 +26,7 @@ import { humanize } from '../labels';
 import { THIS_MONTH, monthName } from '../month';
 import { MAX_MONTHS, PRESET_LABEL, monthsBetween, presetPeriod } from '../period';
 import type { Period, PeriodPreset } from '../period';
+import { Money } from './Money';
 import { CategoryBars } from './StatementCharts';
 import { SectionHeader } from './SectionHeader';
 
@@ -85,13 +90,12 @@ export function ReportsPage({ embedded = false }: { embedded?: boolean }) {
     <div className="page">
       <SectionHeader
         embedded={embedded}
-        eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Reports"
-        subtitle="Where contributions, income and expenses came from and went, for any period."
         actions={
           <>
             <Select
               label="Period"
+              labelHidden
               value={preset}
               onChange={(event) => setPreset(event.target.value as PeriodPreset)}
               options={PRESETS.map((p) => ({ value: p, label: PRESET_LABEL[p] }))}
@@ -165,6 +169,7 @@ function ReportBody({
   period: Period;
 }) {
   const report = useReport(communityId, kind, period.from, period.to);
+  const paged = usePaged(report.data?.monthly ?? []);
   if (report.error) return <ErrorState message={errorMessage(report.error)} />;
   if (!report.data) return <LoadingState />;
   const data = report.data;
@@ -203,80 +208,68 @@ function ReportBody({
           : 'No approved expenses';
     return (
       <section className="card">
-        <EmptyState
-          icon={<IconBarChart />}
-          title={`${what} in this period`}
-          message="Pick a longer period, or come back once money has been recorded."
-        />
+        <EmptyState icon={<IconBarChart />} title={`${what} in this period`} />
       </section>
     );
   }
 
   return (
     <div className="money-section">
-      <section className={`card kpi kpi--${tone === 'in' ? 'in' : 'out'} report-total`}>
-        <div className="kpi__body">
-          <p className="kpi__label">
-            Total {kind} · {monthName(period.from)}
-            {period.from !== period.to && ` to ${monthName(period.to)}`}
-          </p>
-          <p className="kpi__value">
-            {currency} {formatAmount(data.total_minor)}
-          </p>
-          <p className="kpi__note">
-            {data.count} {noun}
-            {data.count === 1 ? '' : 's'}
-            {kind === 'contributions'
-              ? ', confirmed only'
-              : kind === 'expenses'
-                ? ', approved only'
-                : ', reversed ones left out'}
-          </p>
-        </div>
-      </section>
+      <div className="stat-grid">
+        <StatCard
+          label={`Total ${kind}`}
+          value={<Money minor={data.total_minor} currency={currency} />}
+          caption={`${data.count} ${noun}${data.count === 1 ? '' : 's'}`}
+          icon={<IconBarChart />}
+          tone={tone === 'in' ? 'brand' : 'warning'}
+          trend={data.monthly.map((m) => m.amount_minor)}
+        />
+      </div>
 
       <div className="statement-grid report-grid">
         {breakdowns.map((b) => (
-          <section key={b.title} className="card statement-panel" aria-label={b.title}>
-            <h2 className="section-head__title">{b.title}</h2>
+          <SectionCard key={b.title} title={b.title}>
             <CategoryBars
               rows={b.rows.filter((r) => r.amount_minor > 0)}
               kind={tone}
               currency={currency}
             />
-          </section>
+          </SectionCard>
         ))}
       </div>
 
-      <section className="card table-card" aria-label="Month by month">
-        <header className="table-card__head">
-          <h2 className="section-head__title">Month by month</h2>
-        </header>
+      <SectionCard
+        title="Month by month"
+        flush
+        footer={<TableFooter {...paged} onPage={paged.setPage} />}
+      >
         <div className="table-scroll">
           <table className="table table--compact statement-months">
             <thead>
               <tr>
                 <th scope="col">Month</th>
-                <th scope="col">Amount ({currency})</th>
+                <th scope="col" className="num">
+                  Amount ({currency})
+                </th>
               </tr>
             </thead>
             <tbody>
-              {data.monthly.map((m) => (
+              {paged.rows.map((m) => (
                 <tr key={m.month}>
                   <td>{monthName(m.month)}</td>
-                  <td>{m.amount_minor ? formatAmount(m.amount_minor) : '—'}</td>
+                  <td className="num">{m.amount_minor ? formatAmount(m.amount_minor) : '—'}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
                 <th scope="row">Total</th>
-                <td>{formatAmount(data.total_minor)}</td>
+                <td className="num">{formatAmount(data.total_minor)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
-      </section>
+      </SectionCard>
     </div>
   );
 }

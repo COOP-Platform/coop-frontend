@@ -46,7 +46,6 @@ export function RemoveVacantDialog({
       open={positions !== null}
       onClose={onClose}
       title="Remove unassigned positions?"
-      subtitle="For a community that does not need a committee."
       icon={
         <IconTile tone="warning" round>
           <IconUserOff />
@@ -64,8 +63,8 @@ export function RemoveVacantDialog({
       }
     >
       <p className="dialog__text">
-        <strong>{names}</strong> will be deleted. Nobody holds them, so nobody loses anything. You
-        can create positions again from the Positions page whenever you need them.
+        <strong>{names}</strong> will be deleted. Nobody holds them; you can create them again
+        later.
       </p>
       {error !== null && <p className="form-error">{errorMessage(error)}</p>}
     </Dialog>

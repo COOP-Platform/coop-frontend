@@ -18,7 +18,7 @@ export function FinanceAccessGate({ permission, children }: FinanceAccessGatePro
       <EmptyState
         icon={<IconLock />}
         title="You don't have access to this page"
-        message="Ask a community administrator if you need it."
+        message="Ask an administrator."
       />
     );
   }

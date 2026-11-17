@@ -47,7 +47,7 @@ export function RecordIncomeDialog({
       open={open}
       onClose={onClose}
       title="Record Income"
-      subtitle="Donations, event revenue, interest: money in that is not a member's contribution. It counts once someone else approves it."
+      subtitle="Counts once someone else approves it."
       icon={
         <IconTile tone="brand" round>
           <IconPiggyBank />

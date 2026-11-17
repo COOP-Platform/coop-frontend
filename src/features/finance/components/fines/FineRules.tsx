@@ -15,6 +15,7 @@ import {
   IconTrash,
   Input,
   LoadingState,
+  SectionCard,
   Select,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -42,8 +43,8 @@ const ordinal = (n: number) => {
 /** "Late after the 10th of the month", "Missed a meeting". */
 function ruleWhen(rule: FineRule): string {
   if (rule.kind === 'late_payment' && rule.late_after_day !== null)
-    return `Late after day ${rule.late_after_day}: a month not paid in full by the ${ordinal(rule.late_after_day)} of the next month`;
-  if (rule.kind === 'meeting_absence') return 'Marked absent, not excused, at a meeting';
+    return `Unpaid by the ${ordinal(rule.late_after_day)} of next month`;
+  if (rule.kind === 'meeting_absence') return 'Absent, not excused';
   return FINE_KIND_LABEL[rule.kind];
 }
 
@@ -85,21 +86,15 @@ export function FineRules() {
   }
 
   return (
-    <section className="card table-card" aria-labelledby="fine-rules-title">
-      <header className="table-card__head fines__head">
-        <div>
-          <h2 id="fine-rules-title" className="section-head__title">
-            Rules
-          </h2>
-          <p className="section-head__subtitle">
-            Rules only suggest fines. Someone still decides to issue each one.
-          </p>
-        </div>
+    <SectionCard
+      title="Rules"
+      flush
+      actions={
         <Button inline icon={<IconPlusCircle />} onClick={() => setEditing('new')}>
           Add a rule
         </Button>
-      </header>
-
+      }
+    >
       {done && (
         <div className="fines__notice">
           <SuccessNotice text={done} />
@@ -111,11 +106,7 @@ export function FineRules() {
       ) : rules.error ? (
         <ErrorState title="Couldn't load the rules" message={errorMessage(rules.error)} />
       ) : rules.data.length === 0 ? (
-        <EmptyState
-          icon={<IconSliders width={28} height={28} />}
-          title="No fine rules yet"
-          message='Add one, like "Paid after the 10th: 1,000 RWF" or "Missed a meeting: 2,000 RWF".'
-        />
+        <EmptyState icon={<IconSliders width={28} height={28} />} title="No fine rules yet" />
       ) : (
         <div className="table-scroll">
           <table className="table">
@@ -123,7 +114,7 @@ export function FineRules() {
               <tr>
                 <th scope="col">Rule</th>
                 <th scope="col">When</th>
-                <th scope="col" className="table__amount">
+                <th scope="col" className="num">
                   Amount
                 </th>
                 <th scope="col">Status</th>
@@ -146,7 +137,7 @@ export function FineRules() {
                     </span>
                   </td>
                   <td>{ruleWhen(rule)}</td>
-                  <td className="table__amount">
+                  <td className="num">
                     <Money minor={rule.amount_minor} currency={rule.currency} />
                   </td>
                   <td>
@@ -196,7 +187,6 @@ export function FineRules() {
         open={editing !== null}
         onClose={() => setEditing(null)}
         title={editing === 'new' ? 'Add a fine rule' : 'Edit fine rule'}
-        subtitle="The rule suggests fines; whoever issues fines decides on each one."
         icon={
           <IconTile tone="brand" round>
             <IconSliders />
@@ -219,7 +209,7 @@ export function FineRules() {
         open={deleting !== null}
         onClose={() => setDeleting(null)}
         title="Delete this rule?"
-        subtitle="Fines already issued with it stay. To pause it instead, turn it off."
+        subtitle="Issued fines stay. To pause it, turn it off."
         icon={
           <IconTile tone="warning" round>
             <IconTrash />
@@ -242,7 +232,7 @@ export function FineRules() {
           </div>
         )}
       </Dialog>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -279,9 +269,9 @@ function RuleForm({
   const preview =
     Number.isFinite(amountMinor) && amountMinor > 0
       ? kind === 'late_payment' && day >= 1 && day <= 28
-        ? `A month not paid in full by the ${ordinal(day)} of the next month (October by ${day} November) suggests a fine of ${formatAmount(amountMinor)} RWF.`
+        ? `October unpaid by ${day} November: RWF ${formatAmount(amountMinor)} fine.`
         : kind === 'meeting_absence'
-          ? `A member marked absent (not excused) at a meeting is suggested a fine of ${formatAmount(amountMinor)} RWF.`
+          ? `Absent, not excused: RWF ${formatAmount(amountMinor)} fine.`
           : null
       : null;
 
@@ -341,11 +331,7 @@ function RuleForm({
         value={kind}
         onChange={(event) => setKind(event.target.value as FineKind)}
         options={FINE_KIND_OPTIONS}
-        hint={
-          kind === 'other'
-            ? 'An "Other" rule suggests nothing by itself; use it as a shortcut when issuing a fine.'
-            : undefined
-        }
+        hint={kind === 'other' ? 'Suggests nothing by itself: a shortcut when issuing.' : undefined}
         error={errors.kind}
       />
       {kind === 'late_payment' && (
@@ -357,7 +343,7 @@ function RuleForm({
           max={28}
           value={lateDay}
           onChange={(event) => setLateDay(event.target.value)}
-          hint="A month's contribution not paid in full by this day of the next month is late."
+          hint="Day of the next month a payment is late."
           error={errors.late_after_day}
           required
         />

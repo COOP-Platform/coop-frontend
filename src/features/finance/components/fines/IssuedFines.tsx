@@ -10,7 +10,9 @@ import {
   IconGavel,
   IconPlusCircle,
   LoadingState,
-  SegmentedControl,
+  SectionCard,
+  Select,
+  TableFooter,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
@@ -20,7 +22,7 @@ import { useFines, useWaiveFine } from '../../api/fines';
 import type { Fine, FineFilters, FineStatus } from '../../api/fines';
 import { formatAmount } from '../../format';
 import { Money } from '../Money';
-import { Pager, ReasonPrompt } from '../ReasonPrompt';
+import { ReasonPrompt } from '../ReasonPrompt';
 import { SuccessNotice } from '../SuccessNotice';
 import { IssueFineDialog } from './IssueFineDialog';
 import { fineSentence, fineStatus } from './fine-text';
@@ -29,7 +31,7 @@ const PAGE_SIZE = 20;
 
 type StatusFilter = 'all' | FineStatus;
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All statuses' },
   { value: 'issued', label: 'Issued' },
   { value: 'waived', label: 'Waived' },
 ];
@@ -56,43 +58,54 @@ export function IssuedFines() {
   const filtered = status !== 'all' || outstanding;
 
   return (
-    <section className="card table-card" aria-labelledby="issued-fines-title">
-      <header className="table-card__head fines__head">
-        <div>
-          <h2 id="issued-fines-title" className="section-head__title">
-            Issued fines
-          </h2>
-          <p className="section-head__subtitle">
-            {data
-              ? `${formatAmount(data.total_outstanding_minor)} RWF still to be paid.`
-              : 'Every fine issued, and what is still to be paid.'}
-          </p>
-        </div>
-        <Button inline icon={<IconPlusCircle />} onClick={() => setIssuing(true)}>
-          Issue a fine
-        </Button>
-      </header>
-
-      <div className="fines__filters">
-        <SegmentedControl
-          label="Filter by status"
-          options={STATUS_OPTIONS}
-          value={status}
-          onChange={(value) => {
-            setStatus(value);
-            setPage(1);
-          }}
-        />
-        <Checkbox
-          label="Still to be paid only"
-          checked={outstanding}
-          onChange={(event) => {
-            setOutstanding(event.target.checked);
-            setPage(1);
-          }}
-        />
-      </div>
-
+    <SectionCard
+      title={
+        <>
+          Issued fines{' '}
+          {data && data.total_outstanding_minor > 0 && (
+            <Badge tone="warning">RWF {formatAmount(data.total_outstanding_minor)} unpaid</Badge>
+          )}
+        </>
+      }
+      flush
+      actions={
+        <>
+          <Select
+            label="Status"
+            labelHidden
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value as StatusFilter);
+              setPage(1);
+            }}
+            options={STATUS_OPTIONS}
+          />
+          <Checkbox
+            label="Unpaid only"
+            checked={outstanding}
+            onChange={(event) => {
+              setOutstanding(event.target.checked);
+              setPage(1);
+            }}
+          />
+          <Button inline icon={<IconPlusCircle />} onClick={() => setIssuing(true)}>
+            Issue a fine
+          </Button>
+        </>
+      }
+      footer={
+        data && data.items.length > 0 ? (
+          <TableFooter
+            from={(data.page - 1) * data.page_size + 1}
+            to={(data.page - 1) * data.page_size + data.items.length}
+            total={data.total}
+            page={data.page}
+            pageCount={Math.max(1, Math.ceil(data.total / data.page_size))}
+            onPage={setPage}
+          />
+        ) : undefined
+      }
+    >
       {done && (
         <div className="fines__notice">
           <SuccessNotice text={done} />
@@ -108,12 +121,7 @@ export function IssuedFines() {
       ) : data.items.length === 0 ? (
         <EmptyState
           icon={<IconGavel width={28} height={28} />}
-          title={filtered ? 'No fines match' : 'No fines yet'}
-          message={
-            filtered
-              ? 'Nothing matches these filters.'
-              : 'Fines you issue, by hand or from a suggestion, show here.'
-          }
+          title={filtered ? 'No matching fines' : 'No fines yet'}
         />
       ) : (
         <>
@@ -123,10 +131,10 @@ export function IssuedFines() {
                 <tr>
                   <th scope="col">Member</th>
                   <th scope="col">Fine</th>
-                  <th scope="col" className="table__amount">
+                  <th scope="col" className="num">
                     Paid
                   </th>
-                  <th scope="col" className="table__amount">
+                  <th scope="col" className="num">
                     Left
                   </th>
                   <th scope="col">Status</th>
@@ -145,7 +153,7 @@ export function IssuedFines() {
                         <span className="table__stack">
                           <span>{fineSentence(fine)}</span>
                           <span className="table__muted">
-                            {fine.kind !== 'other' && `${fine.reason} · `}Issued{' '}
+                            {fine.kind !== 'other' && `${fine.reason} · `}
                             {formatDate(fine.created_at)} by {fine.issued_by.full_name}
                             {fine.status === 'waived' &&
                               ` · Waived${fine.waived_by ? ` by ${fine.waived_by.full_name}` : ''}${
@@ -154,15 +162,15 @@ export function IssuedFines() {
                           </span>
                         </span>
                       </td>
-                      <td className="table__amount">{formatAmount(fine.paid_minor)}</td>
-                      <td className="table__amount">
+                      <td className="num">{formatAmount(fine.paid_minor)}</td>
+                      <td className="num">
                         <Money minor={fine.outstanding_minor} currency={fine.currency} />
                       </td>
                       <td>
                         <Badge tone={badge.tone}>{badge.label}</Badge>
                         {fine.pending_minor > 0 && badge.tone === 'danger' && (
                           <span className="fines__note">
-                            {formatAmount(fine.pending_minor)} waiting for the Treasurer
+                            {formatAmount(fine.pending_minor)} pending
                           </span>
                         )}
                       </td>
@@ -184,11 +192,6 @@ export function IssuedFines() {
               </tbody>
             </table>
           </div>
-          <Pager
-            page={data.page}
-            pageCount={Math.max(1, Math.ceil(data.total / data.page_size))}
-            onChange={setPage}
-          />
         </>
       )}
 
@@ -204,7 +207,7 @@ export function IssuedFines() {
       <ReasonPrompt
         open={waiving !== null}
         title="Waive this fine"
-        subtitle="The member no longer owes it. The reason is kept on the record."
+        subtitle="The member will no longer owe it."
         icon={<IconBan />}
         about={waiving ? `${waiving.member.full_name} · ${fineSentence(waiving)}` : ''}
         placeholder="e.g. Agreed at the meeting: they were travelling"
@@ -218,6 +221,6 @@ export function IssuedFines() {
           setWaiving(null);
         }}
       />
-    </section>
+    </SectionCard>
   );
 }

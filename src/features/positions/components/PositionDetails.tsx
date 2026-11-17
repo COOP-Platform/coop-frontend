@@ -57,11 +57,7 @@ export function PositionDetails({
 
   if (!can('position.view')) {
     return (
-      <EmptyState
-        icon={<IconIdBadge width={28} height={28} />}
-        title="You can't view positions here"
-        message="Seeing positions needs the position.view permission."
-      />
+      <EmptyState icon={<IconIdBadge width={28} height={28} />} title="You can't view positions" />
     );
   }
 
@@ -74,7 +70,6 @@ export function PositionDetails({
       <EmptyState
         icon={<IconIdBadge width={28} height={28} />}
         title="This position no longer exists"
-        message="It may have been deleted."
       />
     );
   }
@@ -86,7 +81,6 @@ export function PositionDetails({
     <div className="position-panel">
       <header className="details__head position-panel__head">
         <div>
-          <p className="section-head__eyebrow">Position</p>
           <div className="position-panel__title-row">
             <IconTile tone={position.is_admin ? 'brand' : 'neutral'}>
               <PositionIcon name={position.name} />
@@ -101,7 +95,7 @@ export function PositionDetails({
               <Badge tone="success">{position.holder_count} assigned</Badge>
             )}
           </div>
-          <p className="section-head__subtitle">{position.description ?? 'No description yet.'}</p>
+          {position.description && <p className="section-head__subtitle">{position.description}</p>}
         </div>
       </header>
 
@@ -137,7 +131,6 @@ export function PositionDetails({
       </div>
 
       <HoldersCard
-        position={position}
         holders={holders}
         holdersKnown={!directory.positionsPending}
         canAssign={canAssign}
@@ -181,7 +174,6 @@ export function PositionDetails({
 }
 
 function HoldersCard({
-  position,
   holders,
   holdersKnown,
   canAssign,
@@ -189,7 +181,6 @@ function HoldersCard({
   onReassign,
   onRevoke,
 }: {
-  position: Position;
   holders: readonly DirectoryMember[];
   holdersKnown: boolean;
   canAssign: boolean;
@@ -201,7 +192,7 @@ function HoldersCard({
     <section className="panel-section" aria-labelledby="holders-title">
       <div className="panel-section__head">
         <h3 id="holders-title" className="panel-section__title">
-          Assigned members
+          Holders
         </h3>
         {canAssign && holders.length > 0 && (
           <Button variant="secondary" size="sm" inline icon={<IconPlus />} onClick={onAssign}>
@@ -215,8 +206,7 @@ function HoldersCard({
       ) : holders.length === 0 ? (
         <EmptyState
           icon={<IconUserPlus width={28} height={28} />}
-          title="This seat is open"
-          message={`Nobody holds ${position.name} yet.`}
+          title="Vacant"
           action={
             canAssign ? (
               <Button inline icon={<IconUserPlus />} onClick={onAssign}>
@@ -284,7 +274,7 @@ function PermissionsCard({ position }: { position: Position }) {
       </h3>
 
       {position.permissions.length === 0 ? (
-        <p className="table__muted">This position grants no permissions.</p>
+        <p className="table__muted">None.</p>
       ) : (
         PERMISSION_MODULES.map((module) => {
           const inModule = PERMISSION_CATALOG.filter(
@@ -327,7 +317,7 @@ function RevokeDialog({
       open={member !== null}
       onClose={onClose}
       title={`Remove ${position.name}`}
-      subtitle="They stay a member; only this position is taken off them."
+      subtitle="They stay a member."
       icon={
         <IconTile tone="warning" round>
           <IconUserMinus />

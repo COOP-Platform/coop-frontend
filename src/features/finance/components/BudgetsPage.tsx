@@ -100,21 +100,28 @@ export function BudgetsPage({
 
 export type BudgetsSectionName = Section;
 
-/** A thin bar for "x of y", with the numbers written beside it. */
+/**
+ * A thin bar for "x of y", with the numbers written beside it. `pending` (not
+ * counted yet, e.g. spending waiting for approval) shows as a lighter part of
+ * the bar and a line under it, so a recorded payment never looks lost.
+ */
 export function Meter({
   label,
   value,
   of,
   currency,
   tone,
+  pending = 0,
 }: {
   label: string;
   value: number;
   of: number;
   currency: string;
   tone: 'in' | 'out';
+  pending?: number;
 }) {
   const percent = of > 0 ? Math.min(100, (value / of) * 100) : 0;
+  const waiting = of > 0 ? Math.min(100 - percent, (pending / of) * 100) : 0;
   return (
     <div className="meter">
       <div className="meter__head">
@@ -126,7 +133,18 @@ export function Meter({
       </div>
       <div className="meter__track" aria-hidden="true">
         <div className={`meter__fill meter__fill--${tone}`} style={{ width: `${percent}%` }} />
+        {waiting > 0 && (
+          <div
+            className={`meter__fill meter__fill--pending meter__fill--${tone}`}
+            style={{ width: `${waiting}%` }}
+          />
+        )}
       </div>
+      {pending > 0 && (
+        <p className="meter__pending">
+          + {formatAmount(pending)} {currency} awaiting approval
+        </p>
+      )}
     </div>
   );
 }
@@ -287,6 +305,7 @@ function BudgetCard({ budget, onOpen }: { budget: Budget; onOpen: () => void }) 
         of={budget.planned_minor}
         currency={budget.currency}
         tone="out"
+        pending={budget.pending_spent_minor}
       />
       <p className="budget-card__left">
         {budget.left_to_spend_minor >= 0
@@ -351,6 +370,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         of={b.planned_minor}
         currency={b.currency}
         tone="out"
+        pending={b.pending_spent_minor}
       />
 
       <h3 className="details__subhead">Lines</h3>
@@ -472,7 +492,9 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         onClose={() => setUsingPocket(false)}
         onRecorded={() => {
           setUsingPocket(false);
-          onDone('Expense recorded. It counts once someone else approves it.');
+          onDone(
+            'Expense recorded. It shows as awaiting approval on the budget and counts once someone else approves it in Expenses & Income.',
+          );
         }}
       />
 

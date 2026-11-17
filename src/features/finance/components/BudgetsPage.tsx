@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -15,6 +15,7 @@ import {
   IconHandHeart,
   IconPencil,
   IconPlus,
+  IconSend,
   IconTile,
   IconTrash,
   Input,
@@ -41,6 +42,7 @@ import {
 } from '../api/budgets';
 import type { Budget, BudgetDetail, Campaign } from '../api/budgets';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
+import { RecordExpenseDialog } from './RecordExpenseDialog';
 import { SuccessNotice } from './SuccessNotice';
 import { SectionHeader } from './SectionHeader';
 
@@ -138,10 +140,35 @@ type BudgetFilter = 'active' | 'closed';
 function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
   const { communityId, can } = useWorkspace();
   const canManage = can('finance.budget.manage');
+  // Links from an event's page: open its budget, or plan one for it.
+  const search = useSearch({ strict: false }) as {
+    budget?: string;
+    plan?: string;
+    planTitle?: string;
+  };
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<BudgetFilter>('active');
   const [creating, setCreating] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(search.budget ?? null);
+  const [planEvent, setPlanEvent] = useState<{ id: string; title: string } | null>(
+    search.plan && canManage ? { id: search.plan, title: search.planTitle ?? 'Event' } : null,
+  );
   const budgets = useBudgets(communityId, filter);
+
+  /** Forget the event link once used, so a refresh does not reopen it. */
+  function clearLink() {
+    if (search.budget || search.plan)
+      void navigate({
+        to: '.',
+        search: (prev: Record<string, unknown>) => ({
+          ...prev,
+          budget: undefined,
+          plan: undefined,
+          planTitle: undefined,
+        }),
+        replace: true,
+      });
+  }
 
   return (
     <div className="money-section">
@@ -190,21 +217,36 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
       )}
 
       <BudgetFormDialog
-        open={creating}
+        open={creating || planEvent !== null}
         budget={null}
-        onClose={() => setCreating(false)}
+        event={planEvent ?? undefined}
+        onClose={() => {
+          setCreating(false);
+          setPlanEvent(null);
+          clearLink();
+        }}
         onSaved={(message) => {
           setCreating(false);
+          setPlanEvent(null);
+          clearLink();
           onDone(message);
         }}
       />
 
-      <Drawer open={openId !== null} onClose={() => setOpenId(null)} label="Budget details">
+      <Drawer
+        open={openId !== null}
+        onClose={() => {
+          setOpenId(null);
+          clearLink();
+        }}
+        label="Budget details"
+      >
         {openId && (
           <BudgetDetails
             budgetId={openId}
             onDone={(message) => {
               setOpenId(null);
+              clearLink();
               onDone(message);
             }}
           />
@@ -265,6 +307,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
   const [closing, setClosing] = useState(false);
   const [note, setNote] = useState('');
   const [openingCampaign, setOpeningCampaign] = useState(false);
+  const [usingPocket, setUsingPocket] = useState(false);
 
   if (detail.data === undefined) {
     return detail.isPending ? (
@@ -388,7 +431,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         <div className="review-actions">
           {can('finance.campaign.manage') && (
             <Button inline icon={<IconHandHeart />} onClick={() => setOpeningCampaign(true)}>
-              Collect for it
+              Ask members
             </Button>
           )}
           <Button variant="secondary" inline icon={<IconPencil />} onClick={() => setEditing(true)}>
@@ -407,6 +450,29 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         onSaved={(message) => {
           setEditing(false);
           onDone(message);
+        }}
+      />
+
+      {b.status === 'active' && can('finance.expense.record') && (
+        <div className="review-actions">
+          <Button
+            inline
+            variant="secondary"
+            icon={<IconSend />}
+            onClick={() => setUsingPocket(true)}
+          >
+            Use pocket money
+          </Button>
+        </div>
+      )}
+
+      <RecordExpenseDialog
+        open={usingPocket}
+        budgetId={b.id}
+        onClose={() => setUsingPocket(false)}
+        onRecorded={() => {
+          setUsingPocket(false);
+          onDone('Expense recorded. It counts once someone else approves it.');
         }}
       />
 

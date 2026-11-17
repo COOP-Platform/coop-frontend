@@ -433,3 +433,13 @@
     padding-inline: var(--space-4);
   }
 }
+
+/* A total row, in any table: one even band. */
+.table tfoot th,
+.table tfoot td {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 0;
+  background-color: var(--color-surface-muted);
+  font-weight: 700;
+  color: var(--color-text);
+}

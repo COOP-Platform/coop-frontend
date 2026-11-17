@@ -275,6 +275,7 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
 }
 
 function BudgetCard({ budget, onOpen }: { budget: Budget; onOpen: () => void }) {
+  const { can } = useWorkspace();
   return (
     <button type="button" className="card budget-card" onClick={onOpen}>
       <div className="budget-card__head">
@@ -305,7 +306,7 @@ function BudgetCard({ budget, onOpen }: { budget: Budget; onOpen: () => void }) 
         of={budget.planned_minor}
         currency={budget.currency}
         tone="out"
-        pending={budget.pending_spent_minor}
+        pending={can('finance.expense.approve') ? budget.pending_spent_minor : 0}
       />
       <p className="budget-card__left">
         {budget.left_to_spend_minor >= 0
@@ -370,7 +371,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         of={b.planned_minor}
         currency={b.currency}
         tone="out"
-        pending={b.pending_spent_minor}
+        pending={can('finance.expense.approve') ? b.pending_spent_minor : 0}
       />
 
       <h3 className="details__subhead">Lines</h3>

@@ -90,8 +90,12 @@ const path = ({ communityId, contributionId }: DecisionInput, action: string) =>
 
 /** Pending -> confirmed. The member is emailed. */
 export function useConfirmContribution() {
-  return useFinanceMutation((input: DecisionInput) =>
-    apiFetch<ContributionDetail>(path(input, 'confirm'), { method: 'POST' }),
+  return useFinanceMutation((input: DecisionInput & { accountId?: string }) =>
+    apiFetch<ContributionDetail>(path(input, 'confirm'), {
+      method: 'POST',
+      // Sets or corrects the channel the money went into.
+      ...(input.accountId ? { body: { account_id: input.accountId } } : {}),
+    }),
   );
 }
 

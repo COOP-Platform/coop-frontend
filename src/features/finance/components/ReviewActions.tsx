@@ -9,6 +9,7 @@ import {
   IconCheckCircle,
   IconHistory,
   IconTile,
+  Select,
   Textarea,
 } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
@@ -22,6 +23,7 @@ import {
   useSendReminders,
 } from '../api/contributions';
 import type { ReminderResult } from '../api/contributions';
+import { useChannels } from '../api/accounts';
 import type { Contribution } from '../api/my-contributions';
 import { formatAmount } from '../format';
 import { useReviewRights } from '../review-rights';
@@ -57,6 +59,9 @@ export function ReviewActions({
   const rights = useReviewRights();
   const confirm = useConfirmContribution();
   const [reasonFor, setReasonFor] = useState<ReasonKind | null>(null);
+  const channels = useChannels(compact ? undefined : communityId);
+  // The details view lets the reviewer set or correct where the money went.
+  const [channel, setChannel] = useState(row.account?.id ?? '');
 
   if (communityId === undefined) return null;
   const own = rights.isOwn(row);
@@ -75,6 +80,16 @@ export function ReviewActions({
     }
     return (
       <div className={compact ? 'review-actions review-actions--compact' : 'review-actions'}>
+        {rights.canConfirm && !compact && channels.length > 0 && (
+          <Select
+            label="Paid into"
+            hint="Check where the money arrived before approving."
+            placeholder="Not given"
+            value={channel}
+            onChange={(event) => setChannel(event.target.value)}
+            options={channels.map((c) => ({ value: c.id, label: c.name }))}
+          />
+        )}
         {rights.canConfirm && (
           <Button
             inline
@@ -83,7 +98,11 @@ export function ReviewActions({
             disabled={confirm.isPending}
             onClick={() =>
               confirm.mutate(
-                { communityId, contributionId: row.id },
+                {
+                  communityId,
+                  contributionId: row.id,
+                  ...(channel && channel !== row.account?.id ? { accountId: channel } : {}),
+                },
                 { onSuccess: () => onDone?.(`${amount} from ${row.member.full_name} confirmed.`) },
               )
             }

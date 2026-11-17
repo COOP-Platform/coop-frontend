@@ -100,3 +100,18 @@
     padding: var(--space-4);
   }
 }
+
+/* Bank & MoMo: how an account's balance is made up, and the history drawer. */
+.account-card__breakdown {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.account-history__title {
+  margin-top: var(--space-6);
+  font-size: 1rem;
+}

@@ -14,6 +14,8 @@ import { CommunityArrearsSection } from './Arrears';
 import { CashBox } from './CashBox';
 import { FinesSection } from './fines/FinesSection';
 import { AllPayments, MonthOverview, ReviewQueue } from './MemberContributions';
+import { ExpenseReview } from './ExpenseReview';
+import { useExpenses } from '../api/expenses';
 
 export type MoneyTab =
   'month' | 'review' | 'arrears' | 'fines' | 'payments' | 'pocket' | 'accounts';
@@ -33,8 +35,20 @@ export function CommunityMoney({
   tab: MoneyTab;
   onTabChange: (tab: MoneyTab) => void;
 }) {
-  const { can } = useWorkspace();
+  const { can, communityId, membership } = useWorkspace();
   const pending = usePendingForMe();
+  // Expenses wait for approval here too (pocket money, budget spending).
+  const canApproveExpenses = can('finance.expense.approve');
+  const pendingExpenses = useExpenses(canApproveExpenses ? communityId : undefined, {
+    status: 'pending',
+    page_size: 100,
+  });
+  const myId = membership?.id;
+  const expensesForMe = (pendingExpenses.data?.items ?? []).filter(
+    (e) => e.recorded_by.membership_id !== myId,
+  ).length;
+  const reviews = pending.isReviewer || canApproveExpenses;
+  const toReview = (pending.isReviewer ? pending.rows.length : 0) + expensesForMe;
   // Who is behind is the Treasurer's to see, like reminders.
   const canSeeArrears = can('finance.contribution.confirm');
   const canSeeFines = FINES_ENABLED && (can('finance.fine.issue') || can('finance.fine.manage'));
@@ -48,11 +62,11 @@ export function CommunityMoney({
 
   const tabs: { value: MoneyTab; label: string }[] = [
     { value: 'month', label: 'This month' },
-    ...(pending.isReviewer
+    ...(reviews
       ? [
           {
             value: 'review' as const,
-            label: pending.rows.length > 0 ? `To review (${pending.rows.length})` : 'To review',
+            label: toReview > 0 ? `To review (${toReview})` : 'To review',
           },
         ]
       : []),
@@ -64,7 +78,7 @@ export function CommunityMoney({
   ];
   // A non-reviewer who follows a ?tab=review link lands on This month.
   const current =
-    (tab === 'review' && !pending.isReviewer) ||
+    (tab === 'review' && !reviews) ||
     (tab === 'arrears' && !canSeeArrears) ||
     (tab === 'fines' && !canSeeFines)
       ? 'month'
@@ -110,7 +124,12 @@ export function CommunityMoney({
       <SegmentedControl label="Section" options={tabs} value={current} onChange={onTabChange} />
 
       {current === 'month' && <MonthOverview month={month} onMonthChange={setMonth} />}
-      {current === 'review' && <ReviewQueue />}
+      {current === 'review' && (
+        <>
+          {pending.isReviewer && <ReviewQueue />}
+          {canApproveExpenses && <ExpenseReview />}
+        </>
+      )}
       {current === 'arrears' && <CommunityArrearsSection />}
       {current === 'fines' && <FinesSection />}
       {current === 'payments' && <AllPayments month={month} onMonthChange={setMonth} />}

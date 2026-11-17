@@ -332,7 +332,7 @@ function ExpenseCell({ row }: { row: Expense }) {
 }
 
 /** Approve / Reject while pending; Reverse once approved. Never on your own record. */
-function ExpenseActions({
+export function ExpenseActions({
   row,
   compact = false,
   onDone,
@@ -393,7 +393,9 @@ function ExpenseActions({
 
   if (row.status === 'pending' && can('finance.expense.approve')) {
     if (own) {
-      return compact ? null : (
+      return compact ? (
+        <span className="table__muted">Awaiting another approver</span>
+      ) : (
         <p className="details__note">You recorded this, so another approver has to decide it.</p>
       );
     }

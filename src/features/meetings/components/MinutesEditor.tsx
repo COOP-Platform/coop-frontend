@@ -44,12 +44,22 @@ interface ActionDraft {
   assigneeId: string;
   /** Shown when the assignee is no longer an active member. */
   assigneeName?: string;
+  /** When it is due: a date, not set yet, or ongoing work. */
+  due: DueKind;
   dueDate: string;
   done: boolean;
 }
 
+type DueKind = 'date' | 'not_set' | 'ongoing';
+
+const DUE_OPTIONS: SelectOption[] = [
+  { value: 'date', label: 'By a date' },
+  { value: 'not_set', label: 'Date not set yet' },
+  { value: 'ongoing', label: 'Ongoing' },
+];
+
 const RESULT_OPTIONS: SelectOption[] = [
-  { value: 'auto', label: 'Work it out from the votes' },
+  { value: 'auto', label: 'Count the votes' },
   { value: 'adopted', label: RESULT_LABEL.adopted },
   { value: 'rejected', label: RESULT_LABEL.rejected },
   { value: 'deferred', label: RESULT_LABEL.deferred },
@@ -98,6 +108,7 @@ function actionDrafts(minutes: MinutesDetail | null): ActionDraft[] {
     title: a.title,
     assigneeId: a.assignee?.membership_id ?? '',
     assigneeName: a.assignee?.full_name,
+    due: a.ongoing ? 'ongoing' : a.due_date ? 'date' : 'not_set',
     dueDate: a.due_date ?? '',
     done: a.done,
   }));
@@ -117,6 +128,7 @@ const emptyAction = (): ActionDraft => ({
   key: newKey(),
   title: '',
   assigneeId: '',
+  due: 'date',
   dueDate: '',
   done: false,
 });
@@ -225,7 +237,8 @@ export function MinutesEditor({
         ...(a.id ? { id: a.id } : {}),
         title: a.title.trim(),
         assignee_id: a.assigneeId || null,
-        due_date: a.dueDate || null,
+        due_date: a.due === 'date' ? a.dueDate || null : null,
+        ongoing: a.due === 'ongoing',
         done: a.done,
       })),
     };
@@ -299,8 +312,10 @@ export function MinutesEditor({
       <fieldset className="minutes-editor__group">
         <legend className="field__label">Decisions</legend>
         <p className="table__muted minutes-editor__help">
-          Each decision taken, with the votes. Leave the result on “Work it out from the votes” and
-          it is adopted when more voted for than against.
+          Each decision taken, with the votes. Leave the result on “Count the votes” and it is
+          adopted when more members voted for than against, rejected otherwise. Choose Adopted,
+          Rejected or Deferred yourself when there was no vote (for example, a decision agreed by
+          everyone, or one postponed to a later meeting).
         </p>
         {decisions.map((d, index) => {
           const auto = derivedResult(d);
@@ -449,13 +464,21 @@ export function MinutesEditor({
                   value={a.assigneeId}
                   onChange={(event) => setAction(a.key, { assigneeId: event.target.value })}
                 />
-                <Input
-                  label="Due date"
-                  optional
-                  type="date"
-                  value={a.dueDate}
-                  onChange={(event) => setAction(a.key, { dueDate: event.target.value })}
+                <Select
+                  label="Due"
+                  options={DUE_OPTIONS}
+                  value={a.due}
+                  onChange={(event) => setAction(a.key, { due: event.target.value as DueKind })}
                 />
+                {a.due === 'date' && (
+                  <Input
+                    label="Due date"
+                    optional
+                    type="date"
+                    value={a.dueDate}
+                    onChange={(event) => setAction(a.key, { dueDate: event.target.value })}
+                  />
+                )}
               </div>
               <Checkbox
                 label="Already done"

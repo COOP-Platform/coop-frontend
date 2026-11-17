@@ -227,9 +227,10 @@ function MinutesView({
           <div className="notice notice--warning">
             <IconAlertTriangle width={20} height={20} aria-hidden="true" />
             <div>
-              <p className="notice__title">Attendance is not recorded yet</p>
+              <p className="notice__title">No roll-call yet</p>
               <p className="notice__text">
-                Save and lock the attendance on the Attendance tab before finalising the minutes.
+                Take the roll-call on the Attendance tab before finalising the minutes. It stays
+                open until then and locks when the minutes are final.
               </p>
             </div>
           </div>
@@ -252,7 +253,7 @@ function MinutesView({
               <dd>
                 {`${minutes.quorum.present} of ${minutes.quorum.expected} present (${minutes.quorum.percent}%) · ${
                   minutes.quorum.reached ? 'quorum reached' : 'quorum not reached'
-                }${minutes.attendance_recorded ? '' : ' · not locked yet'}`}
+                }${draft ? ' · the roll-call locks when the minutes are final' : ''}`}
               </dd>
             </div>
           )}
@@ -328,8 +329,10 @@ function MinutesView({
                     <td>
                       {a.due_date ? (
                         formatDate(a.due_date)
+                      ) : a.ongoing ? (
+                        'Ongoing'
                       ) : (
-                        <span className="table__muted">No date</span>
+                        <span className="table__muted">Not set yet</span>
                       )}
                     </td>
                     <td>
@@ -437,9 +440,7 @@ function FinaliseDialog({
         onSuccess: onDone,
         onError: (error) => {
           if (error instanceof ApiError && error.code === 'attendance_missing') {
-            setProblem(
-              'Record attendance before finalising minutes. Save and lock the roll-call on the Attendance tab first.',
-            );
+            setProblem('Take the roll-call on the Attendance tab before finalising the minutes.');
           } else {
             setProblem(errorMessage(error));
           }

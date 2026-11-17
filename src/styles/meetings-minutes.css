@@ -159,6 +159,11 @@
   align-items: start;
 }
 
+/* Who, Due and, for "By a date", the date itself. */
+.minutes-editor__action-row:has(> :nth-child(3)) {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .minutes-editor__foot {
   display: flex;
   flex-wrap: wrap;
@@ -178,7 +183,8 @@
     grid-column: 1 / -1;
   }
 
-  .minutes-editor__action-row {
+  .minutes-editor__action-row,
+  .minutes-editor__action-row:has(> :nth-child(3)) {
     grid-template-columns: minmax(0, 1fr);
   }
 }

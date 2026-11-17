@@ -74,7 +74,10 @@ export interface ActionItem {
   position: number;
   title: string;
   assignee: MinutesMemberRef | null;
+  /** Null with `ongoing` false: no date set yet. */
   due_date: string | null;
+  /** Continuous work with no end date. */
+  ongoing: boolean;
   done: boolean;
   done_at: string | null;
   /** Who marked it done; null while open, or when it was ticked in the draft. */
@@ -95,7 +98,7 @@ export interface MinutesDetail {
   };
   status: MinutesStatus;
   agenda: { position: number; title: string }[];
-  /** The roll-call is saved and locked: needed to finalise. */
+  /** A roll-call was taken: needed to finalise, which locks it. */
   attendance_recorded: boolean;
   quorum: {
     present: number;
@@ -131,6 +134,7 @@ export interface ActionItemInput {
   title: string;
   assignee_id: string | null;
   due_date: string | null;
+  ongoing: boolean;
   done: boolean;
 }
 

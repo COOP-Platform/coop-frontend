@@ -10,7 +10,6 @@ import {
   ErrorState,
   IconHistory,
   IconInstitution,
-  IconPencil,
   IconPhone,
   IconPlus,
   IconTile,
@@ -29,13 +28,11 @@ import {
   useAccountBalances,
   useAccountMovements,
   useAccounts,
-  useAddMovement,
   useCreateAccount,
-  useEnterBalance,
   useRetireAccount,
   useUpdateAccount,
 } from '../api/accounts';
-import type { Account, AccountKind, MovementDirection } from '../api/accounts';
+import type { Account, AccountKind } from '../api/accounts';
 import { useCashFlow } from '../api/cashflow';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { THIS_MONTH } from '../month';
@@ -78,9 +75,6 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
   const wallet = useCashFlow(communityId, THIS_MONTH, THIS_MONTH);
   const [notice, setNotice] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [entering, setEntering] = useState<Account | null>(null);
-  const [moving, setMoving] = useState<Account | null>(null);
-  const [renaming, setRenaming] = useState<Account | null>(null);
   const [history, setHistory] = useState<Account | null>(null);
 
   const active = (accounts.data?.items ?? []).filter((a) => a.is_active);
@@ -185,27 +179,6 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
                   </p>
                   <BalanceBreakdown account={account} />
                   <div className="review-actions">
-                    {canManage && (
-                      <Button
-                        size="sm"
-                        inline
-                        icon={<IconPlus />}
-                        onClick={() => setMoving(account)}
-                      >
-                        Money in / out
-                      </Button>
-                    )}
-                    {canManage && (
-                      <Button
-                        size="sm"
-                        inline
-                        variant="secondary"
-                        icon={<IconWallet />}
-                        onClick={() => setEntering(account)}
-                      >
-                        Enter balance
-                      </Button>
-                    )}
                     <Button
                       variant="secondary"
                       size="sm"
@@ -215,17 +188,6 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
                     >
                       History
                     </Button>
-                    {canManage && (
-                      <Button
-                        variant="tint"
-                        size="sm"
-                        inline
-                        icon={<IconPencil />}
-                        onClick={() => setRenaming(account)}
-                      >
-                        Edit
-                      </Button>
-                    )}
                   </div>
                 </li>
               ))}
@@ -254,74 +216,6 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
             onClose={() => setAdding(false)}
             onSaved={(m) => {
               setAdding(false);
-              setNotice(m);
-            }}
-          />
-        )}
-      </Dialog>
-
-      <Dialog
-        open={renaming !== null}
-        onClose={() => setRenaming(null)}
-        title="Edit account"
-        icon={
-          <IconTile tone="brand" round>
-            <IconPencil />
-          </IconTile>
-        }
-      >
-        {renaming && (
-          <AccountForm
-            account={renaming}
-            onClose={() => setRenaming(null)}
-            onSaved={(m) => {
-              setRenaming(null);
-              setNotice(m);
-            }}
-          />
-        )}
-      </Dialog>
-
-      <Dialog
-        open={entering !== null}
-        onClose={() => setEntering(null)}
-        title="Enter balance"
-        subtitle={entering?.name}
-        icon={
-          <IconTile tone="brand" round>
-            <IconWallet />
-          </IconTile>
-        }
-      >
-        {entering && (
-          <BalanceForm
-            account={entering}
-            onClose={() => setEntering(null)}
-            onSaved={(m) => {
-              setEntering(null);
-              setNotice(m);
-            }}
-          />
-        )}
-      </Dialog>
-
-      <Dialog
-        open={moving !== null}
-        onClose={() => setMoving(null)}
-        title="Money in / out"
-        subtitle={moving?.name}
-        icon={
-          <IconTile tone="brand" round>
-            <IconPlus />
-          </IconTile>
-        }
-      >
-        {moving && (
-          <MoveForm
-            account={moving}
-            onClose={() => setMoving(null)}
-            onSaved={(m) => {
-              setMoving(null);
               setNotice(m);
             }}
           />
@@ -507,103 +401,12 @@ function AccountForm({
   );
 }
 
-function BalanceForm({
-  account,
-  onClose,
-  onSaved,
-}: {
-  account: Account;
-  onClose: () => void;
-  onSaved: (message: string) => void;
-}) {
-  const { communityId } = useWorkspace();
-  const enter = useEnterBalance();
-  const [balance, setBalance] = useState('');
-  const [asOf, setAsOf] = useState(today());
-  const [note, setNote] = useState('');
-  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (balance.trim() === '' || !Number.isFinite(Number(balance))) {
-      setErrors({ balance: 'Enter the balance (negative for an overdraft).' });
-      return;
-    }
-    if (!communityId) return;
-    enter.mutate(
-      {
-        communityId,
-        accountId: account.id,
-        balance_minor: Math.round(Number(balance) * MINOR_PER_MAJOR),
-        as_of: asOf,
-        note: note.trim() || undefined,
-      },
-      {
-        onSuccess: () =>
-          onSaved(
-            `${account.name}: ${formatAmount(Math.round(Number(balance) * MINOR_PER_MAJOR))} RWF as of ${formatDate(asOf)}.`,
-          ),
-        onError: (error) => {
-          const f = error instanceof ApiError ? error.fieldErrors : {};
-          setErrors({
-            balance: f.balance_minor,
-            as_of: f.as_of,
-            form: f.balance_minor || f.as_of ? undefined : errorMessage(error),
-          });
-        },
-      },
-    );
-  }
-
-  return (
-    <form className="dialog__form" onSubmit={handleSubmit} noValidate>
-      <div className="form-row">
-        <Input
-          label="Balance (RWF)"
-          type="number"
-          step="any"
-          value={balance}
-          onChange={(event) => setBalance(event.target.value)}
-          error={errors.balance}
-          required
-        />
-        <Input
-          label="As of"
-          type="date"
-          max={today()}
-          value={asOf}
-          onChange={(event) => setAsOf(event.target.value)}
-          error={errors.as_of}
-          required
-        />
-      </div>
-      <Input
-        label="Note"
-        optional
-        placeholder="e.g. October statement"
-        maxLength={255}
-        value={note}
-        onChange={(event) => setNote(event.target.value)}
-      />
-      {errors.form && <p className="form-error">{errors.form}</p>}
-      <div className="dialog__footer dialog__footer--flush">
-        <Button variant="tint" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={enter.isPending}>
-          {enter.isPending ? 'Saving…' : 'Save balance'}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
 /** How the balance is made up: what was typed in, then what came since. */
 function BalanceBreakdown({ account }: { account: Account }) {
   const lines: string[] = [];
   if (account.latest_balance) {
     lines.push(
-      `${formatAmount(account.latest_balance.balance_minor)} on ${formatDate(account.latest_balance.as_of)}`,
+      `Opening ${formatAmount(account.latest_balance.balance_minor)} · ${formatDate(account.latest_balance.as_of)}`,
     );
   }
   if (account.contributions_since_minor !== 0)
@@ -624,110 +427,6 @@ function BalanceBreakdown({ account }: { account: Account }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-function MoveForm({
-  account,
-  onClose,
-  onSaved,
-}: {
-  account: Account;
-  onClose: () => void;
-  onSaved: (message: string) => void;
-}) {
-  const { communityId } = useWorkspace();
-  const move = useAddMovement();
-  const [direction, setDirection] = useState<MovementDirection>('in');
-  const [amount, setAmount] = useState('');
-  const [on, setOn] = useState(today());
-  const [note, setNote] = useState('');
-  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const minor = Math.round(Number(amount) * MINOR_PER_MAJOR);
-    if (amount.trim() === '' || !Number.isFinite(minor) || minor <= 0) {
-      setErrors({ amount: 'Enter an amount more than 0.' });
-      return;
-    }
-    if (!communityId) return;
-    move.mutate(
-      {
-        communityId,
-        accountId: account.id,
-        direction,
-        amount_minor: minor,
-        on,
-        note: note.trim() || undefined,
-      },
-      {
-        onSuccess: () =>
-          onSaved(
-            `${formatAmount(minor)} RWF ${direction === 'in' ? 'added to' : 'taken out of'} ${account.name}.`,
-          ),
-        onError: (error) => {
-          const f = error instanceof ApiError ? error.fieldErrors : {};
-          setErrors({
-            amount: f.amount_minor,
-            on: f.on,
-            form: f.amount_minor || f.on ? undefined : errorMessage(error),
-          });
-        },
-      },
-    );
-  }
-
-  return (
-    <form className="dialog__form" onSubmit={handleSubmit} noValidate>
-      <Select
-        label="What happened?"
-        value={direction}
-        onChange={(event) => setDirection(event.target.value as MovementDirection)}
-        options={[
-          { value: 'in', label: 'Money put in' },
-          { value: 'out', label: 'Money taken out' },
-        ]}
-      />
-      <div className="form-row">
-        <Input
-          label="Amount (RWF)"
-          type="number"
-          min="1"
-          step="any"
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          error={errors.amount}
-          required
-        />
-        <Input
-          label="Date"
-          type="date"
-          max={today()}
-          value={on}
-          onChange={(event) => setOn(event.target.value)}
-          error={errors.on}
-          required
-        />
-      </div>
-      <Input
-        label="Note"
-        optional
-        placeholder="e.g. Cash collected at the November meeting"
-        maxLength={255}
-        value={note}
-        onChange={(event) => setNote(event.target.value)}
-      />
-      {errors.form && <p className="form-error">{errors.form}</p>}
-      <div className="dialog__footer dialog__footer--flush">
-        <Button variant="tint" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={move.isPending}>
-          {move.isPending ? 'Saving…' : 'Save'}
-        </Button>
-      </div>
-    </form>
   );
 }
 

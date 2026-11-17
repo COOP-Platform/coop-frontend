@@ -68,13 +68,6 @@ export function ReviewActions({
   const size = compact ? 'sm' : undefined;
 
   if (row.status === 'pending' && (rights.canConfirm || rights.canReject)) {
-    if (own) {
-      return compact ? (
-        <span className="table__muted">Your own payment</span>
-      ) : (
-        <p className="details__note">Your own payment: another reviewer must confirm it.</p>
-      );
-    }
     return (
       <div className={compact ? 'review-actions review-actions--compact' : 'review-actions'}>
         {rights.canConfirm && !compact && channels.length > 0 && (
@@ -139,7 +132,8 @@ export function ReviewActions({
     );
   }
 
-  if (row.status === 'confirmed' && rights.canReverse && !compact) {
+  // Reversing your own payment is still left to another reviewer.
+  if (row.status === 'confirmed' && rights.canReverse && !compact && !own) {
     return (
       <div className="review-actions">
         <Button

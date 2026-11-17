@@ -11,7 +11,10 @@ export function useReviewRights() {
     canReject: can('finance.contribution.reject'),
     canReverse: can('finance.contribution.reverse'),
     canRemind: can('finance.contribution.confirm'),
-    /** Nobody decides a payment they paid or recorded (backend `own_contribution`). */
+    /**
+     * A payment they paid or recorded. They may still confirm or reject it;
+     * only reversing their own is refused (backend `own_contribution`).
+     */
     isOwn: (row: Contribution) =>
       membership !== undefined &&
       (row.member.membership_id === membership.id ||
@@ -19,7 +22,7 @@ export function useReviewRights() {
   };
 }
 
-/** The pending payments the signed-in reviewer may decide (not their own). */
+/** The pending payments the signed-in reviewer may decide, their own included. */
 export function usePendingForMe() {
   const { communityId } = useWorkspace();
   const rights = useReviewRights();
@@ -32,6 +35,6 @@ export function usePendingForMe() {
   return {
     isReviewer,
     query: queue,
-    rows: (queue.data?.items ?? []).filter((row) => !rights.isOwn(row)),
+    rows: queue.data?.items ?? [],
   };
 }

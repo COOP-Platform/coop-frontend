@@ -19,7 +19,7 @@ import {
 import { organisesEvents, useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 
-import { eventTypeLabel, useEvents } from '../api/events';
+import { NO_COUNTS, eventTypeLabel, useEvents } from '../api/events';
 import type { CommunityEvent, EventListFilter } from '../api/events';
 import { formatMeetingDay, formatMeetingTime } from '../api/meetings';
 import { EventFormDialog } from './EventFormDialog';
@@ -167,7 +167,7 @@ export function EventsPage({
 }
 
 function EventRow({ event, organises }: { event: CommunityEvent; organises: boolean }) {
-  const { confirmed, apologies, guests } = event.rsvp;
+  const { confirmed, apologies, guests } = event.rsvp ?? NO_COUNTS;
   const cancelled = event.status === 'cancelled';
   return (
     <tr>

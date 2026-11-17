@@ -27,7 +27,13 @@ import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatLongDate } from '@/lib/format/date';
 
-import { eventTypeLabel, formatEventWhen, useCancelEvent, useEvent } from '../api/events';
+import {
+  NO_COUNTS,
+  eventTypeLabel,
+  formatEventWhen,
+  useCancelEvent,
+  useEvent,
+} from '../api/events';
 import type { CommunityEventDetail } from '../api/events';
 import { EventBudget, EventBudgetStats } from './EventBudget';
 import { EventFormDialog } from './EventFormDialog';
@@ -112,7 +118,8 @@ function EventDetails({
   const canCancel = can('event.cancel') && upcoming;
   // Members see the event and its money report; responses are for organisers.
   const organises = organisesEvents(can);
-  const { confirmed, apologies, expected, guests } = event.rsvp;
+  // Counts are for organisers only; the API sends none to members.
+  const { confirmed, apologies, expected, guests } = event.rsvp ?? NO_COUNTS;
 
   return (
     <div className="page">

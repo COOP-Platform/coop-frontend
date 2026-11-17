@@ -78,7 +78,8 @@ export interface CommunityEvent {
   hidden_from: EventMemberRef[] | null;
   /** The finance budget planned for it, if any. */
   budget: { id: string; title: string } | null;
-  rsvp: RsvpCounts;
+  /** Null for members who do not organise events. */
+  rsvp: RsvpCounts | null;
   my_rsvp: MyRsvp | null;
   cancel_reason: string | null;
   cancelled_at: string | null;
@@ -104,7 +105,8 @@ export interface EventRsvpEntry {
  * everyone else sees only who is coming.
  */
 export interface CommunityEventDetail extends CommunityEvent {
-  responses: EventRsvpEntry[];
+  /** Null for members who do not organise events. */
+  responses: EventRsvpEntry[] | null;
   /** True when `responses` includes apologies (the caller manages the event). */
   responses_include_apologies: boolean;
 }
@@ -223,8 +225,18 @@ export function myRsvpLabel(event: CommunityEvent): string {
     : 'You are coming';
 }
 
+/** Response counts for someone the API sends none to (members). */
+export const NO_COUNTS: RsvpCounts = {
+  confirmed: 0,
+  apologies: 0,
+  pending: 0,
+  expected: 0,
+  guests: 0,
+};
+
 /** "5 coming (+2 guests) · 1 can't make it · 3 not answered". */
 export function rsvpSummary(event: CommunityEvent): string {
+  if (event.rsvp === null) return '';
   const { confirmed, apologies, pending, guests } = event.rsvp;
   return [
     `${confirmed} coming${guests > 0 ? ` (+${guests} guest${guests === 1 ? '' : 's'})` : ''}`,

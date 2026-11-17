@@ -26,13 +26,15 @@ import { formatDate } from '@/lib/format/date';
 
 import {
   useAccountBalances,
+  useAccountMovements,
   useAccounts,
+  useAddMovement,
   useCreateAccount,
   useEnterBalance,
   useRetireAccount,
   useUpdateAccount,
 } from '../api/accounts';
-import type { Account, AccountKind } from '../api/accounts';
+import type { Account, AccountKind, MovementDirection } from '../api/accounts';
 import { useCashFlow } from '../api/cashflow';
 import { MINOR_PER_MAJOR, formatAmount } from '../format';
 import { THIS_MONTH } from '../month';
@@ -53,9 +55,11 @@ const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.value, k.label])) as R
 const today = () => new Date().toLocaleDateString('en-CA');
 
 /**
- * Where the money actually sits (S3-10b): the bank, mobile money and cash box,
- * each with the balance the Treasurer last read and typed in. Shown next to
- * the community pocket (the records), never part of it, so a gap is visible.
+ * Where the money actually sits: the bank, MoMo number and cash box. Each
+ * balance starts from the last one the Treasurer typed in, then moves on its
+ * own: confirmed contributions paid into the account add to it, and money
+ * put in or taken out by hand moves it. Shown next to the community pocket
+ * (the records), never part of it, so a gap is visible.
  */
 export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
   const { communityId, can } = useWorkspace();
@@ -65,6 +69,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [entering, setEntering] = useState<Account | null>(null);
+  const [moving, setMoving] = useState<Account | null>(null);
   const [renaming, setRenaming] = useState<Account | null>(null);
   const [history, setHistory] = useState<Account | null>(null);
 
@@ -81,7 +86,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
         embedded={embedded}
         eyebrow={<span className="eyebrow eyebrow--muted">Treasury</span>}
         title="Bank & MoMo Accounts"
-        subtitle="Where the community's money actually sits, with the balance the Treasurer last read for each."
+        subtitle="Where the community's money actually sits. Payments confirmed into an account add to it automatically; the Treasurer can also add, take out or type in a balance."
         actions={
           canManage && (
             <Button inline icon={<IconPlus />} onClick={() => setAdding(true)}>
@@ -154,7 +159,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
                   </div>
                   <p className="account-card__balance">
                     {account.balance_minor === null ? (
-                      <span className="table__muted">No balance entered yet</span>
+                      <span className="table__muted">Nothing in it yet</span>
                     ) : (
                       <>
                         {formatAmount(account.balance_minor)}{' '}
@@ -162,19 +167,23 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
                       </>
                     )}
                   </p>
-                  {account.latest_balance && (
-                    <p className="table__muted">
-                      As of {formatDate(account.latest_balance.as_of)}
-                      {account.latest_balance.entered_by &&
-                        ` · entered by ${account.latest_balance.entered_by.full_name}`}
-                      {account.latest_balance.note && ` · ${account.latest_balance.note}`}
-                    </p>
-                  )}
+                  <BalanceBreakdown account={account} />
                   <div className="review-actions">
                     {canManage && (
                       <Button
                         size="sm"
                         inline
+                        icon={<IconPlus />}
+                        onClick={() => setMoving(account)}
+                      >
+                        Money in / out
+                      </Button>
+                    )}
+                    {canManage && (
+                      <Button
+                        size="sm"
+                        inline
+                        variant="secondary"
                         icon={<IconWallet />}
                         onClick={() => setEntering(account)}
                       >
@@ -280,6 +289,33 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
             onClose={() => setEntering(null)}
             onSaved={(m) => {
               setEntering(null);
+              setNotice(m);
+            }}
+          />
+        )}
+      </Dialog>
+
+      <Dialog
+        open={moving !== null}
+        onClose={() => setMoving(null)}
+        title="Money in / out"
+        subtitle={
+          moving
+            ? `Money put into, or taken out of, ${moving.name} that no payment records: meeting cash deposited, a transfer, a withdrawal.`
+            : ''
+        }
+        icon={
+          <IconTile tone="brand" round>
+            <IconPlus />
+          </IconTile>
+        }
+      >
+        {moving && (
+          <MoveForm
+            account={moving}
+            onClose={() => setMoving(null)}
+            onSaved={(m) => {
+              setMoving(null);
               setNotice(m);
             }}
           />
@@ -513,9 +549,149 @@ function BalanceForm({
   );
 }
 
+/** How the balance is made up: what was typed in, then what came since. */
+function BalanceBreakdown({ account }: { account: Account }) {
+  const lines: string[] = [];
+  if (account.latest_balance) {
+    lines.push(
+      `${formatAmount(account.latest_balance.balance_minor)} typed in on ${formatDate(account.latest_balance.as_of)}` +
+        (account.latest_balance.entered_by
+          ? ` by ${account.latest_balance.entered_by.full_name}`
+          : ''),
+    );
+  }
+  const since = account.latest_balance ? ' since' : '';
+  if (account.contributions_since_minor !== 0)
+    lines.push(
+      `+ ${formatAmount(account.contributions_since_minor)} from confirmed payments${since}`,
+    );
+  if (account.movements_since_minor > 0)
+    lines.push(`+ ${formatAmount(account.movements_since_minor)} added by hand${since}`);
+  if (account.movements_since_minor < 0)
+    lines.push(`− ${formatAmount(-account.movements_since_minor)} taken out by hand${since}`);
+  if (lines.length === 0) return null;
+  return (
+    <ul
+      className="account-card__breakdown"
+      aria-label={`How the ${account.name} balance is made up`}
+    >
+      {lines.map((line) => (
+        <li key={line} className="table__muted">
+          {line}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function MoveForm({
+  account,
+  onClose,
+  onSaved,
+}: {
+  account: Account;
+  onClose: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const { communityId } = useWorkspace();
+  const move = useAddMovement();
+  const [direction, setDirection] = useState<MovementDirection>('in');
+  const [amount, setAmount] = useState('');
+  const [on, setOn] = useState(today());
+  const [note, setNote] = useState('');
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const minor = Math.round(Number(amount) * MINOR_PER_MAJOR);
+    if (amount.trim() === '' || !Number.isFinite(minor) || minor <= 0) {
+      setErrors({ amount: 'Enter an amount more than 0.' });
+      return;
+    }
+    if (!communityId) return;
+    move.mutate(
+      {
+        communityId,
+        accountId: account.id,
+        direction,
+        amount_minor: minor,
+        on,
+        note: note.trim() || undefined,
+      },
+      {
+        onSuccess: () =>
+          onSaved(
+            `${formatAmount(minor)} RWF ${direction === 'in' ? 'added to' : 'taken out of'} ${account.name}.`,
+          ),
+        onError: (error) => {
+          const f = error instanceof ApiError ? error.fieldErrors : {};
+          setErrors({
+            amount: f.amount_minor,
+            on: f.on,
+            form: f.amount_minor || f.on ? undefined : errorMessage(error),
+          });
+        },
+      },
+    );
+  }
+
+  return (
+    <form className="dialog__form" onSubmit={handleSubmit} noValidate>
+      <Select
+        label="What happened?"
+        value={direction}
+        onChange={(event) => setDirection(event.target.value as MovementDirection)}
+        options={[
+          { value: 'in', label: 'Money put in' },
+          { value: 'out', label: 'Money taken out' },
+        ]}
+      />
+      <div className="form-row">
+        <Input
+          label="Amount (RWF)"
+          type="number"
+          min="1"
+          step="any"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+          error={errors.amount}
+          required
+        />
+        <Input
+          label="Date"
+          type="date"
+          max={today()}
+          value={on}
+          onChange={(event) => setOn(event.target.value)}
+          error={errors.on}
+          required
+        />
+      </div>
+      <Input
+        label="Note"
+        optional
+        placeholder="e.g. Cash collected at the November meeting"
+        maxLength={255}
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
+      />
+      {errors.form && <p className="form-error">{errors.form}</p>}
+      <div className="dialog__footer dialog__footer--flush">
+        <Button variant="tint" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={move.isPending}>
+          {move.isPending ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 function BalanceHistory({ account }: { account: Account }) {
   const { communityId } = useWorkspace();
   const balances = useAccountBalances(communityId, account.id);
+  const movements = useAccountMovements(communityId, account.id);
   return (
     <section className="details" aria-labelledby="history-title">
       <header className="details__head">
@@ -524,7 +700,9 @@ function BalanceHistory({ account }: { account: Account }) {
           <h2 id="history-title" className="section-head__title">
             {account.name}
           </h2>
-          <p className="section-head__subtitle">Every balance entered, newest first.</p>
+          <p className="section-head__subtitle">
+            Every balance typed in, and money added or taken out by hand, newest first.
+          </p>
         </div>
         {!account.is_active && <Badge tone="neutral">Retired</Badge>}
       </header>
@@ -535,7 +713,7 @@ function BalanceHistory({ account }: { account: Account }) {
           <ErrorState message={errorMessage(balances.error)} />
         )
       ) : balances.data.items.length === 0 ? (
-        <EmptyState icon={<IconHistory />} title="No balances yet" message="Enter the first one." />
+        <p className="table__muted">No balance typed in yet.</p>
       ) : (
         <div className="table-scroll">
           <table className="table table--compact">
@@ -557,6 +735,45 @@ function BalanceHistory({ account }: { account: Account }) {
                   </td>
                   <td className="statement-table__num">{formatAmount(b.balance_minor)}</td>
                   <td>{b.entered_by?.full_name ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h3 className="section-head__title account-history__title">Money in / out by hand</h3>
+      {movements.data === undefined ? (
+        movements.isPending ? (
+          <LoadingState />
+        ) : (
+          <ErrorState message={errorMessage(movements.error)} />
+        )
+      ) : movements.data.items.length === 0 ? (
+        <p className="table__muted">Nothing added or taken out by hand yet.</p>
+      ) : (
+        <div className="table-scroll">
+          <table className="table table--compact">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col" className="statement-table__num">
+                  Amount (RWF)
+                </th>
+                <th scope="col">Entered by</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movements.data.items.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    {formatDate(m.on)}
+                    {m.note && <span className="table__muted"> · {m.note}</span>}
+                  </td>
+                  <td className="statement-table__num">
+                    {m.direction === 'in' ? '+' : '−'} {formatAmount(m.amount_minor)}
+                  </td>
+                  <td>{m.entered_by?.full_name ?? '—'}</td>
                 </tr>
               ))}
             </tbody>

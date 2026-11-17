@@ -73,7 +73,7 @@ interface AccountBalancesProps {
 }
 
 /**
- * The Treasurer's accounts with the balance last typed in for each (S3-10b).
+ * The Treasurer's accounts: the last balance typed in, plus confirmed payments and money moved by hand since.
  * They sit next to the wallet and never feed it.
  */
 export function AccountBalances({
@@ -89,7 +89,7 @@ export function AccountBalances({
           <h2 id="accounts-title" className="section-head__title">
             Account Balances
           </h2>
-          <p className="section-head__subtitle">Entered by the Treasurer</p>
+          <p className="section-head__subtitle">Updated by confirmed payments and the Treasurer</p>
         </div>
         <IconWallet width={22} height={22} aria-hidden="true" />
       </header>
@@ -106,7 +106,9 @@ export function AccountBalances({
                 <p className="finance-accounts__name">{account.name}</p>
                 <p className="finance-accounts__detail">
                   {KIND_LABEL[account.kind]}
-                  {account.as_of ? ` · as of ${formatDate(account.as_of)}` : ''}
+                  {account.as_of && account.entered_manually
+                    ? ` · as of ${formatDate(account.as_of)}`
+                    : ''}
                 </p>
               </div>
               <p className="finance-accounts__balance">

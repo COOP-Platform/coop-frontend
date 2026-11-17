@@ -7,6 +7,8 @@ import { useMemberships } from '@/features/members';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 
+import { useChannels } from '../api/accounts';
+import type { Account } from '../api/accounts';
 import { useMyFines } from '../api/fines';
 import { FINES_ENABLED } from '../features';
 import { useOpenCampaigns, useRecordContribution } from '../api/my-contributions';
@@ -35,7 +37,20 @@ const toIsoMonth = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 const toInput = (minor: number | null | undefined) =>
   minor ? String(minor / MINOR_PER_MAJOR) : '';
 
+/** The channel a payment method usually lands in, to suggest one. */
+const KIND_FOR_METHOD: Record<PaymentMethod, Account['kind']> = {
+  mobile_money: 'mobile_money',
+  bank_transfer: 'bank',
+  cash: 'cash',
+};
+
+function suggestChannel(channels: Account[], method: PaymentMethod): string {
+  if (channels.length === 1) return channels[0]?.id ?? '';
+  return channels.find((c) => c.kind === KIND_FOR_METHOD[method])?.id ?? '';
+}
+
 interface Errors {
+  account_id?: string;
   membership_id?: string;
   contribution_type?: string;
   campaign_id?: string;
@@ -163,6 +178,10 @@ function RecordContributionForm({
   const [amount, setAmount] = useState(toInput(initial?.amountMinor ?? monthly));
   const [paidAt, setPaidAt] = useState(toIsoDate(today));
   const [method, setMethod] = useState<PaymentMethod>('mobile_money');
+  const channels = useChannels(communityId);
+  // Suggested from the payment method until the payer picks one themselves.
+  const [pickedChannel, setPickedChannel] = useState<string | null>(null);
+  const channel = pickedChannel ?? suggestChannel(channels, method);
   const [reference, setReference] = useState('');
   const [proof, setProof] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});
@@ -246,6 +265,7 @@ function RecordContributionForm({
       problems.campaign_id = 'Choose the dedicated contribution you paid into.';
     if (type === 'fine' && openFines.length > 0 && fineId === '')
       problems.fine_id = 'Choose the fine you paid.';
+    if (channels.length > 0 && channel === '') problems.account_id = 'Choose where the money went.';
     setErrors(problems);
     if (Object.keys(problems).length > 0 || communityId === undefined) return;
 
@@ -263,6 +283,7 @@ function RecordContributionForm({
         period_month: hasPeriod ? month : undefined,
         payment_method: method,
         payment_reference: reference.trim() || undefined,
+        account_id: channel || undefined,
         proof: proof ?? undefined,
       },
       {
@@ -281,6 +302,7 @@ function RecordContributionForm({
           }
           const f = error instanceof ApiError ? error.fieldErrors : {};
           const mapped: Errors = {
+            account_id: f.account_id,
             membership_id: f.membership_id,
             contribution_type: f.contribution_type,
             campaign_id: f.campaign_id,
@@ -417,6 +439,19 @@ function RecordContributionForm({
         options={METHOD_ORDER.map((m) => ({ value: m, label: METHOD_LABEL[m].label }))}
         error={errors.payment_method}
       />
+
+      {channels.length > 0 && (
+        <Select
+          label="Paid into"
+          hint="Where the money went. It can differ from how it was paid: a MoMo payment sent to the bank."
+          placeholder="Choose the account"
+          value={channel}
+          onChange={(event) => setPickedChannel(event.target.value)}
+          options={channels.map((c) => ({ value: c.id, label: c.name }))}
+          error={errors.account_id}
+          required
+        />
+      )}
 
       <Input
         label="Transaction reference"

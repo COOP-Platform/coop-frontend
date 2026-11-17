@@ -15,6 +15,8 @@ export interface Contribution {
   contribution_type: ContributionType;
   /** Set for a dedicated contribution; `id` is null when its event is hidden from you. */
   campaign: { id: string | null; title: string; is_private: boolean } | null;
+  /** The channel the money went into (a bank account, a MoMo number); null when none. */
+  account: { id: string; name: string; kind: 'bank' | 'mobile_money' | 'cash' | 'other' } | null;
   period_year: number;
   /** The month a monthly payment covers, 1-12. */
   period_month: number | null;
@@ -172,6 +174,8 @@ export interface RecordContributionInput {
   period_month?: number;
   payment_method: PaymentMethod;
   payment_reference?: string;
+  /** The active account the money went into. */
+  account_id?: string;
   /** JPG, PNG or PDF, 5 MB or smaller. */
   proof?: File;
 }

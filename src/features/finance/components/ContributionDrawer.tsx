@@ -96,12 +96,18 @@ export function ContributionDrawerContent({
           <dd>{periodLabel(row.period_year, row.period_month)}</dd>
         </div>
         <div>
-          <dt>Payment channel</dt>
+          <dt>Paid by</dt>
           <dd>
             <span className={`channel-dot channel-dot--${method.tone}`} aria-hidden="true" />
             {method.label}
           </dd>
         </div>
+        {row.account && (
+          <div>
+            <dt>Paid into</dt>
+            <dd>{row.account.name}</dd>
+          </div>
+        )}
         {row.payment_reference && (
           <div>
             <dt>Reference</dt>

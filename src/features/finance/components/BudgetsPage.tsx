@@ -25,7 +25,7 @@ import {
   Select,
   Textarea,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { reviewsContributions, reviewsExpenses, useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
@@ -308,7 +308,7 @@ function BudgetCard({ budget, onOpen }: { budget: Budget; onOpen: () => void }) 
         of={budget.planned_minor}
         currency={budget.currency}
         tone="out"
-        pending={can('finance.expense.approve') ? budget.pending_spent_minor : 0}
+        pending={reviewsExpenses(can) ? budget.pending_spent_minor : 0}
       />
       <p className="budget-card__left">
         {budget.left_to_spend_minor >= 0
@@ -373,7 +373,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         of={b.planned_minor}
         currency={b.currency}
         tone="out"
-        pending={can('finance.expense.approve') ? b.pending_spent_minor : 0}
+        pending={reviewsExpenses(can) ? b.pending_spent_minor : 0}
       />
 
       <h3 className="details__subhead">Lines</h3>
@@ -842,7 +842,7 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
               <p className="table__muted">
                 {c.paid_count} of {c.member_count} members have paid
                 {c.pending_minor > 0 &&
-                  can('finance.contribution.confirm') &&
+                  reviewsContributions(can) &&
                   ` · ${formatAmount(c.pending_minor)} ${c.currency} awaiting review`}
               </p>
               <div className="campaign-mine">

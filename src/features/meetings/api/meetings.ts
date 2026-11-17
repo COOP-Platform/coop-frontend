@@ -37,7 +37,8 @@ export interface Meeting {
 
 export interface MeetingSummary extends Meeting {
   /** The community's active members. */
-  expected_attendees: number;
+  /** Null for members who do not run meetings. */
+  expected_attendees: number | null;
 }
 
 export interface AgendaItem {
@@ -63,9 +64,10 @@ export interface MeetingDetail extends Meeting {
   description: string | null;
   quorum_threshold_percent: number;
   agenda: AgendaItem[];
-  quorum: Quorum;
+  /** Null for members who do not run meetings. */
+  quorum: Quorum | null;
   /** The roll-call has been saved and locked. */
-  attendance_recorded: boolean;
+  attendance_recorded: boolean | null;
   minutes_published: boolean;
   cancel_reason: string | null;
   cancelled_at: string | null;

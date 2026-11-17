@@ -32,7 +32,7 @@ export interface AppNavItem {
   /** Only match the exact path (the app's index page). */
   exact?: boolean;
   /** Hidden from members who do not hold this permission. */
-  permission?: string;
+  permission?: string | readonly string[];
 }
 
 export interface AppDefinition {
@@ -140,8 +140,8 @@ export const MEETINGS_APP: AppDefinition = {
       label: 'Reports',
       icon: <IconBarChart />,
       to: '/meetings/reports',
-      // Attendance reports: for whoever takes the roll-call (Secretary, admins).
-      permission: 'meeting.attendance.record',
+      // Attendance reports: whoever takes the roll-call (Secretary, admins) and the Auditor.
+      permission: ['meeting.attendance.record', 'audit.view'],
     },
   ],
 };

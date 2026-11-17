@@ -20,7 +20,7 @@ import {
   StatCard,
   TableFooter,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { reviewsIncome, useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatLongDate } from '@/lib/format/date';
 
@@ -83,7 +83,7 @@ export function IncomePage({
   const [month, setMonth] = useState(THIS_MONTH);
   const [source, setSource] = useState<SourceFilter>('all');
   // Only approvers see pending, rejected and reversed income.
-  const reviews = can('finance.income.approve');
+  const reviews = reviewsIncome(can);
   const [chosenStatus, setStatus] = useState<StatusFilter>('all');
   const status: StatusFilter = reviews ? chosenStatus : 'recorded';
   const [search, setSearch] = useState('');

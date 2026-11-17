@@ -48,11 +48,12 @@ export interface Account {
   entered_balance_minor: number | null;
   /** The day that balance was read. */
   as_of: string | null;
-  contributions_since_minor: number;
+  /** Null (with every balance field) for members who may not see balances. */
+  contributions_since_minor: number | null;
   /** Money in minus money out, entered by hand since `as_of`. */
-  movements_since_minor: number;
+  movements_since_minor: number | null;
   latest_balance: AccountBalance | null;
-  entered_manually: boolean;
+  entered_manually: boolean | null;
   created_by: MemberRef;
   created_at: string;
   retired_by: MemberRef | null;

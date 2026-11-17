@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type IconTileTone = 'brand' | 'info' | 'warning' | 'danger' | 'neutral';
+export type IconTileTone = 'brand' | 'info' | 'accent' | 'warning' | 'danger' | 'neutral';
 
 interface IconTileProps {
   children: ReactNode;

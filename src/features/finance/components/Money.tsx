@@ -8,13 +8,13 @@ interface MoneyProps {
   currency?: string;
 }
 
-/** An amount, the currency set smaller and lighter than the figure. */
+/** An amount, "RWF 80,000": the currency first, smaller and lighter than the figure. */
 export function Money({ minor, sign, currency = 'RWF' }: MoneyProps) {
   return (
     <span className="money">
-      {sign}
+      {sign && `${sign} `}
+      <span className="money__unit">{currency} </span>
       {formatAmount(minor)}
-      <span className="money__unit"> {currency}</span>
     </span>
   );
 }

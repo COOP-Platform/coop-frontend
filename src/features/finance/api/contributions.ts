@@ -14,6 +14,8 @@ export interface ContributionFilters {
   type?: ContributionType;
   /** A membership id. */
   member?: string;
+  /** A dedicated contribution: the payments into it. */
+  campaign?: string;
   /** Part of the member's name or of the payment reference. */
   search?: string;
   page?: number;

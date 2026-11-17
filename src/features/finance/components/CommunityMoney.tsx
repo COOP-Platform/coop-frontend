@@ -14,8 +14,6 @@ import { CommunityArrearsSection } from './Arrears';
 import { CashBox } from './CashBox';
 import { FinesSection } from './fines/FinesSection';
 import { AllPayments, MonthOverview, ReviewQueue } from './MemberContributions';
-import { ExpenseReview } from './ExpenseReview';
-import { useExpenses } from '../api/expenses';
 
 export type MoneyTab =
   'month' | 'review' | 'arrears' | 'fines' | 'payments' | 'pocket' | 'accounts';
@@ -35,20 +33,10 @@ export function CommunityMoney({
   tab: MoneyTab;
   onTabChange: (tab: MoneyTab) => void;
 }) {
-  const { can, communityId, membership } = useWorkspace();
+  const { can } = useWorkspace();
   const pending = usePendingForMe();
-  // Expenses wait for approval here too (pocket money, budget spending).
-  const canApproveExpenses = can('finance.expense.approve');
-  const pendingExpenses = useExpenses(canApproveExpenses ? communityId : undefined, {
-    status: 'pending',
-    page_size: 100,
-  });
-  const myId = membership?.id;
-  const expensesForMe = (pendingExpenses.data?.items ?? []).filter(
-    (e) => e.recorded_by.membership_id !== myId,
-  ).length;
-  const reviews = pending.isReviewer || canApproveExpenses;
-  const toReview = (pending.isReviewer ? pending.rows.length : 0) + expensesForMe;
+  const reviews = pending.isReviewer;
+  const toReview = pending.rows.length;
   // Who is behind is the Treasurer's to see, like reminders.
   const canSeeArrears = can('finance.contribution.confirm');
   const canSeeFines = FINES_ENABLED && (can('finance.fine.issue') || can('finance.fine.manage'));
@@ -124,12 +112,7 @@ export function CommunityMoney({
       <SegmentedControl label="Section" options={tabs} value={current} onChange={onTabChange} />
 
       {current === 'month' && <MonthOverview month={month} onMonthChange={setMonth} />}
-      {current === 'review' && (
-        <>
-          {pending.isReviewer && <ReviewQueue />}
-          {canApproveExpenses && <ExpenseReview />}
-        </>
-      )}
+      {current === 'review' && <ReviewQueue />}
       {current === 'arrears' && <CommunityArrearsSection />}
       {current === 'fines' && <FinesSection />}
       {current === 'payments' && <AllPayments month={month} onMonthChange={setMonth} />}

@@ -45,6 +45,7 @@ import { MonthPicker } from './MonthPicker';
 import { ReasonPrompt } from './ReasonPrompt';
 import { EditExpenseDialog } from './EditExpenseDialog';
 import { RecordExpenseDialog } from './RecordExpenseDialog';
+import { ExpenseReview } from './ExpenseReview';
 import { SuccessNotice } from './SuccessNotice';
 import { SectionHeader } from './SectionHeader';
 
@@ -181,6 +182,8 @@ export function ExpensesPage({
           tone="brand"
         />
       </div>
+
+      {(can('finance.expense.approve') || canRecord) && <ExpenseReview onDone={done} />}
 
       <SectionCard
         title={`Expenses in ${label}`}

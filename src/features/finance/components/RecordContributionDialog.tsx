@@ -447,7 +447,10 @@ function RecordContributionForm({
           placeholder="Choose the account"
           value={channel}
           onChange={(event) => setPickedChannel(event.target.value)}
-          options={channels.map((c) => ({ value: c.id, label: c.name }))}
+          options={channels.map((c) => ({
+            value: c.id,
+            label: c.number ? `${c.name} · ${c.number}` : c.name,
+          }))}
           error={errors.account_id}
           required
         />

@@ -105,7 +105,10 @@ export function ContributionDrawerContent({
         {row.account && (
           <div>
             <dt>Paid into</dt>
-            <dd>{row.account.name}</dd>
+            <dd>
+              {row.account.name}
+              {row.account.number && <span className="mono"> · {row.account.number}</span>}
+            </dd>
           </div>
         )}
         {row.payment_reference && (

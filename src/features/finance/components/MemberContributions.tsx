@@ -179,7 +179,7 @@ export function ReviewQueue() {
       {notice && <SuccessNotice text={notice} />}
 
       <SectionCard
-        title="To review"
+        title="Payments to review"
         flush
         footer={
           pending.rows.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined

@@ -3822,3 +3822,20 @@ button.position-card__main:focus-visible {
 .budget-lines td:first-child {
   width: 34%;
 }
+
+/* Record a payment: where a monthly payment goes when ibirarane come first. */
+.arrears-first__list {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.arrears-first__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-variant-numeric: tabular-nums;
+}

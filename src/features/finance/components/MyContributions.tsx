@@ -30,11 +30,11 @@ import { formatDate } from '@/lib/format/date';
 import { toPeriod, useMyArrears } from '../api/arrears';
 import { useMyFines } from '../api/fines';
 import { statementPath, useMyContributions } from '../api/my-contributions';
-import type { Contribution } from '../api/my-contributions';
+import type { Contribution, ContributionDetail } from '../api/my-contributions';
 import type { ContributionStatus, ContributionType } from '../api/types';
 import { FINES_ENABLED } from '../features';
 import { formatAmount } from '../format';
-import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL } from '../labels';
+import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL, periodLabel } from '../labels';
 import { THIS_YEAR, YEAR_OPTIONS } from '../year-options';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
@@ -43,6 +43,10 @@ import { leftToRecord } from './fines/fine-text';
 import { MyFines } from './fines/MyFines';
 import { RecordContributionDialog } from './RecordContributionDialog';
 import type { RecordInitial } from './RecordContributionDialog';
+
+/** The whole payment: every row it was split into, or the one row. */
+const recordedTotal = (c: ContributionDetail) =>
+  c.split?.reduce((sum, row) => sum + row.amount_minor, 0) ?? c.amount_minor;
 
 /** The one section the page shows at a time. */
 export type MyContributionsView = 'payments' | 'arrears' | 'fines';
@@ -74,7 +78,7 @@ export function MyContributions({
   const [recording, setRecording] = useState(startRecording && canRecord);
   // Set when the form is opened from an unpaid month ("Pay" in Ibirarane).
   const [prefill, setPrefill] = useState<RecordInitial | undefined>(undefined);
-  const [justRecorded, setJustRecorded] = useState<Contribution | null>(null);
+  const [justRecorded, setJustRecorded] = useState<ContributionDetail | null>(null);
   const [year, setYear] = useState(THIS_YEAR);
   const [selected, setSelected] = useState<Contribution | null>(null);
   const [statementError, setStatementError] = useState<string | null>(null);
@@ -198,9 +202,18 @@ export function MyContributions({
           <div>
             <p className="notice__title">Sent for review</p>
             <p className="notice__text">
-              {currency} {formatAmount(justRecorded.amount_minor)} paid on{' '}
+              {currency} {formatAmount(recordedTotal(justRecorded))} paid on{' '}
               {formatDate(justRecorded.paid_at)} is pending until the Treasurer confirms it.
             </p>
+            {(justRecorded.split?.length ?? 0) > 1 && (
+              <p className="notice__text">
+                Ibirarane first:{' '}
+                {justRecorded.split
+                  ?.map((row) => periodLabel(row.period_year, row.period_month ?? 1))
+                  .join(', ')}
+                .
+              </p>
+            )}
           </div>
         </div>
       )}

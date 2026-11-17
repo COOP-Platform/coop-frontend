@@ -16,7 +16,12 @@ export interface Contribution {
   /** Set for a dedicated contribution; `id` is null when its event is hidden from you. */
   campaign: { id: string | null; title: string; is_private: boolean } | null;
   /** The channel the money went into (a bank account, a MoMo number); null when none. */
-  account: { id: string; name: string; kind: 'bank' | 'mobile_money' | 'cash' | 'other' } | null;
+  account: {
+    id: string;
+    name: string;
+    kind: 'bank' | 'mobile_money' | 'cash' | 'other';
+    number: string | null;
+  } | null;
   period_year: number;
   /** The month a monthly payment covers, 1-12. */
   period_month: number | null;

@@ -87,7 +87,10 @@ export function ReviewActions({
             placeholder="Not given"
             value={channel}
             onChange={(event) => setChannel(event.target.value)}
-            options={channels.map((c) => ({ value: c.id, label: c.name }))}
+            options={channels.map((c) => ({
+              value: c.id,
+              label: c.number ? `${c.name} · ${c.number}` : c.name,
+            }))}
           />
         )}
         {rights.canConfirm && (

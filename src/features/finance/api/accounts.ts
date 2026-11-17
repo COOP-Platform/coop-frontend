@@ -32,6 +32,10 @@ export interface Account {
   id: string;
   name: string;
   kind: AccountKind;
+  /** Bank account number or MoMo phone number members send money to. */
+  number: string | null;
+  /** The name it is registered under. */
+  holder_name: string | null;
   currency: string;
   is_active: boolean;
   /**
@@ -146,7 +150,13 @@ export function useCreateAccount() {
     ({
       communityId,
       ...body
-    }: { communityId: string; name: string; kind: AccountKind } & BalanceFields) =>
+    }: {
+      communityId: string;
+      name: string;
+      kind: AccountKind;
+      number?: string;
+      holder_name?: string;
+    } & BalanceFields) =>
       apiFetch<Account>(`/communities/${communityId}/finance/accounts/`, { method: 'POST', body }),
   );
 }
@@ -162,6 +172,8 @@ export function useUpdateAccount() {
       accountId: string;
       name?: string;
       kind?: AccountKind;
+      number?: string;
+      holder_name?: string;
     }) =>
       apiFetch<Account>(`/communities/${communityId}/finance/accounts/${accountId}/`, {
         method: 'PATCH',

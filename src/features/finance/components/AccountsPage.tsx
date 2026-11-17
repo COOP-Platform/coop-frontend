@@ -54,6 +54,14 @@ const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.value, k.label])) as R
 
 const today = () => new Date().toLocaleDateString('en-CA');
 
+/** What the number is called for each kind; a cash box has none. */
+const NUMBER_LABEL: Record<AccountKind, string | null> = {
+  bank: 'Account number',
+  mobile_money: 'MoMo number',
+  cash: null,
+  other: 'Number or reference',
+};
+
 /**
  * Where the money actually sits: the bank, MoMo number and cash box. Each
  * balance starts from the last one the Treasurer typed in, then moves on its
@@ -154,7 +162,18 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
                     </IconTile>
                     <div>
                       <h3 className="account-card__name">{account.name}</h3>
-                      <p className="table__muted">{KIND_LABEL[account.kind]}</p>
+                      <p className="table__muted">
+                        {KIND_LABEL[account.kind]}
+                        {account.number && (
+                          <>
+                            {' · '}
+                            <span className="mono">{account.number}</span>
+                          </>
+                        )}
+                      </p>
+                      {account.holder_name && (
+                        <p className="table__muted">In the name of {account.holder_name}</p>
+                      )}
                     </div>
                   </div>
                   <p className="account-card__balance">
@@ -348,6 +367,11 @@ function AccountForm({
   const retire = useRetireAccount();
   const [name, setName] = useState(account?.name ?? '');
   const [kind, setKind] = useState<AccountKind>(account?.kind ?? 'bank');
+  const [number, setNumber] = useState(account?.number ?? '');
+  const [holder, setHolder] = useState(account?.holder_name ?? '');
+  const numberLabel = NUMBER_LABEL[kind];
+  // Members need it to send money: required for a bank account and a MoMo number.
+  const numberRequired = kind === 'bank' || kind === 'mobile_money';
   const [balance, setBalance] = useState('');
   const [asOf, setAsOf] = useState(today());
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -355,23 +379,35 @@ function AccountForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (name.trim() === '') {
-      setErrors({ name: 'Give the account a name, e.g. Bank of Kigali.' });
-      return;
-    }
+    const problems: Record<string, string> = {};
+    if (name.trim() === '') problems.name = 'Give the account a name, e.g. Bank of Kigali.';
+    if (numberRequired && number.trim() === '')
+      problems.number = `Enter the ${numberLabel?.toLowerCase() ?? 'number'} members send money to.`;
+    setErrors(problems);
+    if (Object.keys(problems).length > 0) return;
     if (!communityId) return;
     const onError = (error: unknown) => {
       const f = error instanceof ApiError ? error.fieldErrors : {};
       setErrors({
         name: f.name,
+        number: f.number,
+        holder: f.holder_name,
         balance: f.balance_minor,
         as_of: f.as_of,
-        form: f.name || f.balance_minor || f.as_of ? undefined : errorMessage(error),
+        form:
+          f.name || f.number || f.holder_name || f.balance_minor || f.as_of
+            ? undefined
+            : errorMessage(error),
       });
+    };
+    const details = {
+      // A cash box has no number.
+      number: numberLabel ? number.trim() : '',
+      holder_name: holder.trim(),
     };
     if (account) {
       update.mutate(
-        { communityId, accountId: account.id, name: name.trim(), kind },
+        { communityId, accountId: account.id, name: name.trim(), kind, ...details },
         { onSuccess: () => onSaved(`${name.trim()} saved.`), onError },
       );
     } else {
@@ -380,6 +416,8 @@ function AccountForm({
           communityId,
           name: name.trim(),
           kind,
+          ...(details.number ? { number: details.number } : {}),
+          ...(details.holder_name ? { holder_name: details.holder_name } : {}),
           ...(balance.trim() !== ''
             ? { balance_minor: Math.round(Number(balance) * MINOR_PER_MAJOR), as_of: asOf }
             : {}),
@@ -393,7 +431,7 @@ function AccountForm({
     <form className="dialog__form" onSubmit={handleSubmit} noValidate>
       <Input
         label="Name"
-        placeholder="e.g. Bank of Kigali, MTN MoMo 078…"
+        placeholder="e.g. Bank of Kigali, MTN MoMo"
         maxLength={80}
         value={name}
         onChange={(event) => setName(event.target.value)}
@@ -406,6 +444,30 @@ function AccountForm({
         onChange={(event) => setKind(event.target.value as AccountKind)}
         options={KINDS}
       />
+      {numberLabel && (
+        <div className="form-row">
+          <Input
+            label={numberLabel}
+            optional={!numberRequired}
+            required={numberRequired}
+            inputMode={kind === 'mobile_money' ? 'tel' : undefined}
+            placeholder={kind === 'mobile_money' ? 'e.g. 078 123 4567' : 'e.g. 0001-2345-6789'}
+            maxLength={64}
+            value={number}
+            onChange={(event) => setNumber(event.target.value)}
+            error={errors.number}
+          />
+          <Input
+            label="Registered name"
+            optional
+            placeholder="e.g. Les Cousins Family"
+            maxLength={120}
+            value={holder}
+            onChange={(event) => setHolder(event.target.value)}
+            error={errors.holder}
+          />
+        </div>
+      )}
       {!account && (
         <div className="form-row">
           <Input

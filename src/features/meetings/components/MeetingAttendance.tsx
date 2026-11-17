@@ -64,10 +64,11 @@ function when(iso: string): string {
 
 /**
  * The "Attendance" tab of a meeting: who came. Every member reads it, notes
- * included. The roll-call can be saved any time (apologies come in advance)
- * but only finished (locked) once the meeting has started. The member who
- * first saves it is its recorder, and only they can change it afterwards;
- * everyone else sees it read-only.
+ * included. The roll-call can be saved and changed any time, during or after
+ * the meeting (apologies come in advance), and locks itself when the
+ * meeting's minutes are final; members left unmarked are then recorded
+ * absent. The member who first saves it is its recorder, and only they can
+ * change it afterwards; everyone else sees it read-only.
  */
 export function MeetingAttendance({ meeting }: { meeting: MeetingDetail }) {
   const { communityId, can } = useWorkspace();
@@ -228,8 +229,11 @@ function RollCallStatus({
   } else if (canRecord && !rc.can_edit && rc.recorded_by && !mine) {
     lines.push(`Only ${rc.recorded_by.full_name} can change it.`);
   } else if (rc.can_edit && !hasStarted(meeting)) {
+    lines.push('The meeting has not started yet. You can note apologies now.');
+  }
+  if (!rc.locked && !meeting.minutes_published) {
     lines.push(
-      'The meeting has not started yet. You can note apologies now and finish the roll-call once it starts.',
+      'You can keep changing it, even after the meeting. It locks when the minutes are final, and anyone not marked is recorded absent.',
     );
   }
 
@@ -242,11 +246,7 @@ function RollCallStatus({
       )}
       <div>
         <p className="notice__title">
-          {rc.locked
-            ? 'Roll-call finished'
-            : rc.recorded_by
-              ? 'Roll-call in progress'
-              : 'Roll-call'}
+          {rc.locked ? 'Roll-call locked' : rc.recorded_by ? 'Roll-call open' : 'Roll-call'}
         </p>
         <p className="notice__text">{lines.join(' ')}</p>
       </div>
@@ -331,7 +331,6 @@ function RollCallForm({
 }) {
   const { communityId } = useWorkspace();
   const save = useSaveRollCall();
-  const started = hasStarted(meeting);
   const [drafts, setDrafts] = useState<Record<string, Draft>>(() =>
     Object.fromEntries(
       rc.records.map((r) => [
@@ -485,30 +484,14 @@ function RollCallForm({
         <Button variant="tint" onClick={onCancel} disabled={save.isPending}>
           Cancel
         </Button>
-        {rc.locked ? (
-          <Button disabled={save.isPending} onClick={() => submit(false)}>
-            {save.isPending ? 'Saving…' : 'Save corrections'}
-          </Button>
-        ) : (
-          <>
-            <Button variant="secondary" disabled={save.isPending} onClick={() => submit(false)}>
-              {save.isPending ? 'Saving…' : 'Save for now'}
-            </Button>
-            <Button
-              disabled={save.isPending || !started}
-              title={started ? undefined : 'You can finish the roll-call once the meeting starts.'}
-              onClick={() => submit(true)}
-            >
-              Finish roll-call
-            </Button>
-          </>
-        )}
+        <Button disabled={save.isPending} onClick={() => submit(false)}>
+          {save.isPending ? 'Saving…' : rc.locked ? 'Save corrections' : 'Save roll-call'}
+        </Button>
       </div>
       {!rc.locked && (
         <p className="table__muted roll-call-form__hint">
-          {started
-            ? 'Finishing records everyone not marked as absent and makes the roll-call final. Only you can correct it afterwards.'
-            : 'You can finish the roll-call once the meeting has started.'}
+          You can come back and change it any time until the minutes are final. Then it locks, and
+          anyone not marked is recorded absent.
         </p>
       )}
     </section>

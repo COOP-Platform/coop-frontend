@@ -23,7 +23,7 @@ import {
   Select,
   Textarea,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { reviewsContributions, useWorkspace } from '@/features/auth';
 import { useMemberCategories } from '@/features/members';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
@@ -32,6 +32,7 @@ import { formatDate } from '@/lib/format/date';
 import {
   useBudgetDetail,
   useBudgets,
+  useCampaignMembers,
   useCampaigns,
   useCloseBudget,
   useCloseCampaign,
@@ -45,6 +46,7 @@ import { useExpenses, useRecordExpense } from '../api/expenses';
 import { MINOR_PER_MAJOR, chargeText, formatAmount } from '../format';
 import { CampaignPayments } from './CampaignPayments';
 import { dueText } from '../budget-goal';
+import { memberStatus, yourPart } from '../your-part';
 import { ProgressRing } from './ProgressRing';
 import { RecordContributionDialog } from './RecordContributionDialog';
 import { SuccessNotice } from './SuccessNotice';
@@ -656,6 +658,84 @@ function AddUseDialog({
   );
 }
 
+/**
+ * For whoever reviews payments: every member, what they were asked and what
+ * they paid, so the Treasurer sees who still owes and who gave more.
+ */
+function MembersPaid({ campaign }: { campaign: Campaign }) {
+  const { communityId } = useWorkspace();
+  const members = useCampaignMembers(communityId, campaign.id);
+  const rows = members.data?.items ?? [];
+  const owing = rows.filter((r) => r.asked_minor !== null && r.paid_minor < r.asked_minor).length;
+  const extra = rows.filter((r) => r.asked_minor !== null && r.paid_minor > r.asked_minor).length;
+  const done = rows.filter(
+    (r) => r.asked_minor !== null && r.asked_minor > 0 && r.paid_minor === r.asked_minor,
+  ).length;
+
+  return (
+    <div className="members-paid">
+      <h3 className="details__subhead">Members</h3>
+      {members.isPending ? (
+        <LoadingState />
+      ) : rows.length === 0 ? (
+        <p className="table__muted">No members asked yet.</p>
+      ) : (
+        <>
+          <p className="table__muted">
+            {done} paid in full · {extra} paid more · {owing} still to pay
+          </p>
+          <div className="table-scroll">
+            <table className="table table--compact">
+              <thead>
+                <tr>
+                  <th scope="col">Member</th>
+                  <th scope="col" className="num">
+                    Asked
+                  </th>
+                  <th scope="col" className="num">
+                    Paid
+                  </th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const status = memberStatus(r.asked_minor, r.paid_minor);
+                  return (
+                    <tr key={r.membership_id}>
+                      <td>
+                        <div className="table__stack">
+                          <span>{r.full_name}</span>
+                          {r.category && <span className="table__muted">{r.category}</span>}
+                        </div>
+                      </td>
+                      <td className="num">
+                        {r.asked_minor === null ? 'Any' : formatAmount(r.asked_minor)}
+                      </td>
+                      <td className="num">
+                        {formatAmount(r.paid_minor)}
+                        {r.pending_minor > 0 && (
+                          <span className="table__muted">
+                            {' '}
+                            (+{formatAmount(r.pending_minor)} in review)
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <Badge tone={status.tone}>{status.label}</Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function BudgetFormDialog({
   open,
   budget,
@@ -1114,36 +1194,33 @@ function CampaignsSection({
                 </dl>
               )}
               {budgetId && (
-                <div className="campaign-mine">
-                  <strong>You:</strong>{' '}
-                  {c.my_share.owed_minor === null
-                    ? `voluntary · paid ${formatAmount(c.my_share.paid_minor)} ${c.currency}`
-                    : c.my_share.owed_minor === 0
-                      ? 'not asked to pay'
-                      : `owe ${formatAmount(c.my_share.owed_minor)}, paid ${formatAmount(c.my_share.paid_minor)}${
-                          c.my_share.outstanding_minor
-                            ? `, ${formatAmount(c.my_share.outstanding_minor)} ${c.currency} still to pay`
-                            : ' · all paid'
-                        }`}
+                <div
+                  className={`campaign-mine campaign-mine--${yourPart(c.my_share, c.currency).tone}`}
+                >
+                  {yourPart(c.my_share, c.currency).text}
                 </div>
               )}
               <div className="review-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  inline
-                  icon={<IconFile />}
-                  onClick={() => setPaymentsOf(c)}
-                >
-                  {budgetId ? 'Who paid' : 'Payments'}
-                </Button>
-                {c.status === 'open' &&
-                  can('finance.contribution.record') &&
-                  (c.my_share.outstanding_minor ?? 1) > 0 && (
-                    <Button size="sm" inline onClick={() => setContributingTo(c)}>
-                      Contribute
-                    </Button>
-                  )}
+                {!(budgetId && reviewsContributions(can)) && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    inline
+                    icon={<IconFile />}
+                    onClick={() => setPaymentsOf(c)}
+                  >
+                    {budgetId ? 'Who paid' : 'Payments'}
+                  </Button>
+                )}
+                {c.status === 'open' && can('finance.contribution.record') && (
+                  <Button size="sm" inline onClick={() => setContributingTo(c)}>
+                    {yourPart(c.my_share, c.currency).leftMinor > 0
+                      ? `Pay ${formatAmount(yourPart(c.my_share, c.currency).leftMinor)}`
+                      : c.my_share.paid_minor > 0
+                        ? 'Add a payment'
+                        : 'Contribute'}
+                  </Button>
+                )}
                 {/* Inside a budget, the budget's own Edit changes what members pay. */}
                 {canManage && c.status === 'open' && !budgetId && (
                   <>
@@ -1162,6 +1239,7 @@ function CampaignsSection({
                   </>
                 )}
               </div>
+              {budgetId && reviewsContributions(can) && <MembersPaid campaign={c} />}
             </li>
           ))}
         </ul>
@@ -1185,7 +1263,8 @@ function CampaignsSection({
             ? {
                 type: 'dedicated',
                 campaignId: contributingTo.id,
-                amountMinor: contributingTo.my_share.outstanding_minor ?? undefined,
+                amountMinor:
+                  yourPart(contributingTo.my_share, contributingTo.currency).leftMinor || undefined,
               }
             : undefined
         }

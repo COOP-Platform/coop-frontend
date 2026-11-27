@@ -58,7 +58,7 @@ export function CommunityMoney({
           },
         ]
       : []),
-    ...(canSeeArrears ? [{ value: 'arrears' as const, label: 'Ibirarane' }] : []),
+    ...(canSeeArrears ? [{ value: 'arrears' as const, label: 'Unpaid months' }] : []),
     ...(canSeeFines ? [{ value: 'fines' as const, label: 'Fines' }] : []),
     { value: 'payments', label: 'All payments' },
     { value: 'pocket', label: 'Community pocket' },

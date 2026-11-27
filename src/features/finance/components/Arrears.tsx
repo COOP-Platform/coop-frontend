@@ -74,7 +74,7 @@ export function MyArrears({ onPay }: { onPay?: (month: ArrearsMonth) => void }) 
 
   return (
     <SectionCard
-      title="Ibirarane"
+      title="Unpaid months"
       flush
       actions={
         data && (
@@ -148,7 +148,7 @@ function ArrearsBody({
         <IconCheckCircle width={20} height={20} aria-hidden="true" />
         <div>
           <p className="notice__title">
-            Nta birarane: {who === 'you' ? 'you owe' : `${who} owes`} nothing for {scope}
+            All paid up: {who === 'you' ? 'you owe' : `${who} owes`} nothing for {scope}
           </p>
           {data.pending_minor > 0 && (
             <p className="notice__text">
@@ -305,7 +305,7 @@ export function CommunityArrearsSection() {
   return (
     <div className="money-section">
       <SectionCard
-        title="Ibirarane"
+        title="Unpaid months"
         flush
         footer={
           data.items.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined
@@ -314,7 +314,7 @@ export function CommunityArrearsSection() {
         {data.items.length === 0 ? (
           <EmptyState
             icon={<IconCheckCircle width={28} height={28} />}
-            title="Nta birarane: everyone is up to date"
+            title="All paid up: everyone is up to date"
           />
         ) : (
           <>

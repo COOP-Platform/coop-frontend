@@ -595,7 +595,7 @@ function RecordContributionForm({
           <div>
             <p className="notice__title">
               {owedUpToPeriod > 0
-                ? `Ibirarane first: ${formatAmount(owedUpToPeriod)} RWF still owed`
+                ? `Unpaid months first: ${formatAmount(owedUpToPeriod)} RWF still owed`
                 : 'Paying ahead'}
             </p>
             {plan.length > 0 && (

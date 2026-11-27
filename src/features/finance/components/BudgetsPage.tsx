@@ -1,4 +1,4 @@
-import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -21,7 +21,6 @@ import {
   IconTrash,
   Input,
   LoadingState,
-  SegmentedControl,
   Select,
   Textarea,
 } from '@/components/ui';
@@ -44,63 +43,34 @@ import {
 import type { Budget, BudgetDetail, Campaign, CampaignCharge } from '../api/budgets';
 import { MINOR_PER_MAJOR, chargeText, formatAmount } from '../format';
 import { CampaignPayments } from './CampaignPayments';
+import { RecordContributionDialog } from './RecordContributionDialog';
 import { RecordExpenseDialog } from './RecordExpenseDialog';
 import { SuccessNotice } from './SuccessNotice';
 import { SectionHeader } from './SectionHeader';
-
-type Section = 'budgets' | 'campaigns';
-
-const SECTIONS: { value: Section; label: string }[] = [
-  { value: 'budgets', label: 'Budgets' },
-  { value: 'campaigns', label: 'Dedicated contributions' },
-];
 
 const today = () => new Date().toLocaleDateString('en-CA');
 const toMinor = (rwf: string) => Math.round(Number(rwf) * MINOR_PER_MAJOR);
 const toRwf = (minor: number) => String(minor / MINOR_PER_MAJOR);
 
 /**
- * Budgets (S3-37) and dedicated contributions (S3-38). A budget plans spending
- * for an event or project in lines; a dedicated contribution collects money
- * from members for it. Every member reads them; the Treasurer and committee
- * (finance.budget.manage / finance.campaign.manage) change them.
+ * Budgets (S3-37) with their dedicated contributions (S3-38) on one page. Open
+ * a budget to see its lines and contribute to its collection right there;
+ * collections not tied to a budget follow the budgets. Every member reads
+ * them; the Treasurer and committee (finance.budget.manage /
+ * finance.campaign.manage) change them.
  */
-export function BudgetsPage({
-  section,
-  onSectionChange,
-  embedded = false,
-}: {
-  section: Section;
-  onSectionChange: (s: Section) => void;
-  embedded?: boolean;
-}) {
+export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
   const [notice, setNotice] = useState<string | null>(null);
   return (
     <div className="page">
       {/* Inside Budgets & Shares the tab already names the section: no heading. */}
       {!embedded && <SectionHeader title="Budgets" />}
-      {!embedded && (
-        <SegmentedControl
-          label="Section"
-          options={SECTIONS}
-          value={section}
-          onChange={(value) => {
-            setNotice(null);
-            onSectionChange(value);
-          }}
-        />
-      )}
       {notice && <SuccessNotice text={notice} />}
-      {section === 'budgets' ? (
-        <BudgetsSection onDone={setNotice} />
-      ) : (
-        <CampaignsSection onDone={setNotice} />
-      )}
+      <BudgetsSection onDone={setNotice} />
+      <CampaignsSection onDone={setNotice} standalone title="Other collections" />
     </div>
   );
 }
-
-export type BudgetsSectionName = Section;
 
 /**
  * A thin bar for "x of y", with the numbers written beside it. `pending` (not
@@ -422,6 +392,10 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         </table>
       </div>
 
+      {b.status === 'active' && (
+        <CampaignsSection onDone={onDone} budgetId={b.id} title="Contribute" />
+      )}
+
       {b.close_note && (
         <p className="details__note">
           <strong>Closed:</strong> {b.close_note}
@@ -741,10 +715,31 @@ function BudgetForm({
 
 type CampaignFilter = 'open' | 'closed';
 
-function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
+/** The collections a list shows: one budget's, the ones with no budget, or all. */
+function shownCampaigns(items: Campaign[], budgetId?: string, standalone = false): Campaign[] {
+  if (budgetId) return items.filter((c) => c.budget?.id === budgetId);
+  if (standalone) return items.filter((c) => c.budget === null);
+  return items;
+}
+
+function CampaignsSection({
+  onDone,
+  budgetId,
+  standalone = false,
+  title = 'Dedicated contributions',
+}: {
+  onDone: (message: string) => void;
+  /** Inside a budget's panel: that budget's open collections only. */
+  budgetId?: string;
+  /** On the page: only the collections not tied to a budget. */
+  standalone?: boolean;
+  title?: string;
+}) {
   const { communityId, can } = useWorkspace();
   const canManage = can('finance.campaign.manage');
-  const [filter, setFilter] = useState<CampaignFilter>('open');
+  const [chosenFilter, setFilter] = useState<CampaignFilter>('open');
+  const filter: CampaignFilter = budgetId ? 'open' : chosenFilter;
+  const [contributingTo, setContributingTo] = useState<Campaign | null>(null);
   const [editing, setEditing] = useState<Campaign | 'new' | null>(null);
   const [closingId, setClosingId] = useState<Campaign | null>(null);
   const [paymentsOf, setPaymentsOf] = useState<Campaign | null>(null);
@@ -754,24 +749,26 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
   return (
     <div className="money-section">
       <div className="section-bar">
-        <h2 className="section-title">Dedicated contributions</h2>
-        <div className="section-bar__actions">
-          <Select
-            label="Status"
-            labelHidden
-            options={[
-              { value: 'open', label: 'Open' },
-              { value: 'closed', label: 'Closed' },
-            ]}
-            value={filter}
-            onChange={(event) => setFilter(event.target.value as CampaignFilter)}
-          />
-          {canManage && (
-            <Button inline icon={<IconPlus />} onClick={() => setEditing('new')}>
-              New collection
-            </Button>
-          )}
-        </div>
+        <h2 className="section-title">{title}</h2>
+        {!budgetId && (
+          <div className="section-bar__actions">
+            <Select
+              label="Status"
+              labelHidden
+              options={[
+                { value: 'open', label: 'Open' },
+                { value: 'closed', label: 'Closed' },
+              ]}
+              value={filter}
+              onChange={(event) => setFilter(event.target.value as CampaignFilter)}
+            />
+            {canManage && (
+              <Button inline icon={<IconPlus />} onClick={() => setEditing('new')}>
+                New collection
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {campaigns.data === undefined ? (
@@ -780,16 +777,24 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
         ) : (
           <ErrorState message={errorMessage(campaigns.error)} />
         )
-      ) : campaigns.data.items.length === 0 ? (
-        <section className="card">
-          <EmptyState
-            icon={<IconHandHeart />}
-            title={filter === 'open' ? 'No open collections' : 'No closed collections'}
-          />
-        </section>
+      ) : shownCampaigns(campaigns.data.items, budgetId, standalone).length === 0 ? (
+        budgetId ? (
+          <p className="table__muted">
+            No collection for this budget yet.
+            {can('finance.campaign.manage') && ' Use "Ask members" to start one.'}
+          </p>
+        ) : (
+          <section className="card">
+            <EmptyState
+              icon={<IconHandHeart />}
+              size="sm"
+              title={filter === 'open' ? 'No open collections' : 'No closed collections'}
+            />
+          </section>
+        )
       ) : (
         <ul className="budget-cards" role="list">
-          {campaigns.data.items.map((c) => (
+          {shownCampaigns(campaigns.data.items, budgetId, standalone).map((c) => (
             <li key={c.id} className="card budget-card budget-card--static">
               <div className="budget-card__head">
                 <h3 className="budget-card__title">{c.title}</h3>
@@ -801,7 +806,7 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
                 {chargeText(c.charge, c.amount_minor, c.currency)} ·{' '}
                 {c.required ? 'Required' : 'Voluntary'}
                 {c.due_date && ` · due ${formatDate(c.due_date)}`}
-                {c.budget && ` · for ${c.budget.title}`}
+                {c.budget && !budgetId && ` · for ${c.budget.title}`}
               </p>
               {c.expected_minor !== null ? (
                 <Meter
@@ -848,13 +853,9 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
                 {c.status === 'open' &&
                   can('finance.contribution.record') &&
                   (c.my_share.outstanding_minor ?? 1) > 0 && (
-                    <Link
-                      to="/finance/my-contributions"
-                      search={{ record: true }}
-                      className="btn btn--primary btn--sm btn--inline"
-                    >
-                      Pay now
-                    </Link>
+                    <Button size="sm" inline onClick={() => setContributingTo(c)}>
+                      Contribute
+                    </Button>
                   )}
                 {canManage && c.status === 'open' && (
                   <>
@@ -885,6 +886,30 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
       >
         {paymentsOf && <CampaignPayments campaign={paymentsOf} />}
       </Drawer>
+
+      {/* Contribute right here, with this collection already chosen. */}
+      <RecordContributionDialog
+        open={contributingTo !== null}
+        onClose={() => setContributingTo(null)}
+        shares={undefined}
+        initial={
+          contributingTo
+            ? {
+                type: 'dedicated',
+                campaignId: contributingTo.id,
+                amountMinor: contributingTo.my_share.outstanding_minor ?? undefined,
+              }
+            : undefined
+        }
+        onRecorded={(contribution) => {
+          setContributingTo(null);
+          onDone(
+            contribution.status === 'confirmed'
+              ? `${formatAmount(contribution.amount_minor)} ${contribution.currency} recorded for ${contribution.campaign?.title ?? 'the collection'}.`
+              : `${formatAmount(contribution.amount_minor)} ${contribution.currency} sent for review.`,
+          );
+        }}
+      />
 
       <CampaignFormDialog
         open={editing !== null}

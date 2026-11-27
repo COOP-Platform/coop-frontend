@@ -80,22 +80,19 @@ export function BudgetsSharesPage({
   const { can } = useWorkspace();
   const options: { value: PlanningTab; label: string }[] = [
     ...(can('finance.budget.view') ? [{ value: 'budgets' as const, label: 'Budgets' }] : []),
-    ...(can('finance.campaign.view')
-      ? [{ value: 'campaigns' as const, label: 'Dedicated contributions' }]
-      : []),
     { value: 'shares', label: 'Shares' },
   ];
-  const current = options.some((o) => o.value === tab) ? tab : (options[0]?.value ?? 'shares');
+  // Collections now live with the budgets: an old "campaigns" link opens Budgets.
+  const wanted = tab === 'campaigns' ? 'budgets' : tab;
+  const current = options.some((o) => o.value === wanted)
+    ? wanted
+    : (options[0]?.value ?? 'shares');
 
   return (
     <div className="page">
       <PageHeader title="Budgets & Shares" />
       <Tabs options={options} value={current} onChange={onTabChange} />
-      {current === 'shares' ? (
-        <SharesPage embedded />
-      ) : (
-        <BudgetsPage embedded section={current} onSectionChange={onTabChange} />
-      )}
+      {current === 'shares' ? <SharesPage embedded /> : <BudgetsPage embedded />}
     </div>
   );
 }

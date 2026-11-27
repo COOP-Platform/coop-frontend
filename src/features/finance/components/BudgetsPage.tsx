@@ -27,6 +27,7 @@ import {
   Textarea,
 } from '@/components/ui';
 import { reviewsContributions, reviewsExpenses, useWorkspace } from '@/features/auth';
+import { useMemberCategories } from '@/features/members';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
@@ -617,6 +618,16 @@ function BudgetForm({
     asking && asking.amount_minor !== null ? toRwf(asking.amount_minor) : '',
   );
   const [askRequired, setAskRequired] = useState(asking?.required ?? false);
+  // per_category: what each member category pays, as typed (RWF).
+  const categories = useMemberCategories(communityId);
+  const payingCategories = (categories.data ?? []).filter(
+    (c) => c.is_active && !c.is_stipend_recipient,
+  );
+  const [categoryAmounts, setCategoryAmounts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      (asking?.category_amounts ?? []).map((c) => [c.category_id, toRwf(c.amount_minor)]),
+    ),
+  );
   const [askDue, setAskDue] = useState(asking?.due_date ?? '');
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState(budget?.title ?? (forEvent ? `${forEvent.title} budget` : ''));
@@ -650,8 +661,18 @@ function BudgetForm({
       )
     )
       problems.lines = 'Each line needs a name (2+ characters) and a planned amount of 0 or more.';
-    if (ask !== 'none' && ask !== 'any' && (askAmount.trim() === '' || toMinor(askAmount) <= 0))
+    if (
+      ask !== 'none' &&
+      ask !== 'any' &&
+      ask !== 'per_category' &&
+      (askAmount.trim() === '' || toMinor(askAmount) <= 0)
+    )
       problems.askAmount = 'Enter what each member pays.';
+    if (
+      ask === 'per_category' &&
+      !payingCategories.some((c) => toMinor(categoryAmounts[c.id] ?? '') > 0)
+    )
+      problems.categoryAmounts = 'Enter what at least one category pays.';
     if (ask !== 'none' && askDue && askDue < today())
       problems.askDue = 'The due date is today or later.';
     setErrors(problems);
@@ -669,11 +690,12 @@ function BudgetForm({
     };
     const onError = (error: unknown) => {
       const f = error instanceof ApiError ? error.fieldErrors : {};
-      const known = f.title || f.lines || f.amount_minor || f.due_date;
+      const known = f.title || f.lines || f.amount_minor || f.due_date || f.category_amounts;
       setErrors({
         title: f.title,
         lines: f.lines,
         askAmount: f.amount_minor,
+        categoryAmounts: f.category_amounts,
         askDue: f.due_date,
         // An event problem (cancelled, already has a budget) is shown as a whole.
         form: known ? undefined : (f.event_id ?? errorMessage(error)),
@@ -693,7 +715,15 @@ function BudgetForm({
             communityId: cid,
             title: saved.title,
             charge: ask,
-            amount_minor: ask === 'any' ? null : toMinor(askAmount),
+            amount_minor: ask === 'any' || ask === 'per_category' ? null : toMinor(askAmount),
+            ...(ask === 'per_category'
+              ? {
+                  category_amounts: payingCategories.map((c) => ({
+                    category_id: c.id,
+                    amount_minor: toMinor(categoryAmounts[c.id] ?? '') || 0,
+                  })),
+                }
+              : {}),
             required: askRequired,
             due_date: askDue || null,
           };
@@ -797,11 +827,14 @@ function BudgetForm({
               options={[
                 { value: 'none', label: 'No' },
                 { value: 'fixed', label: 'Yes, the same amount per member' },
-                { value: 'per_share', label: 'Yes, an amount per share' },
+                { value: 'per_category', label: 'Yes, an amount per category' },
+                ...(asking?.charge === 'per_share'
+                  ? [{ value: 'per_share', label: 'Yes, an amount per share' }]
+                  : []),
                 { value: 'any', label: 'Yes, any amount (each member decides)' },
               ]}
             />
-            {ask !== 'none' && ask !== 'any' && (
+            {ask !== 'none' && ask !== 'any' && ask !== 'per_category' && (
               <Input
                 label={ask === 'per_share' ? 'Amount per share (RWF)' : 'Amount per member (RWF)'}
                 type="number"
@@ -814,6 +847,36 @@ function BudgetForm({
               />
             )}
           </div>
+          {ask === 'per_category' && (
+            <div className="budget-ask__categories">
+              <p className="field__label">What each category pays (RWF)</p>
+              {categories.isPending ? (
+                <p className="table__muted">Loading the categories…</p>
+              ) : payingCategories.length === 0 ? (
+                <p className="table__muted">This community has no paying categories yet.</p>
+              ) : (
+                payingCategories.map((c) => (
+                  <div key={c.id} className="budget-ask__category">
+                    <span>{c.name}</span>
+                    <Input
+                      label={`${c.name} pays (RWF)`}
+                      labelHidden
+                      type="number"
+                      min={0}
+                      step="any"
+                      placeholder="0"
+                      value={categoryAmounts[c.id] ?? ''}
+                      onChange={(event) =>
+                        setCategoryAmounts((all) => ({ ...all, [c.id]: event.target.value }))
+                      }
+                    />
+                  </div>
+                ))
+              )}
+              <p className="table__muted">Leave 0 for a category that does not pay.</p>
+              {errors.categoryAmounts && <p className="field__error">{errors.categoryAmounts}</p>}
+            </div>
+          )}
           {ask !== 'none' && (
             <div className="form-row">
               <Input
@@ -937,6 +1000,20 @@ function CampaignsSection({
                 {c.due_date && ` · due ${formatDate(c.due_date)}`}
                 {c.budget && !budgetId && ` · for ${c.budget.title}`}
               </p>
+              {c.charge === 'per_category' && c.category_amounts.length > 0 && (
+                <ul className="category-amounts" role="list" aria-label="What each category pays">
+                  {c.category_amounts.map((row) => (
+                    <li key={row.category_id}>
+                      <span>{row.name}</span>
+                      <strong>
+                        {row.amount_minor > 0
+                          ? `${formatAmount(row.amount_minor)} ${c.currency}`
+                          : 'Not asked'}
+                      </strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {c.expected_minor !== null ? (
                 <Meter
                   label="Collected"

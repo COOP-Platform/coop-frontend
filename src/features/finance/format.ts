@@ -14,10 +14,11 @@ export function formatAmount(minor: number): string {
 
 /** "10,000 RWF per share", "5,000 RWF per member" or "Any amount". */
 export function chargeText(
-  charge: 'per_share' | 'fixed' | 'any',
+  charge: 'per_share' | 'fixed' | 'any' | 'per_category',
   amountMinor: number | null,
   currency: string,
 ): string {
+  if (charge === 'per_category') return 'By member category';
   if (charge === 'any' || amountMinor === null) return 'Any amount';
   return `${formatAmount(amountMinor)} ${currency} ${charge === 'per_share' ? 'per share' : 'per member'}`;
 }

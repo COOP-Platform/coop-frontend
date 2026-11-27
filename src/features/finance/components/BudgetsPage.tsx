@@ -422,28 +422,6 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         </table>
       </div>
 
-      <h3 className="details__subhead">Dedicated contributions for it</h3>
-      {b.campaigns.length === 0 ? (
-        <p className="table__muted">None yet.</p>
-      ) : (
-        <ul className="budget-campaigns" role="list">
-          {b.campaigns.map((c) => (
-            <li key={c.id}>
-              <span className="table__name">{c.title}</span>{' '}
-              <Badge tone={c.status === 'open' ? 'success' : 'neutral'}>
-                {c.status === 'open' ? 'Open' : 'Closed'}
-              </Badge>
-              <span className="table__muted">
-                {' '}
-                · {formatAmount(c.collected_minor)}
-                {c.expected_minor !== null && ` of ${formatAmount(c.expected_minor)}`} {b.currency}{' '}
-                collected
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-
       {b.close_note && (
         <p className="details__note">
           <strong>Closed:</strong> {b.close_note}

@@ -107,6 +107,12 @@ export interface MinutesDetail {
     threshold: number;
     reached: boolean;
   } | null;
+  /** Who attended: members marked present at the roll-call, by name. */
+  attended?: {
+    membership_id: string;
+    full_name: string;
+    channel: 'in_person' | 'virtual' | null;
+  }[];
   /** The discussion notes. */
   discussion: string;
   decisions: Decision[];

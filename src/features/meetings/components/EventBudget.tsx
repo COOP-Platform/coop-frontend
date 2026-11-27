@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { Button, IconFlag, SectionCard } from '@/components/ui';
+import { SectionCard } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { BudgetDetails, BudgetFormDialog, organisesEventMoney } from '@/features/finance';
 
@@ -9,7 +9,7 @@ import type { CommunityEvent } from '../api/events';
 
 /**
  * The event's budget, run from the event's page: the same budget as in
- * Finance, not a copy. Its organisers add it ("This event needs a budget"),
+ * Finance, not a copy. Its organisers switch it on ("Budget for this event"),
  * set the goal and what members pay, and record what was used; Finance
  * receives the money and approves the spending. A surprise event's budget
  * stays hidden from the members the event is hidden from (the API hides it).
@@ -33,14 +33,24 @@ export function EventBudget({
         {cancelled ? (
           <p className="table__muted">Cancelled: no budget.</p>
         ) : canPlan ? (
-          <div className="event-budget-offer">
+          // Off until the organiser switches it on; then only what the event does not know is asked.
+          <div className="event-budget-switch">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={creating}
+              className="switch"
+              onClick={() => setCreating(true)}
+            >
+              <span className="switch__track" aria-hidden="true">
+                <span className="switch__thumb" />
+              </span>
+              <span className="switch__label">Budget for this event</span>
+            </button>
             <p className="table__muted">
-              Does this event need money? Add a budget: set a goal, ask members to contribute, and
-              record what is used. Finance receives the money and approves the spending.
+              Off. Switch it on to collect money for this event. Finance receives it and approves
+              what is spent.
             </p>
-            <Button inline icon={<IconFlag />} onClick={() => setCreating(true)}>
-              This event needs a budget
-            </Button>
           </div>
         ) : (
           <p className="table__muted">No budget for this event.</p>
@@ -48,7 +58,7 @@ export function EventBudget({
         <BudgetFormDialog
           open={creating}
           budget={null}
-          event={{ id: event.id, title: event.title }}
+          event={{ id: event.id, title: event.title, date: event.starts_at.slice(0, 10) }}
           onClose={() => setCreating(false)}
           onSaved={(message) => {
             setCreating(false);

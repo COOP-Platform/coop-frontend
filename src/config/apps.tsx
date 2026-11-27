@@ -14,7 +14,6 @@ import {
   IconChat,
   IconCheckSquare,
   IconCommunity,
-  IconFile,
   IconGrid,
   IconIdBadge,
   IconMail,
@@ -61,7 +60,6 @@ export const COMMUNITY_APP: AppDefinition = {
       to: '/community/invitations',
       permission: 'member.invite',
     },
-    { label: 'Reports', icon: <IconFile />, to: '/community/reports' },
   ],
 };
 

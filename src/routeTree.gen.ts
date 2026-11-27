@@ -22,7 +22,6 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password';
 import { Route as StatusRouteImport } from './routes/status';
 import { Route as AccountPasswordRouteImport } from './routes/account.password';
 import { Route as CommunityIndexRouteImport } from './routes/community.index';
-import { Route as CommunityReportsRouteImport } from './routes/community.reports';
 import { Route as CommunitySettingsRouteImport } from './routes/community.settings';
 import { Route as FinanceIndexRouteImport } from './routes/finance.index';
 import { Route as FinanceAccountsRouteImport } from './routes/finance.accounts';
@@ -122,11 +121,6 @@ const AccountPasswordRoute = AccountPasswordRouteImport.update({
 const CommunityIndexRoute = CommunityIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => CommunityRoute,
-} as any);
-const CommunityReportsRoute = CommunityReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
   getParentRoute: () => CommunityRoute,
 } as any);
 const CommunitySettingsRoute = CommunitySettingsRouteImport.update({
@@ -323,7 +317,6 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
   '/account/password': typeof AccountPasswordRoute;
-  '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/finance/accounts': typeof FinanceAccountsRoute;
   '/finance/budgets': typeof FinanceBudgetsRoute;
@@ -370,7 +363,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
   '/account/password': typeof AccountPasswordRoute;
-  '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/finance/accounts': typeof FinanceAccountsRoute;
   '/finance/budgets': typeof FinanceBudgetsRoute;
@@ -422,7 +414,6 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute;
   '/status': typeof StatusRoute;
   '/account/password': typeof AccountPasswordRoute;
-  '/community/reports': typeof CommunityReportsRoute;
   '/community/settings': typeof CommunitySettingsRoute;
   '/finance/accounts': typeof FinanceAccountsRoute;
   '/finance/budgets': typeof FinanceBudgetsRoute;
@@ -475,7 +466,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/status'
     | '/account/password'
-    | '/community/reports'
     | '/community/settings'
     | '/finance/accounts'
     | '/finance/budgets'
@@ -522,7 +512,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/status'
     | '/account/password'
-    | '/community/reports'
     | '/community/settings'
     | '/finance/accounts'
     | '/finance/budgets'
@@ -573,7 +562,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/status'
     | '/account/password'
-    | '/community/reports'
     | '/community/settings'
     | '/finance/accounts'
     | '/finance/budgets'
@@ -722,13 +710,6 @@ declare module '@tanstack/react-router' {
       path: '/';
       fullPath: '/community/';
       preLoaderRoute: typeof CommunityIndexRouteImport;
-      parentRoute: typeof CommunityRoute;
-    };
-    '/community/reports': {
-      id: '/community/reports';
-      path: '/reports';
-      fullPath: '/community/reports';
-      preLoaderRoute: typeof CommunityReportsRouteImport;
       parentRoute: typeof CommunityRoute;
     };
     '/community/settings': {
@@ -980,7 +961,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface CommunityRouteChildren {
-  CommunityReportsRoute: typeof CommunityReportsRoute;
   CommunitySettingsRoute: typeof CommunitySettingsRoute;
   CommunityIndexRoute: typeof CommunityIndexRoute;
   CommunityInvitationsNewRoute: typeof CommunityInvitationsNewRoute;
@@ -992,7 +972,6 @@ interface CommunityRouteChildren {
 }
 
 const CommunityRouteChildren: CommunityRouteChildren = {
-  CommunityReportsRoute: CommunityReportsRoute,
   CommunitySettingsRoute: CommunitySettingsRoute,
   CommunityIndexRoute: CommunityIndexRoute,
   CommunityInvitationsNewRoute: CommunityInvitationsNewRoute,

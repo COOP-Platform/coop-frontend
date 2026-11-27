@@ -35,6 +35,7 @@ import type { ContributionStatus, ContributionType } from '../api/types';
 import { FINES_ENABLED } from '../features';
 import { formatAmount } from '../format';
 import { METHOD_LABEL, NO_METHOD, STATUS_LABEL, TYPE_LABEL, periodLabel } from '../labels';
+import { usePaidUpTo } from '../paid-up-to';
 import { THIS_YEAR, YEAR_OPTIONS } from '../year-options';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
@@ -91,6 +92,12 @@ export function MyContributions({
   const arrears = useMyArrears(communityId);
   const fines = useMyFines(communityId);
   const monthsBehind = arrears.data?.months_behind ?? 0;
+  // How far ahead a member who owes nothing has paid ("Paid up to June 2027").
+  const paidUpTo = usePaidUpTo(
+    communityId,
+    data?.shares.owed_per_month_minor,
+    arrears.data !== undefined && arrears.data.total_minor === 0,
+  );
   const finesToPay = (fines.data?.items ?? []).filter(
     (fine) => fine.status === 'issued' && fine.outstanding_minor > 0,
   ).length;
@@ -275,20 +282,37 @@ export function MyContributions({
           icon={<IconHistory />}
           tone="accent"
         />
-        <StatCard
-          label="Outstanding"
-          value={<Money minor={summary.outstanding_minor} currency={currency} />}
-          caption={
-            summary.outstanding_minor === 0
-              ? 'All clear'
-              : monthsBehind > 0
-                ? `${plural(monthsBehind, 'month')} behind`
-                : `Of ${currency} ${formatAmount(summary.owed_to_date_minor)}`
-          }
-          icon={<IconCheckCircle />}
-          tone="warning"
-          emphasis={summary.outstanding_minor > 0}
-        />
+        {year === THIS_YEAR && summary.outstanding_minor === 0 && paidUpTo ? (
+          <StatCard
+            label="Paid up to"
+            value={`${periodLabel(...paidUpTo.upTo)}${paidUpTo.orLater ? '+' : ''}`}
+            caption={[
+              paidUpTo.ahead === 0
+                ? 'This month is paid'
+                : `${plural(paidUpTo.ahead, 'month')} ahead`,
+              paidUpTo.pendingUpTo && `${periodLabel(...paidUpTo.pendingUpTo)} waiting for review`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            icon={<IconCheckCircle />}
+            tone="brand"
+          />
+        ) : (
+          <StatCard
+            label="Outstanding"
+            value={<Money minor={summary.outstanding_minor} currency={currency} />}
+            caption={
+              summary.outstanding_minor === 0
+                ? 'All clear'
+                : monthsBehind > 0
+                  ? `${plural(monthsBehind, 'month')} behind`
+                  : `Of ${currency} ${formatAmount(summary.owed_to_date_minor)}`
+            }
+            icon={<IconCheckCircle />}
+            tone="warning"
+            emphasis={summary.outstanding_minor > 0}
+          />
+        )}
       </div>
 
       <SegmentedControl

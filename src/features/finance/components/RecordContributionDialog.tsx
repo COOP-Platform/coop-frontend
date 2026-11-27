@@ -9,6 +9,7 @@ import { errorMessage } from '@/lib/api/errors';
 
 import { useChannels } from '../api/accounts';
 import { useMemberArrears, useMyArrears } from '../api/arrears';
+import { useFinancialYears } from '../api/years';
 import type { ArrearsMonth } from '../api/arrears';
 import type { Account } from '../api/accounts';
 import { useMyFines } from '../api/fines';
@@ -60,32 +61,116 @@ interface Piece {
   year: number;
   month: number;
   amount: number;
+  /** A month not due yet, paid in advance. */
+  ahead: boolean;
 }
 
+const nextMonth = (y: number, m: number): [number, number] => (m === 12 ? [y + 1, 1] : [y, m + 1]);
+const before = (a: [number, number], b: [number, number]) =>
+  a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]);
+
 /**
- * Where a monthly payment goes, as the backend splits it (settle_arrears):
- * the oldest unpaid months first (what is left after anything pending), then
- * the month chosen. A preview only; the server decides.
+ * Where a monthly payment goes, as the backend splits it (settle_arrears,
+ * finance/arrears.py): (1) the oldest unpaid months up to the month chosen,
+ * each what is left after anything pending; (2) the month chosen, one
+ * month's worth, when it is still ahead; (3) the rest pays the following
+ * months in advance, one month's worth each. Months in a closed financial
+ * year are skipped throughout. A preview only: the server decides, and it
+ * also skips months already paid ahead.
  */
-function planPayment(months: readonly ArrearsMonth[], amount: number, period: string): Piece[] {
+function planPayment(
+  months: readonly ArrearsMonth[],
+  amount: number,
+  period: string,
+  perMonth: number | undefined,
+  today: Date,
+  closedYears: ReadonlySet<number>,
+): Piece[] {
   const [year = 0, month = 0] = period.split('-').map(Number);
+  const chosen: [number, number] = [year, month];
+  const now: [number, number] = [today.getFullYear(), today.getMonth() + 1];
   const pieces: Piece[] = [];
+  const has = (y: number, m: number) => pieces.some((p) => p.year === y && p.month === m);
   let left = amount;
+
+  // 1) Ibirarane, oldest first, up to the month chosen.
   for (const m of months) {
     if (left <= 0) break;
     const free = m.remaining_minor - m.pending_minor;
-    const after = m.year > year || (m.year === year && m.month > month);
-    if (free <= 0 || m.record_as === null || after) continue;
+    if (free <= 0 || m.record_as === null || before(chosen, [m.year, m.month])) continue;
+    if (closedYears.has(m.year)) continue;
     const piece = Math.min(left, free);
-    pieces.push({ year: m.year, month: m.month, amount: piece });
+    pieces.push({ year: m.year, month: m.month, amount: piece, ahead: false });
     left -= piece;
   }
-  if (left > 0) {
-    const mine = pieces.find((p) => p.year === year && p.month === month);
-    if (mine) mine.amount += left;
-    else pieces.push({ year, month, amount: left });
+
+  // Without a known monthly amount, the rest stays on the month chosen.
+  if (!perMonth || perMonth <= 0) {
+    if (left > 0) {
+      const mine = pieces.find((p) => p.year === year && p.month === month);
+      if (mine) mine.amount += left;
+      else pieces.push({ year, month, amount: left, ahead: before(now, chosen) });
+    }
+    return pieces;
+  }
+
+  // 2) The month chosen, when it is still ahead.
+  const owed = new Set(months.map((m) => `${m.year}-${m.month}`));
+  if (left > 0 && before(now, chosen) && !owed.has(`${year}-${month}`) && !closedYears.has(year)) {
+    const piece = Math.min(left, perMonth);
+    pieces.push({ year, month, amount: piece, ahead: true });
+    left -= piece;
+  }
+
+  // 3) The rest pays the months after it, ahead.
+  let [y, m] = chosen;
+  for (let i = 0; i < 120 && left > 0; i += 1) {
+    [y, m] = nextMonth(y, m);
+    if (has(y, m) || closedYears.has(y)) continue;
+    const piece = Math.min(left, perMonth);
+    pieces.push({ year: y, month: m, amount: piece, ahead: before(now, [y, m]) });
+    left -= piece;
   }
   return pieces;
+}
+
+/** Longer than this, the preview shows ranges instead of every month. */
+const LONG_PLAN = 8;
+
+interface PlanRow {
+  key: string;
+  label: string;
+  amount: number;
+  ahead: boolean;
+}
+
+const onePiece = (p: Piece): PlanRow => ({
+  key: `${p.year}-${p.month}`,
+  label: periodLabel(p.year, p.month),
+  amount: p.amount,
+  ahead: p.ahead,
+});
+
+/** "September 2022 – June 2026 · 32 months", then the same for months ahead. */
+function summarise(plan: readonly Piece[]): PlanRow[] {
+  return [false, true].flatMap((ahead) => {
+    const part = plan.filter((p) => p.ahead === ahead);
+    const first = part[0];
+    const last = part[part.length - 1];
+    if (!first || !last) return [];
+    const range =
+      part.length === 1
+        ? periodLabel(first.year, first.month)
+        : `${periodLabel(first.year, first.month)} – ${periodLabel(last.year, last.month)}`;
+    return [
+      {
+        key: ahead ? 'ahead' : 'owed',
+        label: `${range} · ${part.length} month${part.length === 1 ? '' : 's'}`,
+        amount: part.reduce((sum, p) => sum + p.amount, 0),
+        ahead,
+      },
+    ];
+  });
 }
 
 interface Errors {
@@ -242,13 +327,20 @@ function RecordContributionForm({
     seeTheirs ? who : undefined,
   );
   const unpaid = (forOther ? theirArrears.data : myArrears.data)?.months ?? [];
+  // Closed financial years take no new money: the backend skips them too.
+  const financialYears = useFinancialYears(communityId);
+  const closedYears = new Set(
+    (financialYears.data?.items ?? []).filter((y) => y.status === 'closed').map((y) => y.year),
+  );
   const settles = type === 'monthly';
   const [periodYear = 0, periodMonth = 0] = period.split('-').map(Number);
   const isChosen = (m: ArrearsMonth) => m.year === periodYear && m.month === periodMonth;
   const isBefore = (m: ArrearsMonth) =>
     m.year < periodYear || (m.year === periodYear && m.month < periodMonth);
   const freeOn = (m: ArrearsMonth) =>
-    m.record_as === null ? 0 : Math.max(0, m.remaining_minor - m.pending_minor);
+    m.record_as === null || closedYears.has(m.year)
+      ? 0
+      : Math.max(0, m.remaining_minor - m.pending_minor);
   // Ibirarane: what is still owed for the months before the one chosen.
   const owedUpToPeriod = unpaid.filter(isBefore).reduce((sum, m) => sum + freeOn(m), 0);
   const chosenMonth = unpaid.find(isChosen);
@@ -256,9 +348,12 @@ function RecordContributionForm({
   const payAllMinor = owedUpToPeriod + (chosenMonth ? freeOn(chosenMonth) : (monthly ?? 0));
   const amountMinor = Math.round(Number(amount) * MINOR_PER_MAJOR);
   const plan =
-    settles && owedUpToPeriod > 0 && amountMinor > 0
-      ? planPayment(unpaid, amountMinor, period)
+    settles && amountMinor > 0
+      ? planPayment(unpaid, amountMinor, period, monthly, today, closedYears)
       : [];
+  // Shown when the payment is split: ibirarane to clear, or months paid ahead.
+  const showPlan = settles && (owedUpToPeriod > 0 || plan.length > 1);
+  const aheadMinor = plan.filter((p) => p.ahead).reduce((sum, p) => sum + p.amount, 0);
 
   function changeType(next: ContributionType) {
     setType(next);
@@ -482,7 +577,11 @@ function RecordContributionForm({
         min={1}
         step="any"
         value={amount}
-        onChange={(event) => setAmount(event.target.value)}
+        onChange={(event) => {
+          setAmount(event.target.value);
+          // A new amount answers the old "too large" (or any amount) error.
+          if (errors.amount) setErrors((prev) => ({ ...prev, amount: undefined }));
+        }}
         hint={
           hasPeriod && monthly
             ? forOther
@@ -494,29 +593,41 @@ function RecordContributionForm({
         required
       />
 
-      {settles && owedUpToPeriod > 0 && (
+      {showPlan && (
         <div className="notice notice--info arrears-first" role="status">
           <div>
             <p className="notice__title">
-              Ibirarane first: {formatAmount(owedUpToPeriod)} RWF still owed
+              {owedUpToPeriod > 0
+                ? `Ibirarane first: ${formatAmount(owedUpToPeriod)} RWF still owed`
+                : 'Paying ahead'}
             </p>
             {plan.length > 0 && (
               <ul className="arrears-first__list" role="list">
-                {plan.map((p) => (
-                  <li key={`${p.year}-${p.month}`}>
-                    <span>{periodLabel(p.year, p.month)}</span>
-                    <span>{formatAmount(p.amount)}</span>
+                {(plan.length > LONG_PLAN ? summarise(plan) : plan.map(onePiece)).map((row) => (
+                  <li key={row.key}>
+                    <span>
+                      {row.label}
+                      {row.ahead && <span className="table__muted"> · ahead</span>}
+                    </span>
+                    <span>{formatAmount(row.amount)}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <button
-              type="button"
-              className="link-action"
-              onClick={() => setAmount(toInput(payAllMinor))}
-            >
-              Pay everything owed
-            </button>
+            {aheadMinor > 0 && (
+              <p className="notice__text">
+                {formatAmount(aheadMinor)} RWF pays months that are not due yet.
+              </p>
+            )}
+            {owedUpToPeriod > 0 && (
+              <button
+                type="button"
+                className="link-action"
+                onClick={() => setAmount(toInput(payAllMinor))}
+              >
+                Pay everything owed
+              </button>
+            )}
           </div>
         </div>
       )}

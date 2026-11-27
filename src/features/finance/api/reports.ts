@@ -98,11 +98,3 @@ export function downloadStatementPdf(communityId: string, from: string, to: stri
     `cash-flow-statement-${from}-to-${to}.pdf`,
   );
 }
-
-/** Every money record of the period as CSV, from the cash flow export. */
-export function downloadTransactionsCsv(communityId: string, fromDate: string, toDate: string) {
-  return apiDownload(
-    `/communities/${communityId}/cash-flow/export/?from=${fromDate}&to=${toDate}&format=csv`,
-    `cash-flow-${fromDate}-to-${toDate}.csv`,
-  );
-}

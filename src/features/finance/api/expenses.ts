@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { apiDownload, apiFetch } from '@/lib/api/client';
+import { apiFetch } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query-keys';
 
 import type { MemberRef, PaymentMethod } from './types';
@@ -198,14 +198,20 @@ export function useReverseExpense() {
   );
 }
 
-/** The filtered list as a CSV file. */
-export function downloadExpensesCsv(communityId: string, filters: ExpenseFilters) {
-  // The export is the whole filtered list, not one page.
-  const rest = { ...filters, page: undefined, page_size: undefined };
-  return apiDownload(
-    `/communities/${communityId}/expenses/export/?${toQuery({ ...rest, format: 'csv' })}`,
-    `expenses-${filters.month ?? 'all'}.csv`,
-  );
+/** Every expense matching the filters, all pages (for the PDF download). */
+export async function fetchAllExpenses(
+  communityId: string,
+  filters: ExpenseFilters,
+): Promise<Expense[]> {
+  const items: Expense[] = [];
+  for (let page = 1; page <= 50; page += 1) {
+    const list = await apiFetch<ExpenseList>(
+      `/communities/${communityId}/expenses/?${toQuery({ ...filters, page, page_size: 100 })}`,
+    );
+    items.push(...list.items);
+    if (items.length >= list.total || list.items.length === 0) break;
+  }
+  return items;
 }
 
 export interface UpdateExpenseInput {

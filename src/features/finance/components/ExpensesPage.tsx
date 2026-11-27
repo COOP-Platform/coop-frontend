@@ -28,7 +28,7 @@ import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatLongDate } from '@/lib/format/date';
 
 import {
-  downloadExpensesCsv,
+  fetchAllExpenses,
   useApproveExpense,
   useExpenseDetail,
   useExpenses,
@@ -36,6 +36,8 @@ import {
   useReverseExpense,
 } from '../api/expenses';
 import type { Expense, ExpenseStatus } from '../api/expenses';
+import { downloadTablePdf } from '@/lib/pdf';
+
 import { formatAmount } from '../format';
 import { EXPENSE_STATUS, METHOD_LABEL, NO_METHOD, humanize } from '../labels';
 import { THIS_MONTH, monthName } from '../month';
@@ -73,7 +75,7 @@ export function ExpensesPage({
   embedded?: boolean;
 }) {
   const searchId = useId();
-  const { communityId, can } = useWorkspace();
+  const { communityId, can, membership } = useWorkspace();
   const canRecord = can('finance.expense.record');
 
   const [month, setMonth] = useState(THIS_MONTH);
@@ -87,6 +89,7 @@ export function ExpensesPage({
   const [recording, setRecording] = useState(startRecording && canRecord);
   const [notice, setNotice] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const filters = {
     month,
@@ -96,6 +99,58 @@ export function ExpensesPage({
     page_size: PAGE_SIZE,
   };
   const list = useExpenses(communityId, filters);
+
+  /** The whole filtered list (all pages), as a PDF with the total. */
+  async function exportPdf() {
+    if (!communityId) return;
+    setExportError(null);
+    setExporting(true);
+    try {
+      const rows = await fetchAllExpenses(communityId, {
+        month,
+        status: status === 'all' ? undefined : status,
+        search: search.trim() || undefined,
+      });
+      await downloadTablePdf({
+        filename: `expenses-${month}.pdf`,
+        title: `Expenses · ${monthName(month)}`,
+        community: membership?.community.name,
+        subtitle: [
+          status === 'all' ? undefined : EXPENSE_STATUS[status].label,
+          search.trim() ? `matching "${search.trim()}"` : undefined,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        header: ['Date', 'Expense', 'Category', 'Budget', 'Paid to', 'Status', 'Amount (RWF)'],
+        rows: rows.map((e) => [
+          formatDate(e.spent_at),
+          e.description,
+          e.category ? humanize(e.category) : '',
+          e.budget?.title ?? '',
+          e.payee ?? '',
+          EXPENSE_STATUS[e.status].label,
+          formatAmount(e.amount_minor),
+        ]),
+        // Only approved expenses count as spent; the rest are listed, not added up.
+        totals: [
+          'Total approved',
+          '',
+          '',
+          '',
+          '',
+          '',
+          formatAmount(
+            rows.filter((e) => e.status === 'approved').reduce((sum, e) => sum + e.amount_minor, 0),
+          ),
+        ],
+        numeric: [6],
+      });
+    } catch (error) {
+      setExportError(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   function done(message: string) {
     setNotice(message);
@@ -127,15 +182,10 @@ export function ExpensesPage({
               variant="secondary"
               inline
               icon={<IconDownload />}
-              onClick={() => {
-                if (!communityId) return;
-                setExportError(null);
-                downloadExpensesCsv(communityId, filters).catch((error: unknown) =>
-                  setExportError(errorMessage(error)),
-                );
-              }}
+              disabled={exporting}
+              onClick={() => void exportPdf()}
             >
-              Export CSV
+              {exporting ? 'Preparing…' : 'Download PDF'}
             </Button>
             {canRecord && (
               <Button inline icon={<IconSend />} onClick={() => setRecording(true)}>

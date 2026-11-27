@@ -28,7 +28,8 @@ import {
 import { useWorkspace } from '@/features/auth';
 import { useCommittee, usePositions } from '@/features/positions';
 import { errorMessage } from '@/lib/api/errors';
-import { downloadCsv } from '@/lib/csv';
+import { formatDate } from '@/lib/format/date';
+import { downloadTablePdf, today } from '@/lib/pdf';
 import { isPlainMemberPosition, positionTone } from '@/lib/position-tone';
 import { PositionIcon } from '@/lib/positions';
 
@@ -103,19 +104,21 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
     onSearchChange({ ...search, page: undefined, ...next });
   }
 
-  function exportCsv() {
-    downloadCsv(
-      `${membership?.community.slug ?? 'community'}-members.csv`,
-      ['Name', 'Email', 'Positions', 'Contribution category', 'Status', 'Joined'],
-      filtered.map((m) => [
+  function exportPdf() {
+    void downloadTablePdf({
+      filename: `${membership?.community.slug ?? 'community'}-members-${today()}.pdf`,
+      title: 'Members',
+      community: membership?.community.name,
+      header: ['Name', 'Email', 'Positions', 'Contribution category', 'Status', 'Joined'],
+      rows: filtered.map((m) => [
         m.fullName,
         m.email ?? '',
-        m.positions.map((p) => p.name).join('; '),
+        m.positions.map((p) => p.name).join(', '),
         categoryName.get(m.categoryId) ?? '',
-        m.status,
-        m.joinDate ?? '',
+        m.status.charAt(0).toUpperCase() + m.status.slice(1),
+        m.joinDate ? formatDate(m.joinDate) : '',
       ]),
-    );
+    });
   }
 
   const activeCount = members.filter((m) => m.status === 'active').length;
@@ -230,9 +233,11 @@ export function MembersDirectory({ search, onSearchChange }: MembersDirectoryPro
               <button
                 type="button"
                 className="toolbar__button toolbar__button--icon"
-                aria-label="Export members as CSV"
-                title="Export CSV"
-                onClick={exportCsv}
+                aria-label="Download members as PDF"
+                title="Download PDF"
+                // Positions load a moment after the list; wait so the PDF has them.
+                disabled={directory.positionsPending}
+                onClick={exportPdf}
               >
                 <IconDownload width={18} height={18} />
               </button>

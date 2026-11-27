@@ -8,7 +8,6 @@ import {
   IconArrowRight,
   IconCheckCircle,
   IconDownload,
-  IconFile,
   IconHistory,
   IconInstitution,
   IconSearch,
@@ -26,7 +25,7 @@ import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
 
 import { useAllCashFlowItems } from '../api/cashflow';
-import { downloadStatementPdf, downloadTransactionsCsv, useReport } from '../api/reports';
+import { downloadStatementPdf, useReport } from '../api/reports';
 import type { SummaryReport } from '../api/reports';
 import type { CashFlowItem } from '../api/summary';
 import { formatAmount } from '../format';
@@ -66,7 +65,7 @@ export function CashFlowStatement({ embedded = false }: { embedded?: boolean }) 
   const { communityId } = useWorkspace();
   const [preset, setPreset] = useState<PeriodPreset>('last_6');
   const [custom, setCustom] = useState<Period>(presetPeriod('last_6'));
-  const [busy, setBusy] = useState<'pdf' | 'csv' | null>(null);
+  const [busy, setBusy] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const period = preset === 'custom' ? custom : presetPeriod(preset);
@@ -78,17 +77,16 @@ export function CashFlowStatement({ embedded = false }: { embedded?: boolean }) 
         ? `A statement covers at most ${MAX_MONTHS} months.`
         : null;
 
-  async function download(kind: 'pdf' | 'csv') {
+  async function download() {
     if (!communityId) return;
     setDownloadError(null);
-    setBusy(kind);
+    setBusy(true);
     try {
-      if (kind === 'pdf') await downloadStatementPdf(communityId, period.from, period.to);
-      else await downloadTransactionsCsv(communityId, `${period.from}-01`, lastDay(period.to));
+      await downloadStatementPdf(communityId, period.from, period.to);
     } catch (error) {
       setDownloadError(errorMessage(error));
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   }
 
@@ -107,21 +105,12 @@ export function CashFlowStatement({ embedded = false }: { embedded?: boolean }) 
               options={PRESETS.map((p) => ({ value: p, label: PRESET_LABEL[p] }))}
             />
             <Button
-              variant="secondary"
-              inline
-              icon={<IconFile />}
-              disabled={busy !== null || periodError !== null}
-              onClick={() => void download('pdf')}
-            >
-              {busy === 'pdf' ? 'Preparing…' : 'Export PDF'}
-            </Button>
-            <Button
               inline
               icon={<IconDownload />}
-              disabled={busy !== null || periodError !== null}
-              onClick={() => void download('csv')}
+              disabled={busy || periodError !== null}
+              onClick={() => void download()}
             >
-              {busy === 'csv' ? 'Preparing…' : 'Export Excel (CSV)'}
+              {busy ? 'Preparing…' : 'Download PDF'}
             </Button>
           </>
         }

@@ -4123,9 +4123,56 @@ button.position-card__main:focus-visible {
   margin-top: var(--space-3);
 }
 
-/* An event with no budget yet: one line and one button. */
-.event-budget-offer {
+/* An event's budget: an on/off switch until it is on. */
+.event-budget-switch {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
   justify-items: start;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.switch__track {
+  position: relative;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background-color: var(--color-border);
+  transition: background-color 0.15s ease;
+}
+
+.switch__thumb {
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 0.2));
+  transition: transform 0.15s ease;
+}
+
+.switch[aria-checked='true'] .switch__track {
+  background-color: var(--color-brand);
+}
+
+.switch[aria-checked='true'] .switch__thumb {
+  transform: translateX(1.25rem);
+}
+
+.switch:focus-visible .switch__track {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
 }

@@ -3951,3 +3951,159 @@ button.position-card__main:focus-visible {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* Budget as a goal: a ring with what came in, and the few numbers that matter. */
+.progress-ring {
+  flex-shrink: 0;
+}
+
+.progress-ring__track {
+  stroke: var(--color-surface-tint);
+}
+
+.progress-ring__fill {
+  stroke: var(--color-brand);
+  transition: stroke-dashoffset 0.4s ease;
+}
+
+.progress-ring__fill--done {
+  stroke: var(--color-success);
+}
+
+.progress-ring__text {
+  fill: var(--color-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-card--goal {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.budget-card__goal {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.budget-card__amounts {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-card__amounts strong {
+  color: var(--color-text);
+  font-size: 1.125rem;
+}
+
+.budget-card__due {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-brand-text);
+}
+
+.budget-card__due.is-late {
+  color: var(--color-danger, #b42318);
+}
+
+.budget-goal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6, 1.5rem);
+  padding: var(--space-4) 0;
+}
+
+.budget-goal__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3) var(--space-5);
+  flex: 1;
+  min-width: 14rem;
+  margin: 0;
+}
+
+.budget-goal__stats dt {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.budget-goal__stats dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-goal__big {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+/* What a budget's money was used for. */
+.budget-uses {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+}
+
+.budget-uses li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.budget-uses li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.budget-uses li strong {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.budget-uses__badge {
+  margin-left: var(--space-2);
+}
+
+.budget-goal__stats .is-negative {
+  color: var(--color-danger, #b42318);
+}
+
+.budget-goal__body {
+  display: grid;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 14rem;
+}
+
+.budget-goal__body .budget-goal__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.budget-goal__body .budget-goal__stats dd {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.budget-goal__line {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.budget-goal__line strong {
+  color: var(--color-brand-text);
+}
+
+.budget-goal__line .is-late {
+  color: var(--color-danger, #b42318);
+}

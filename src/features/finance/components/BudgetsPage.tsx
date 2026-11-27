@@ -10,23 +10,20 @@ import {
   Drawer,
   EmptyState,
   ErrorState,
-  IconCalendar,
   IconFlag,
   IconArrowLeft,
   IconFile,
   IconHandHeart,
   IconPencil,
   IconPlus,
-  IconSend,
   IconTile,
-  IconTrash,
   Input,
   LoadingState,
   SegmentedControl,
   Select,
   Textarea,
 } from '@/components/ui';
-import { reviewsContributions, reviewsExpenses, useWorkspace } from '@/features/auth';
+import { useWorkspace } from '@/features/auth';
 import { useMemberCategories } from '@/features/members';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
@@ -44,10 +41,12 @@ import {
   useUpdateCampaign,
 } from '../api/budgets';
 import type { Budget, BudgetDetail, Campaign, CampaignCharge } from '../api/budgets';
+import { useExpenses, useRecordExpense } from '../api/expenses';
 import { MINOR_PER_MAJOR, chargeText, formatAmount } from '../format';
 import { CampaignPayments } from './CampaignPayments';
+import { dueText } from '../budget-goal';
+import { ProgressRing } from './ProgressRing';
 import { RecordContributionDialog } from './RecordContributionDialog';
-import { RecordExpenseDialog } from './RecordExpenseDialog';
 import { SuccessNotice } from './SuccessNotice';
 import { SectionHeader } from './SectionHeader';
 
@@ -169,7 +168,7 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
   );
   const budgets = useBudgets(communityId, filter);
   // Which budgets are asking members for money right now.
-  const openCollections = useCampaigns(communityId, 'open');
+  const openCollections = useCampaigns(communityId, period === 'open' ? 'open' : 'closed');
   const askingFor = (budgetId: string) =>
     openCollections.data?.items.find((c) => c.budget?.id === budgetId) ?? null;
 
@@ -278,41 +277,37 @@ function BudgetCard({
   onOpen,
 }: {
   budget: Budget;
-  /** The budget's open collection, when members are asked to contribute. */
+  /** What members are asked to pay towards it, when they are. */
   asking: Campaign | null;
   onOpen: () => void;
 }) {
-  const collecting = asking !== null && budget.status === 'active';
-  // Clean card: name, what is planned, money in and out. The rest is on the budget's page.
+  const due = budget.status === 'active' ? dueText(asking?.due_date) : null;
+  const hasGoal = budget.planned_minor > 0;
+  const left = budget.raised_minor - budget.spent_minor;
+  // At a glance: how far we are (with a goal), what came in, what was used, the time left.
   return (
-    <button type="button" className="card budget-card" onClick={onOpen}>
-      <div className="budget-card__head">
-        <h3 className="budget-card__title">{budget.title}</h3>
-        {budget.status !== 'active' ? (
-          <Badge tone="neutral">Closed</Badge>
-        ) : (
-          collecting && <Badge tone="success">Open for contributions</Badge>
+    <button type="button" className="card budget-card budget-card--goal" onClick={onOpen}>
+      {hasGoal && <ProgressRing value={budget.raised_minor} of={budget.planned_minor} />}
+      <div className="budget-card__goal">
+        <div className="budget-card__head">
+          <h3 className="budget-card__title">{budget.title}</h3>
+          {budget.status !== 'active' && <Badge tone="neutral">Closed</Badge>}
+        </div>
+        <p className="budget-card__amounts">
+          <strong>{formatAmount(budget.raised_minor)}</strong>{' '}
+          {hasGoal
+            ? `of ${formatAmount(budget.planned_minor)} ${budget.currency}`
+            : `${budget.currency} collected`}
+        </p>
+        {budget.spent_minor > 0 && (
+          <p className="budget-card__amounts">
+            {formatAmount(budget.spent_minor)} used · {formatAmount(left)} left
+          </p>
+        )}
+        {due && (
+          <p className={`budget-card__due${due.endsWith('late') ? ' is-late' : ''}`}>{due}</p>
         )}
       </div>
-      {budget.event && (
-        <p className="budget-card__event">
-          <IconCalendar width={14} height={14} aria-hidden="true" /> {budget.event.title}
-        </p>
-      )}
-      <p className="budget-card__planned">
-        {formatAmount(budget.planned_minor)}{' '}
-        <span className="money__unit">{budget.currency} planned</span>
-      </p>
-      <dl className="budget-card__figures">
-        <div>
-          <dt>Raised</dt>
-          <dd>{formatAmount(budget.raised_minor)}</dd>
-        </div>
-        <div>
-          <dt>Spent</dt>
-          <dd>{formatAmount(budget.spent_minor)}</dd>
-        </div>
-      </dl>
     </button>
   );
 }
@@ -324,10 +319,10 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
   const [editing, setEditing] = useState(false);
   const [closing, setClosing] = useState(false);
   const [note, setNote] = useState('');
+  const status = detail.data?.status === 'closed' ? 'closed' : 'open';
   // What members are asked to pay towards this budget, set in Edit.
-  const openAsks = useCampaigns(communityId, 'open');
-  const asking = openAsks.data?.items.find((c) => c.budget?.id === budgetId) ?? null;
-  const [usingPocket, setUsingPocket] = useState(false);
+  const asks = useCampaigns(communityId, status);
+  const asking = asks.data?.items.find((c) => c.budget?.id === budgetId) ?? null;
 
   if (detail.data === undefined) {
     return detail.isPending ? (
@@ -338,6 +333,10 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
   }
   const b = detail.data;
   const canManage = can('finance.budget.manage') && b.status === 'active';
+  const hasGoal = b.planned_minor > 0;
+  const stillNeeded = Math.max(b.planned_minor - b.raised_minor, 0);
+  const left = b.raised_minor - b.spent_minor;
+  const due = b.status === 'active' ? dueText(asking?.due_date) : null;
 
   return (
     <section className="details" aria-labelledby="budget-title">
@@ -358,73 +357,48 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
 
       {b.description && <p className="details__note">{b.description}</p>}
 
-      <Meter
-        label="Raised"
-        value={b.raised_minor}
-        of={b.planned_minor}
-        currency={b.currency}
-        tone="in"
-      />
-      <Meter
-        label="Spent"
-        value={b.spent_minor}
-        of={b.planned_minor}
-        currency={b.currency}
-        tone="out"
-        pending={reviewsExpenses(can) ? b.pending_spent_minor : 0}
-      />
-
-      <h3 className="details__subhead">Lines</h3>
-      <div className="table-scroll">
-        <table className="table table--compact budget-lines">
-          <thead>
-            <tr>
-              <th scope="col">Line</th>
-              <th scope="col" className="statement-table__num">
-                Planned
-              </th>
-              <th scope="col" className="statement-table__num">
-                Spent
-              </th>
-              <th scope="col" className="statement-table__num">
-                Left
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {b.lines.map((line) => (
-              <tr key={line.id}>
-                <td>{line.title}</td>
-                <td className="statement-table__num">{formatAmount(line.planned_minor)}</td>
-                <td className="statement-table__num">{formatAmount(line.spent_minor)}</td>
-                <td className="statement-table__num">{formatAmount(line.left_to_spend_minor)}</td>
-              </tr>
-            ))}
-            {b.unallocated_spent_minor > 0 && (
-              <tr>
-                <td className="table__muted">Spent on no particular line</td>
-                <td />
-                <td className="statement-table__num">{formatAmount(b.unallocated_spent_minor)}</td>
-                <td />
-              </tr>
+      {/* How far we are: the ring (with a goal), three numbers, one short line. */}
+      <div className="budget-goal">
+        {hasGoal && (
+          <ProgressRing value={b.raised_minor} of={b.planned_minor} size={160} stroke={16} />
+        )}
+        <div className="budget-goal__body">
+          <dl className="budget-goal__stats">
+            <div>
+              <dt>Collected</dt>
+              <dd>{formatAmount(b.raised_minor)}</dd>
+            </div>
+            <div>
+              <dt>Used</dt>
+              <dd>{formatAmount(b.spent_minor)}</dd>
+            </div>
+            <div>
+              <dt>Left</dt>
+              <dd className={left < 0 ? 'is-negative' : undefined}>{formatAmount(left)}</dd>
+            </div>
+          </dl>
+          <p className="budget-goal__line">
+            {hasGoal
+              ? `Goal ${formatAmount(b.planned_minor)} ${b.currency} · ${
+                  stillNeeded > 0 ? `${formatAmount(stillNeeded)} still needed` : 'goal reached'
+                }`
+              : 'No fixed amount: members give freely'}
+            {asking?.due_date && ` · pay by ${formatDate(asking.due_date)}`}
+            {due && (
+              <strong className={due.endsWith('late') ? 'is-late' : undefined}> ({due})</strong>
             )}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row">Total</th>
-              <td className="statement-table__num">{formatAmount(b.planned_minor)}</td>
-              <td className="statement-table__num">{formatAmount(b.spent_minor)}</td>
-              <td className="statement-table__num">{formatAmount(b.left_to_spend_minor)}</td>
-            </tr>
-          </tfoot>
-        </table>
+            {asking && ` · ${asking.paid_count} of ${asking.member_count} members paid`}
+          </p>
+        </div>
       </div>
 
-      <CampaignsSection
-        onDone={onDone}
+      <CampaignsSection onDone={onDone} budgetId={b.id} status={status} title="Contribute" />
+
+      <BudgetUses
         budgetId={b.id}
-        status={b.status === 'active' ? 'open' : 'closed'}
-        title="Contributions"
+        currency={b.currency}
+        open={b.status === 'active'}
+        onDone={onDone}
       />
 
       {b.close_note && (
@@ -455,36 +429,11 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         }}
       />
 
-      {b.status === 'active' && can('finance.expense.record') && (
-        <div className="review-actions">
-          <Button
-            inline
-            variant="secondary"
-            icon={<IconSend />}
-            onClick={() => setUsingPocket(true)}
-          >
-            Use pocket money
-          </Button>
-        </div>
-      )}
-
-      <RecordExpenseDialog
-        open={usingPocket}
-        budgetId={b.id}
-        onClose={() => setUsingPocket(false)}
-        onRecorded={() => {
-          setUsingPocket(false);
-          onDone(
-            'Expense recorded. It shows as awaiting approval on the budget and counts once someone else approves it in Expenses & Income.',
-          );
-        }}
-      />
-
       <Dialog
         open={closing}
         onClose={() => setClosing(false)}
         title="Close budget"
-        subtitle="Its open collections close too. What is left stays in the cash box."
+        subtitle="Members can no longer contribute to it. What was collected stays."
         icon={
           <IconTile tone="warning" round>
             <IconFlag />
@@ -497,7 +446,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
             optional
             rows={2}
             maxLength={255}
-            placeholder="e.g. Event done; leftover stays in the wallet."
+            placeholder="e.g. Gift handed over on Saturday."
             value={note}
             onChange={(event) => setNote(event.target.value)}
           />
@@ -526,6 +475,187 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
   );
 }
 
+/**
+ * What the budget's money was used for: Transport 50,000, Food 30,000...
+ * Each use is an expense from this budget; the Treasurer adds one with "Add
+ * what was used". Approved ones count in Used; others wait for approval.
+ */
+function BudgetUses({
+  budgetId,
+  currency,
+  open,
+  onDone,
+}: {
+  budgetId: string;
+  currency: string;
+  open: boolean;
+  onDone: (message: string) => void;
+}) {
+  const { communityId, can } = useWorkspace();
+  const [adding, setAdding] = useState(false);
+  const expenses = useExpenses(communityId, { budget_id: budgetId, page_size: 100 });
+  const rows = (expenses.data?.items ?? []).filter(
+    (e) => e.status === 'approved' || e.status === 'pending',
+  );
+
+  return (
+    <div className="money-section">
+      <div className="section-bar">
+        <h2 className="section-title">Used for</h2>
+        {open && can('finance.expense.record') && (
+          <div className="section-bar__actions">
+            <Button inline variant="secondary" icon={<IconPlus />} onClick={() => setAdding(true)}>
+              Add what was used
+            </Button>
+          </div>
+        )}
+      </div>
+      {expenses.isPending ? (
+        <LoadingState />
+      ) : rows.length === 0 ? (
+        <p className="table__muted">Nothing used from this budget yet.</p>
+      ) : (
+        <ul className="budget-uses" role="list">
+          {rows.map((e) => (
+            <li key={e.id}>
+              <span>
+                {e.description}
+                {e.status === 'pending' && (
+                  <Badge tone="warning" className="budget-uses__badge">
+                    Awaiting approval
+                  </Badge>
+                )}
+              </span>
+              <strong>
+                {formatAmount(e.amount_minor)} {currency}
+              </strong>
+            </li>
+          ))}
+        </ul>
+      )}
+      <AddUseDialog
+        open={adding}
+        budgetId={budgetId}
+        onClose={() => setAdding(false)}
+        onSaved={() => {
+          setAdding(false);
+          onDone('Saved. It counts in Used once someone else approves it in Expenses & Income.');
+        }}
+      />
+    </div>
+  );
+}
+
+/** "Add what was used": what for, how much, when. Saved as an expense from the budget. */
+function AddUseDialog({
+  open,
+  budgetId,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  budgetId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { communityId } = useWorkspace();
+  const record = useRecordExpense();
+  const [what, setWhat] = useState('');
+  const [amount, setAmount] = useState('');
+  const [when, setWhen] = useState(today());
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const problems: Record<string, string> = {};
+    if (what.trim().length < 2) problems.what = 'Say what it was for, e.g. Transport.';
+    if (amount.trim() === '' || toMinor(amount) <= 0) problems.amount = 'Enter the amount.';
+    setErrors(problems);
+    if (Object.keys(problems).length > 0 || !communityId) return;
+    record.mutate(
+      {
+        communityId,
+        description: what.trim(),
+        amount_minor: toMinor(amount),
+        spent_at: when,
+        budget_id: budgetId,
+      },
+      {
+        onSuccess: () => {
+          setWhat('');
+          setAmount('');
+          onSaved();
+        },
+        onError: (error) => {
+          const f = error instanceof ApiError ? error.fieldErrors : {};
+          setErrors({
+            what: f.description,
+            amount: f.amount_minor,
+            when: f.spent_at,
+            form: f.description || f.amount_minor || f.spent_at ? undefined : errorMessage(error),
+          });
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Add what was used"
+      subtitle="Counts once someone else approves it."
+      icon={
+        <IconTile tone="brand" round>
+          <IconFlag />
+        </IconTile>
+      }
+    >
+      <form className="dialog__form" onSubmit={handleSubmit} noValidate>
+        <Input
+          label="What for"
+          placeholder="e.g. Transport"
+          maxLength={255}
+          value={what}
+          onChange={(event) => setWhat(event.target.value)}
+          error={errors.what}
+          required
+        />
+        <div className="form-row">
+          <Input
+            label="Amount (RWF)"
+            type="number"
+            min={1}
+            step="any"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            error={errors.amount}
+            required
+          />
+          <Input
+            label="Date"
+            type="date"
+            max={today()}
+            value={when}
+            onChange={(event) => setWhen(event.target.value)}
+            error={errors.when}
+            required
+          />
+        </div>
+        {errors.form && <p className="form-error">{errors.form}</p>}
+        <div className="dialog__footer dialog__footer--flush">
+          <Button variant="tint" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={record.isPending}>
+            {record.isPending ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
 export function BudgetFormDialog({
   open,
   budget,
@@ -548,7 +678,7 @@ export function BudgetFormDialog({
       open={open}
       onClose={onClose}
       title={budget ? 'Edit budget' : event ? `Budget for ${event.title}` : 'New budget'}
-      subtitle="Plan the spending in lines, and say what members pay towards it."
+      subtitle="What you are collecting for, how much, and by when."
       icon={
         <IconTile tone="brand" round>
           <IconFlag />
@@ -566,13 +696,6 @@ export function BudgetFormDialog({
       )}
     </Dialog>
   );
-}
-
-interface LineDraft {
-  key: number;
-  id?: string;
-  title: string;
-  planned: string;
 }
 
 type Ask = CampaignCharge | 'none';
@@ -598,7 +721,8 @@ function BudgetForm({
   const updateAsk = useUpdateCampaign();
   const stopAsk = useCloseCampaign();
   // What members pay towards the budget: part of the budget, not a separate thing.
-  const [ask, setAsk] = useState<Ask>(asking?.charge ?? 'none');
+  // A new budget asks members by category unless the Treasurer picks otherwise.
+  const [ask, setAsk] = useState<Ask>(asking?.charge ?? (budget ? 'none' : 'per_category'));
   const [askAmount, setAskAmount] = useState(
     asking && asking.amount_minor !== null ? toRwf(asking.amount_minor) : '',
   );
@@ -617,35 +741,21 @@ function BudgetForm({
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState(budget?.title ?? (forEvent ? `${forEvent.title} budget` : ''));
   const [description, setDescription] = useState(budget?.description ?? '');
-  const [lines, setLines] = useState<LineDraft[]>(
-    budget
-      ? budget.lines.map((l, i) => ({
-          key: i,
-          id: l.id,
-          title: l.title,
-          planned: toRwf(l.planned_minor),
-        }))
-      : [{ key: 0, title: '', planned: '' }],
+  // The goal: one amount. An older budget planned in several lines keeps them.
+  const oldLines = budget !== null && budget.lines.length > 1;
+  const [goal, setGoal] = useState(
+    budget && budget.planned_minor > 0 ? toRwf(budget.planned_minor) : '',
   );
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const busy = saving;
-  const total = lines.reduce((sum, l) => sum + (toMinor(l.planned) || 0), 0);
-
-  function setLine(key: number, patch: Partial<LineDraft>) {
-    setLines((all) => all.map((l) => (l.key === key ? { ...l, ...patch } : l)));
-  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const problems: Record<string, string> = {};
     if (title.trim().length < 3)
       problems.title = 'Give the budget a title of at least 3 characters.';
-    if (
-      lines.some(
-        (l) => l.title.trim().length < 2 || l.planned.trim() === '' || toMinor(l.planned) < 0,
-      )
-    )
-      problems.lines = 'Each line needs a name (2+ characters) and a planned amount of 0 or more.';
+    if (!oldLines && goal.trim() !== '' && !(toMinor(goal) >= 0))
+      problems.goal = 'Enter an amount, or leave it empty.';
     if (
       ask !== 'none' &&
       ask !== 'any' &&
@@ -667,18 +777,24 @@ function BudgetForm({
       communityId,
       title: title.trim(),
       description: description.trim() || null,
-      lines: lines.map((l) => ({
-        ...(l.id ? { id: l.id } : {}),
-        title: l.title.trim(),
-        planned_minor: toMinor(l.planned),
-      })),
+      lines:
+        budget && oldLines
+          ? budget.lines.map((l) => ({ id: l.id, title: l.title, planned_minor: l.planned_minor }))
+          : [
+              {
+                ...(budget?.lines[0] ? { id: budget.lines[0].id } : {}),
+                title: budget?.lines[0]?.title ?? 'Goal',
+                // No goal: members give freely; 0 means "no fixed amount".
+                planned_minor: goal.trim() === '' ? 0 : toMinor(goal),
+              },
+            ],
     };
     const onError = (error: unknown) => {
       const f = error instanceof ApiError ? error.fieldErrors : {};
       const known = f.title || f.lines || f.amount_minor || f.due_date || f.category_amounts;
       setErrors({
         title: f.title,
-        lines: f.lines,
+        goal: f.lines,
         askAmount: f.amount_minor,
         categoryAmounts: f.category_amounts,
         askDue: f.due_date,
@@ -752,58 +868,28 @@ function BudgetForm({
         value={description}
         onChange={(event) => setDescription(event.target.value)}
       />
-      <fieldset className="budget-lines-editor">
-        <legend className="field__label">Lines</legend>
-        {lines.map((line, index) => (
-          <div key={line.key} className="budget-lines-editor__row">
-            <Input
-              label={`Line ${index + 1}`}
-              labelHidden
-              placeholder="e.g. Venue"
-              maxLength={160}
-              value={line.title}
-              onChange={(event) => setLine(line.key, { title: event.target.value })}
-            />
-            <Input
-              label={`Line ${index + 1} planned (RWF)`}
-              labelHidden
-              type="number"
-              min={0}
-              step="any"
-              placeholder="Planned RWF"
-              value={line.planned}
-              onChange={(event) => setLine(line.key, { planned: event.target.value })}
-            />
-            <Button
-              variant="tint"
-              size="sm"
-              inline
-              icon={<IconTrash />}
-              aria-label={`Remove line ${index + 1}`}
-              disabled={lines.length === 1}
-              onClick={() => setLines((all) => all.filter((l) => l.key !== line.key))}
-            >
-              {''}
-            </Button>
-          </div>
-        ))}
-        <div className="budget-lines-editor__foot">
-          <Button
-            variant="secondary"
-            size="sm"
-            inline
-            icon={<IconPlus />}
-            onClick={() => setLines((all) => [...all, { key: Date.now(), title: '', planned: '' }])}
-          >
-            Add line
-          </Button>
-          <span className="table__amount">Planned total: {formatAmount(total)} RWF</span>
-        </div>
-        {errors.lines && <p className="field__error">{errors.lines}</p>}
-      </fieldset>
+      {oldLines && budget ? (
+        <p className="details__note">
+          Goal: <strong>{formatAmount(budget.planned_minor)} RWF</strong> (the total of this
+          budget&apos;s {budget.lines.length} lines).
+        </p>
+      ) : (
+        <Input
+          label="Goal (RWF)"
+          optional
+          type="number"
+          min={0}
+          step="any"
+          placeholder="e.g. 500000"
+          hint="Leave empty when there is no fixed amount and members give freely."
+          value={goal}
+          onChange={(event) => setGoal(event.target.value)}
+          error={errors.goal}
+        />
+      )}
       {canAsk && (
         <fieldset className="budget-ask">
-          <legend className="field__label">Members&apos; contribution</legend>
+          <legend className="field__label">Who pays</legend>
           <div className="form-row">
             <Select
               label="Ask members to pay towards it"
@@ -982,7 +1068,7 @@ function CampaignsSection({
                 {budgetId && (filter === 'open' ? 'Members are asked: ' : 'Members were asked: ')}
                 {chargeText(c.charge, c.amount_minor, c.currency)}
                 {budgetId && ` · ${c.required ? 'Required' : 'Voluntary'}`}
-                {c.due_date && ` · due ${formatDate(c.due_date)}`}
+                {!budgetId && c.due_date && ` · due ${formatDate(c.due_date)}`}
               </p>
               {budgetId && c.charge === 'per_category' && c.category_amounts.length > 0 && (
                 <ul className="category-amounts" role="list" aria-label="What each category pays">
@@ -998,7 +1084,7 @@ function CampaignsSection({
                   ))}
                 </ul>
               )}
-              {budgetId && c.expected_minor !== null ? (
+              {budgetId ? null : c.expected_minor !== null ? (
                 <Meter
                   label="Collected"
                   value={c.collected_minor}
@@ -1026,14 +1112,6 @@ function CampaignsSection({
                     <dd>{formatAmount(c.my_share.paid_minor)}</dd>
                   </div>
                 </dl>
-              )}
-              {budgetId && (
-                <p className="table__muted">
-                  {c.paid_count} of {c.member_count} members have paid
-                  {c.pending_minor > 0 &&
-                    reviewsContributions(can) &&
-                    ` · ${formatAmount(c.pending_minor)} ${c.currency} awaiting review`}
-                </p>
               )}
               {budgetId && (
                 <div className="campaign-mine">

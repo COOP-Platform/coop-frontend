@@ -3877,3 +3877,16 @@ button.position-card__main:focus-visible {
   border-top: 1px solid var(--color-border);
   padding: var(--space-4) 0 0;
 }
+
+/* A budget's own page: contributions use the full width. */
+.budget-contribute-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.budget-contribute .campaign-mine {
+  justify-self: start;
+}

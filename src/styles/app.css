@@ -4205,3 +4205,17 @@ button.position-card__main:focus-visible {
 .notice--danger {
   background-color: var(--color-danger-bg, #fdecea);
 }
+
+/* Tabs with the page's main action on the same row (Budgets: New budget). */
+.tabs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.tabs-bar > .segmented {
+  flex: 1;
+  min-width: 0;
+}

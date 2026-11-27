@@ -86,6 +86,7 @@ export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
   const { communityId, can } = useWorkspace();
   const [notice, setNotice] = useState<string | null>(null);
   const requests = seesBudgetRequests(can);
+  const [creating, setCreating] = useState(false);
   const waiting = useBudgets(requests ? communityId : undefined, 'proposed');
   const waitingCount = waiting.data?.total ?? 0;
   const periods = requests
@@ -103,17 +104,29 @@ export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
     <div className="page">
       {/* Inside Budgets & Shares the tab already names the section: no heading. */}
       {!embedded && <SectionHeader title="Budgets" />}
-      <SegmentedControl
-        label="Budgets"
-        options={periods}
-        value={period}
-        onChange={(value) => {
-          setNotice(null);
-          setPeriod(value);
-        }}
-      />
+      <div className="tabs-bar">
+        <SegmentedControl
+          label="Budgets"
+          options={periods}
+          value={period}
+          onChange={(value) => {
+            setNotice(null);
+            setPeriod(value);
+          }}
+        />
+        {can('finance.budget.manage') && (
+          <Button inline icon={<IconPlus />} onClick={() => setCreating(true)}>
+            New budget
+          </Button>
+        )}
+      </div>
       {notice && <SuccessNotice text={notice} />}
-      <BudgetsSection onDone={setNotice} period={period} />
+      <BudgetsSection
+        onDone={setNotice}
+        period={period}
+        creating={creating}
+        onCreating={setCreating}
+      />
       {/* Older money asks with no budget behind them: shown as more cards, no own section. */}
       {period !== 'requests' && (
         <CampaignsSection
@@ -181,7 +194,18 @@ export function Meter({
 
 type BudgetFilter = 'active' | 'closed';
 
-function BudgetsSection({ onDone, period }: { onDone: (message: string) => void; period: Period }) {
+function BudgetsSection({
+  onDone,
+  period,
+  creating,
+  onCreating: setCreating,
+}: {
+  onDone: (message: string) => void;
+  period: Period;
+  /** "New budget" sits beside the tabs; the form opens here. */
+  creating: boolean;
+  onCreating: (open: boolean) => void;
+}) {
   const { communityId, can } = useWorkspace();
   const canManage = can('finance.budget.manage');
   // Links from an event's page: open its budget, or plan one for it.
@@ -194,7 +218,6 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
   const isRequests = period === 'requests';
   const proposed = useBudgets(isRequests ? communityId : undefined, 'proposed');
   const rejected = useBudgets(isRequests ? communityId : undefined, 'rejected');
-  const [creating, setCreating] = useState(false);
   const [planEvent, setPlanEvent] = useState<{ id: string; title: string } | null>(
     search.plan && canManage ? { id: search.plan, title: search.planTitle ?? 'Event' } : null,
   );
@@ -236,15 +259,8 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
     <div className="money-section">
       <div className="section-bar">
         <h2 className="section-title">
-          {isRequests ? 'Budget requests' : period === 'open' ? 'Budgets' : 'Past budgets'}
+          {isRequests ? 'Budget requests' : period === 'open' ? 'Open budgets' : 'Past budgets'}
         </h2>
-        <div className="section-bar__actions">
-          {canManage && period === 'open' && (
-            <Button inline icon={<IconPlus />} onClick={() => setCreating(true)}>
-              New budget
-            </Button>
-          )}
-        </div>
       </div>
 
       {budgets.data === undefined ? (

@@ -548,7 +548,7 @@
   color: var(--color-warning);
 }
 
-/* A wider popup for long forms, with fields side by side (Record payment). */
+/* Same as every popup now (see .dialog); kept so size="lg" still works. */
 .dialog.dialog--lg {
   width: min(46rem, calc(100vw - 2rem));
 }

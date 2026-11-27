@@ -1555,7 +1555,8 @@
   /* Centred on screen. The global `* { margin: 0 }` reset strips the auto
      margins the browser uses to centre a modal <dialog>, so restore them. */
   margin: auto;
-  width: min(32rem, calc(100vw - 2rem));
+  /* Every popup is as wide as Record payment (was 32rem). */
+  width: min(46rem, calc(100vw - 2rem));
   max-height: calc(100dvh - 2rem);
   border: none;
   border-radius: var(--radius-lg);
@@ -2224,10 +2225,6 @@ button.position-card__main:focus-visible {
 .dialog__panel {
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
-}
-
-.dialog:has(.permission-picker) {
-  width: min(40rem, calc(100vw - 2rem));
 }
 
 .permission-picker {

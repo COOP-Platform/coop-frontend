@@ -67,7 +67,7 @@ export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
       {!embedded && <SectionHeader title="Budgets" />}
       {notice && <SuccessNotice text={notice} />}
       <BudgetsSection onDone={setNotice} />
-      <CampaignsSection onDone={setNotice} standalone title="Other collections" />
+      <CampaignsSection onDone={setNotice} standalone title="Other contributions" />
     </div>
   );
 }
@@ -144,6 +144,10 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
     search.plan && canManage ? { id: search.plan, title: search.planTitle ?? 'Event' } : null,
   );
   const budgets = useBudgets(communityId, filter);
+  // Which budgets are asking members for money right now.
+  const openCollections = useCampaigns(communityId, 'open');
+  const askingFor = (budgetId: string) =>
+    openCollections.data?.items.find((c) => c.budget?.id === budgetId) ?? null;
 
   /** Forget the event link once used, so a refresh does not reopen it. */
   function clearLink() {
@@ -200,7 +204,11 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
         <ul className="budget-cards" role="list">
           {budgets.data.items.map((budget) => (
             <li key={budget.id}>
-              <BudgetCard budget={budget} onOpen={() => setOpenId(budget.id)} />
+              <BudgetCard
+                budget={budget}
+                asking={askingFor(budget.id)}
+                onOpen={() => setOpenId(budget.id)}
+              />
             </li>
           ))}
         </ul>
@@ -246,7 +254,16 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
   );
 }
 
-function BudgetCard({ budget, onOpen }: { budget: Budget; onOpen: () => void }) {
+function BudgetCard({
+  budget,
+  asking,
+  onOpen,
+}: {
+  budget: Budget;
+  /** The budget's open collection, when members are asked to contribute. */
+  asking: Campaign | null;
+  onOpen: () => void;
+}) {
   const { can } = useWorkspace();
   return (
     <button type="button" className="card budget-card" onClick={onOpen}>
@@ -287,6 +304,12 @@ function BudgetCard({ budget, onOpen }: { budget: Budget; onOpen: () => void }) 
         {budget.from_wallet_minor > 0 &&
           ` · ${formatAmount(budget.from_wallet_minor)} taken from the cash box`}
       </p>
+      {asking && budget.status === 'active' && (
+        <p className="budget-card__asking">
+          <IconHandHeart width={16} height={16} aria-hidden="true" />
+          Open for contributions · {chargeText(asking.charge, asking.amount_minor, asking.currency)}
+        </p>
+      )}
     </button>
   );
 }
@@ -393,7 +416,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
       </div>
 
       {b.status === 'active' && (
-        <CampaignsSection onDone={onDone} budgetId={b.id} title="Contribute" />
+        <CampaignsSection onDone={onDone} budgetId={b.id} title="Contributions" />
       )}
 
       {b.close_note && (
@@ -780,8 +803,8 @@ function CampaignsSection({
       ) : shownCampaigns(campaigns.data.items, budgetId, standalone).length === 0 ? (
         budgetId ? (
           <p className="table__muted">
-            No collection for this budget yet.
-            {can('finance.campaign.manage') && ' Use "Ask members" to start one.'}
+            Members are not asked to contribute to this budget yet.
+            {can('finance.campaign.manage') && ' Use "Ask members" to start.'}
           </p>
         ) : (
           <section className="card">
@@ -795,14 +818,20 @@ function CampaignsSection({
       ) : (
         <ul className="budget-cards" role="list">
           {shownCampaigns(campaigns.data.items, budgetId, standalone).map((c) => (
-            <li key={c.id} className="card budget-card budget-card--static">
-              <div className="budget-card__head">
-                <h3 className="budget-card__title">{c.title}</h3>
-                <Badge tone={c.status === 'open' ? 'success' : 'neutral'}>
-                  {c.status === 'open' ? 'Open' : 'Closed'}
-                </Badge>
-              </div>
+            <li
+              key={c.id}
+              className={budgetId ? 'budget-contribute' : 'card budget-card budget-card--static'}
+            >
+              {!budgetId && (
+                <div className="budget-card__head">
+                  <h3 className="budget-card__title">{c.title}</h3>
+                  <Badge tone={c.status === 'open' ? 'success' : 'neutral'}>
+                    {c.status === 'open' ? 'Open' : 'Closed'}
+                  </Badge>
+                </div>
+              )}
               <p className="table__muted">
+                {budgetId && 'Members are asked: '}
                 {chargeText(c.charge, c.amount_minor, c.currency)} ·{' '}
                 {c.required ? 'Required' : 'Voluntary'}
                 {c.due_date && ` · due ${formatDate(c.due_date)}`}
@@ -847,7 +876,7 @@ function CampaignsSection({
                   icon={<IconFile />}
                   onClick={() => setPaymentsOf(c)}
                 >
-                  Payments
+                  {budgetId ? 'Who paid' : 'Payments'}
                 </Button>
                 {c.status === 'open' &&
                   can('finance.contribution.record') &&
@@ -865,10 +894,10 @@ function CampaignsSection({
                       icon={<IconPencil />}
                       onClick={() => setEditing(c)}
                     >
-                      Edit
+                      {budgetId ? 'Edit request' : 'Edit'}
                     </Button>
                     <Button variant="secondary" size="sm" inline onClick={() => setClosingId(c)}>
-                      Close
+                      {budgetId ? 'Stop collecting' : 'Close'}
                     </Button>
                   </>
                 )}

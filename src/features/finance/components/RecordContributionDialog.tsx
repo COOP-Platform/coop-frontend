@@ -683,13 +683,16 @@ function RecordContributionForm({
         />
       </div>
 
-      <FilePicker
-        label="Proof of payment"
-        prompt="or drag the MoMo screenshot or bank slip here"
-        value={proof}
-        onChange={setProof}
-        error={errors.proof}
-      />
+      {/* Proof is for the member paying; the Treasurer records what they received. */}
+      {!can('finance.contribution.confirm') && (
+        <FilePicker
+          label="Proof of payment"
+          prompt="or drag the MoMo screenshot or bank slip here"
+          value={proof}
+          onChange={setProof}
+          error={errors.proof}
+        />
+      )}
 
       {errors.form && <p className="form-error">{errors.form}</p>}
 

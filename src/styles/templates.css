@@ -609,3 +609,23 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+
+/* Payment request: the proof shown right there, click to open it full size. */
+.payment-request__proofs {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.payment-request__proofs img {
+  display: block;
+  max-width: 100%;
+  max-height: 22rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  object-fit: contain;
+  background-color: var(--color-surface-muted);
+  margin-bottom: var(--space-1);
+}

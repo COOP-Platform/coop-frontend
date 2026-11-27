@@ -37,6 +37,7 @@ import { Money } from './Money';
 import { MonthPicker } from './MonthPicker';
 import { coversLabel } from '../payment-groups';
 import { PaymentGroupActions } from './PaymentGroupActions';
+import { PaymentRequest } from './PaymentRequest';
 import { RemindersDialog, ReviewActions } from './ReviewActions';
 import { SuccessNotice } from './SuccessNotice';
 
@@ -164,7 +165,8 @@ function MonthCards({
 /** The Treasurer's queue: approve or reject each pending payment. */
 export function ReviewQueue() {
   const pending = usePendingForMe();
-  const [selected, setSelected] = useState<Contribution | null>(null);
+  // The payment request open in the side panel: every month of one payment.
+  const [selected, setSelected] = useState<Contribution[] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // One row per payment: the months one payment was split into go together.
   const payments = groupByPayment(pending.rows);
@@ -217,7 +219,7 @@ export function ReviewQueue() {
                       key={row.payment_group}
                       className="table__row--clickable"
                       onClick={(event) => {
-                        if (!(event.target as HTMLElement).closest('button')) setSelected(row);
+                        if (!(event.target as HTMLElement).closest('button')) setSelected(rows);
                       }}
                     >
                       <td>
@@ -261,7 +263,15 @@ export function ReviewQueue() {
         )}
       </SectionCard>
 
-      <PaymentDrawer selected={selected} onClose={() => setSelected(null)} onDone={done} />
+      <Drawer
+        open={selected !== null}
+        onClose={() => setSelected(null)}
+        label={
+          selected?.[0] ? `Payment request from ${selected[0].member.full_name}` : 'Payment request'
+        }
+      >
+        {selected && <PaymentRequest rows={selected} onDone={done} />}
+      </Drawer>
     </div>
   );
 }

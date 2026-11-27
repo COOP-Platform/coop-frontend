@@ -34,6 +34,8 @@ export interface Contribution {
   status: ContributionStatus;
   recorded_by: MemberRef;
   confirmed_by: MemberRef | null;
+  /** Confirmed by the member who paid or recorded it (a Treasurer may confirm their own). */
+  self_confirmed?: boolean;
   confirmed_at: string | null;
   rejection_reason: string | null;
   rejected_by: MemberRef | null;

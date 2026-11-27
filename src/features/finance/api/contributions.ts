@@ -24,6 +24,8 @@ export interface ContributionFilters {
   campaign?: string;
   /** Part of the member's name or of the payment reference. */
   search?: string;
+  /** Only payments confirmed by the member who paid or recorded them. */
+  self_confirmed?: boolean;
   page?: number;
   page_size?: number;
 }

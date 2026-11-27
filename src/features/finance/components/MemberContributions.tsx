@@ -4,6 +4,7 @@ import {
   Avatar,
   Badge,
   Button,
+  Checkbox,
   Drawer,
   EmptyState,
   ErrorState,
@@ -302,6 +303,8 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
   // Ordinary members see paid payments only; reviewers pick any status.
   const status: StatusFilter = reviews ? chosenStatus : 'confirmed';
   const [search, setSearch] = useState('');
+  // Oversight: only payments confirmed by the member who paid or recorded them.
+  const [sameOnly, setSameOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Contribution | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -311,6 +314,7 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
     month,
     status: status === 'all' ? undefined : status,
     search: search.trim() || undefined,
+    self_confirmed: reviews && sameOnly ? true : undefined,
     page,
     page_size: PAGE_SIZE,
   });
@@ -362,6 +366,16 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
                   setPage(1);
                 }}
                 options={STATUS_OPTIONS}
+              />
+            )}
+            {reviews && (
+              <Checkbox
+                label="Confirmed by the same person"
+                checked={sameOnly}
+                onChange={(event) => {
+                  setSameOnly(event.target.checked);
+                  setPage(1);
+                }}
               />
             )}
             <MonthPicker
@@ -447,6 +461,11 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
                       </td>
                       <td>
                         <Badge tone={badge.tone}>{badge.label}</Badge>
+                        {reviews && row.self_confirmed && (
+                          <Badge tone="info" className="badge--spaced">
+                            Same person
+                          </Badge>
+                        )}
                       </td>
                       <td className="table__action-col">
                         <button

@@ -30,7 +30,8 @@ export interface Budget {
   id: string;
   title: string;
   event: { id: string; title: string } | null;
-  status: 'active' | 'closed';
+  /** proposed: waits for approval; rejected: turned down (edit to propose again). */
+  status: BudgetStatus;
   currency: string;
   /** The sum of the lines. */
   planned_minor: number;
@@ -75,10 +76,17 @@ export interface BudgetDetail extends Budget {
   created_by: MemberRef;
   closed_by: MemberRef | null;
   close_note: string | null;
+  approved_by: MemberRef | null;
+  approved_at: string | null;
+  rejected_by: MemberRef | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
   updated_at: string;
 }
 
-export function useBudgets(communityId: string | undefined, status?: 'active' | 'closed') {
+export type BudgetStatus = 'proposed' | 'rejected' | 'active' | 'closed';
+
+export function useBudgets(communityId: string | undefined, status?: BudgetStatus) {
   return useQuery({
     queryKey: queryKeys.finance.budgets(communityId ?? '', status ?? 'all'),
     queryFn: () =>
@@ -130,6 +138,34 @@ export function useUpdateBudget() {
 }
 
 /** Closes the budget and its open dedicated contributions. */
+/** Approve a proposed budget (finance.budget.approve; not your own). */
+export function useApproveBudget() {
+  return useFinanceWrite(({ communityId, budgetId }: { communityId: string; budgetId: string }) =>
+    apiFetch<BudgetDetail>(`/communities/${communityId}/budgets/${budgetId}/approve/`, {
+      method: 'POST',
+    }),
+  );
+}
+
+/** Reject a proposed budget, with the reason. */
+export function useRejectBudget() {
+  return useFinanceWrite(
+    ({
+      communityId,
+      budgetId,
+      reason,
+    }: {
+      communityId: string;
+      budgetId: string;
+      reason: string;
+    }) =>
+      apiFetch<BudgetDetail>(`/communities/${communityId}/budgets/${budgetId}/reject/`, {
+        method: 'POST',
+        body: { reason },
+      }),
+  );
+}
+
 export function useCloseBudget() {
   return useFinanceWrite(
     ({ communityId, budgetId, note }: { communityId: string; budgetId: string; note?: string }) =>

@@ -207,11 +207,11 @@ export function MyContributions({
             </p>
             {(justRecorded.split?.length ?? 0) > 1 && (
               <p className="notice__text">
-                Ibirarane first:{' '}
+                Split over {justRecorded.split?.length} months:{' '}
                 {justRecorded.split
                   ?.map((row) => periodLabel(row.period_year, row.period_month ?? 1))
-                  .join(', ')}
-                .
+                  .join(', ')}{' '}
+                (oldest unpaid first, the rest paid ahead).
               </p>
             )}
           </div>

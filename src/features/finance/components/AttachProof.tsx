@@ -15,17 +15,17 @@ import { FilePicker } from './FilePicker';
  * evidence they decided on stays as it was). Only the member's own payment.
  */
 export function AttachProof({ row }: { row: Contribution }) {
-  const { communityId, membership } = useWorkspace();
+  const { communityId, membership, can } = useWorkspace();
   const attach = useAttachProof();
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | undefined>(undefined);
   const [done, setDone] = useState(false);
 
-  const mine =
-    membership !== undefined &&
-    (row.member.membership_id === membership.id || row.recorded_by.membership_id === membership.id);
-  // Only for a payment sent without proof; once one is attached, that is enough.
-  if (row.status !== 'pending' || !mine || row.proof_count > 0) return null;
+  // Proof is the payer's to give: the member who paid, never the Treasurer
+  // (or anyone who reviews payments), and only while none is attached.
+  const paidIt = membership !== undefined && row.member.membership_id === membership.id;
+  const reviews = can('finance.contribution.confirm') || can('finance.contribution.reject');
+  if (row.status !== 'pending' || !paidIt || reviews || row.proof_count > 0) return null;
 
   if (done) {
     return <p className="details__note">Proof attached.</p>;

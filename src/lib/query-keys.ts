@@ -60,6 +60,8 @@ export const queryKeys = {
     budget: (communityId: string, id: string) => ['finance', communityId, 'budget', id] as const,
     campaigns: (communityId: string, status: string) =>
       ['finance', communityId, 'campaigns', status] as const,
+    campaignMembers: (communityId: string, id: string) =>
+      ['finance', communityId, 'campaign-members', id] as const,
     accounts: (communityId: string) => ['finance', communityId, 'accounts'] as const,
     accountBalances: (communityId: string, id: string) =>
       ['finance', communityId, 'account-balances', id] as const,

@@ -4107,3 +4107,21 @@ button.position-card__main:focus-visible {
 .budget-goal__line .is-late {
   color: var(--color-danger, #b42318);
 }
+
+/* Your part of a budget: one sentence, coloured by how it stands. */
+.campaign-mine--done,
+.campaign-mine--extra {
+  background-color: var(--color-success-soft, #e7f6ec);
+  color: var(--color-success-text, #11643a);
+  font-weight: 600;
+}
+
+.campaign-mine--todo {
+  font-weight: 600;
+}
+
+.members-paid {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}

@@ -166,6 +166,8 @@ export interface Campaign {
   paid_count: number;
   fully_paid_count: number | null;
   my_share: {
+    /** What you are asked, required or voluntary; 0 when not asked; null for any amount. */
+    asked_minor: number | null;
     owed_minor: number | null;
     paid_minor: number;
     pending_minor: number;
@@ -180,6 +182,31 @@ export interface CampaignDetail extends Campaign {
   created_by: MemberRef;
   closed_by: MemberRef | null;
   updated_at: string;
+}
+
+/** Each member's asked and paid (contribution reviewers only). */
+export interface CampaignMember {
+  membership_id: string;
+  full_name: string;
+  category: string | null;
+  asked_minor: number | null;
+  paid_minor: number;
+  pending_minor: number;
+}
+
+export function useCampaignMembers(
+  communityId: string | undefined,
+  campaignId: string | undefined,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: queryKeys.finance.campaignMembers(communityId ?? '', campaignId ?? ''),
+    queryFn: () =>
+      apiFetch<{ items: CampaignMember[] }>(
+        `/communities/${communityId ?? ''}/campaigns/${campaignId ?? ''}/members/`,
+      ),
+    enabled: enabled && communityId !== undefined && campaignId !== undefined,
+  });
 }
 
 export function useCampaigns(communityId: string | undefined, status?: 'open' | 'closed') {

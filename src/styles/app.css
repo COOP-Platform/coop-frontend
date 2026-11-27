@@ -3920,3 +3920,34 @@ button.position-card__main:focus-visible {
   justify-content: space-between;
   gap: var(--space-3);
 }
+
+/* Budget card: only the essentials. */
+.budget-card__event {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.budget-card__figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  width: 100%;
+  margin: var(--space-1) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.budget-card__figures dt {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.budget-card__figures dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

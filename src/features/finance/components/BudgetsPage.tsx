@@ -895,73 +895,77 @@ function AddUseDialog({
 function MembersPaid({ campaign }: { campaign: Campaign }) {
   const { communityId } = useWorkspace();
   const members = useCampaignMembers(communityId, campaign.id);
-  const rows = members.data?.items ?? [];
-  const owing = rows.filter((r) => r.asked_minor !== null && r.paid_minor < r.asked_minor).length;
+  const everyone = members.data?.items ?? [];
+  // Only those who paid (or whose payment waits for review): no list of everyone.
+  const rows = everyone.filter((r) => r.paid_minor > 0 || r.pending_minor > 0);
+  const anyAmount = campaign.charge === 'any';
+  const owing = everyone.filter(
+    (r) => r.asked_minor !== null && r.asked_minor > 0 && r.paid_minor < r.asked_minor,
+  ).length;
   const extra = rows.filter((r) => r.asked_minor !== null && r.paid_minor > r.asked_minor).length;
   const done = rows.filter(
     (r) => r.asked_minor !== null && r.asked_minor > 0 && r.paid_minor === r.asked_minor,
   ).length;
 
+  // Nothing to show until someone pays.
+  if (members.isPending || rows.length === 0) return null;
+
   return (
     <div className="members-paid">
-      <h3 className="details__subhead">Members</h3>
-      {members.isPending ? (
-        <LoadingState />
-      ) : rows.length === 0 ? (
-        <p className="table__muted">No members asked yet.</p>
-      ) : (
-        <>
-          <p className="table__muted">
-            {done} paid in full · {extra} paid more · {owing} still to pay
-          </p>
-          <div className="table-scroll">
-            <table className="table table--compact">
-              <thead>
-                <tr>
-                  <th scope="col">Member</th>
-                  <th scope="col" className="num">
-                    Asked
-                  </th>
-                  <th scope="col" className="num">
-                    Paid
-                  </th>
-                  <th scope="col">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => {
-                  const status = memberStatus(r.asked_minor, r.paid_minor);
-                  return (
-                    <tr key={r.membership_id}>
-                      <td>
-                        <div className="table__stack">
-                          <span>{r.full_name}</span>
-                          {r.category && <span className="table__muted">{r.category}</span>}
-                        </div>
-                      </td>
-                      <td className="num">
-                        {r.asked_minor === null ? 'Any' : formatAmount(r.asked_minor)}
-                      </td>
-                      <td className="num">
-                        {formatAmount(r.paid_minor)}
-                        {r.pending_minor > 0 && (
-                          <span className="table__muted">
-                            {' '}
-                            (+{formatAmount(r.pending_minor)} in review)
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <Badge tone={status.tone}>{status.label}</Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+      <h3 className="details__subhead">Who paid</h3>
+      <>
+        <p className="table__muted">
+          {anyAmount
+            ? `${rows.length} member${rows.length === 1 ? '' : 's'} gave`
+            : `${done} paid in full · ${extra} paid more · ${owing} still to pay`}
+        </p>
+        <div className="table-scroll">
+          <table className="table table--compact">
+            <thead>
+              <tr>
+                <th scope="col">Member</th>
+                <th scope="col" className="num">
+                  Asked
+                </th>
+                <th scope="col" className="num">
+                  Paid
+                </th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const status = memberStatus(r.asked_minor, r.paid_minor);
+                return (
+                  <tr key={r.membership_id}>
+                    <td>
+                      <div className="table__stack">
+                        <span>{r.full_name}</span>
+                        {r.category && <span className="table__muted">{r.category}</span>}
+                      </div>
+                    </td>
+                    <td className="num">
+                      {r.asked_minor === null ? 'Any' : formatAmount(r.asked_minor)}
+                    </td>
+                    <td className="num">
+                      {formatAmount(r.paid_minor)}
+                      {r.pending_minor > 0 && (
+                        <span className="table__muted">
+                          {' '}
+                          (+{formatAmount(r.pending_minor)} in review)
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <Badge tone={status.tone}>{status.label}</Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </>
     </div>
   );
 }

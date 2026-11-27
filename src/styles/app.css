@@ -4125,3 +4125,10 @@ button.position-card__main:focus-visible {
   gap: var(--space-2);
   margin-top: var(--space-3);
 }
+
+/* An event with no budget yet: one line and one button. */
+.event-budget-offer {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}

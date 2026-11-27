@@ -7,3 +7,7 @@ export function dueText(due: string | null | undefined): string | null {
   if (days > 0) return `${days} day${days === 1 ? '' : 's'} left`;
   return `${-days} day${days === -1 ? '' : 's'} late`;
 }
+
+/** Who may run an event's money from its page: whoever organises events. */
+export const organisesEventMoney = (can: (code: string) => boolean) =>
+  can('event.create') || can('event.update');

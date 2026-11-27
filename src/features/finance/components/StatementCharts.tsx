@@ -145,7 +145,7 @@ function Bar({
   width: number;
   top: number;
   base: number;
-  kind: 'in' | 'out';
+  kind: 'in' | 'out' | 'expected';
 }) {
   const h = Math.max(0, base - top);
   if (h === 0) return null;
@@ -202,5 +202,240 @@ export function CategoryBars({
         );
       })}
     </ul>
+  );
+}
+
+export interface MonthCollection {
+  /** `YYYY-MM`. */
+  month: string;
+  expected_minor: number;
+  received_minor: number;
+  paid_count: number;
+  member_count: number;
+}
+
+/**
+ * The contributions a savings group cares about: for each month, what was
+ * collected next to what members owed. A light bar for expected, the brand
+ * green for collected; hover or focus a month for the figures.
+ */
+export function CollectedBars({ months }: { months: MonthCollection[] }) {
+  const [active, setActive] = useState<number | null>(null);
+  const max = Math.max(0, ...months.flatMap((m) => [m.expected_minor, m.received_minor]));
+  const { top, step } = niceScale(max);
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top - PAD.bottom;
+  const band = plotW / Math.max(1, months.length);
+  const barW = Math.min(28, (band * 0.6) / 2);
+  const y = (v: number) => PAD.top + plotH - (v / top) * plotH;
+  const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
+  const shown = active === null ? null : months[active];
+  const rate = (m: MonthCollection) =>
+    m.expected_minor > 0 ? Math.round((m.received_minor / m.expected_minor) * 100) : null;
+
+  return (
+    <div className="flow-chart">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label="Contributions collected and expected, by month"
+        className="flow-chart__svg"
+        onMouseLeave={() => setActive(null)}
+      >
+        {ticks.map((t) => (
+          <g key={t}>
+            <line
+              x1={PAD.left}
+              x2={W - PAD.right}
+              y1={y(t)}
+              y2={y(t)}
+              className={t === 0 ? 'flow-chart__baseline' : 'flow-chart__grid'}
+            />
+            <text
+              x={PAD.left - 8}
+              y={y(t)}
+              className="flow-chart__tick"
+              textAnchor="end"
+              dy="0.32em"
+            >
+              {compact(t)}
+            </text>
+          </g>
+        ))}
+        {months.map((m, i) => {
+          const cx = PAD.left + band * i + band / 2;
+          return (
+            <g
+              key={m.month}
+              className={active === i ? 'flow-chart__group is-active' : 'flow-chart__group'}
+              tabIndex={0}
+              aria-label={`${monthName(m.month)}: collected ${formatAmount(m.received_minor)} of ${formatAmount(m.expected_minor)}`}
+              onMouseEnter={() => setActive(i)}
+              onFocus={() => setActive(i)}
+              onBlur={() => setActive(null)}
+            >
+              <rect
+                x={cx - band / 2}
+                y={PAD.top}
+                width={band}
+                height={plotH}
+                className="flow-chart__hit"
+              />
+              <Bar
+                x={cx - barW - 1}
+                width={barW}
+                top={y(m.expected_minor)}
+                base={y(0)}
+                kind="expected"
+              />
+              <Bar x={cx + 1} width={barW} top={y(m.received_minor)} base={y(0)} kind="in" />
+              <text x={cx} y={H - 8} className="flow-chart__label" textAnchor="middle">
+                {monthName(m.month).slice(0, 3)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      {shown && active !== null && (
+        <div
+          className="flow-chart__tooltip"
+          style={{
+            left: `${Math.min(80, Math.max(20, ((PAD.left + band * active + band / 2) / W) * 100))}%`,
+          }}
+          role="status"
+        >
+          <p className="flow-chart__tooltip-title">{monthName(shown.month)}</p>
+          <p>
+            <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> Collected{' '}
+            <strong>{formatAmount(shown.received_minor)}</strong>
+            {rate(shown) !== null && <span className="table__muted"> · {rate(shown)}%</span>}
+          </p>
+          <p>
+            <span className="legend-swatch legend-swatch--expected" aria-hidden="true" /> Expected{' '}
+            <strong>{formatAmount(shown.expected_minor)}</strong>
+          </p>
+          <p className="table__muted">
+            {shown.paid_count} of {shown.member_count} members paid
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export interface MonthBalance {
+  /** `YYYY-MM`. */
+  month: string;
+  /** The community's money at the end of the month. */
+  balance_minor: number;
+}
+
+/**
+ * How the community's money grows: the balance at the end of each month as a
+ * line over a soft area. Hover or focus a month for the balance and the
+ * change since the month before.
+ */
+export function BalanceLine({ months }: { months: MonthBalance[] }) {
+  const [active, setActive] = useState<number | null>(null);
+  const values = months.map((m) => m.balance_minor);
+  const max = Math.max(0, ...values);
+  const min = Math.min(0, ...values);
+  const { top, step } = niceScale(max - min);
+  const floor = min < 0 ? -step * Math.ceil(-min / step) : 0;
+  const span = top - floor || 1;
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top - PAD.bottom;
+  const band = plotW / Math.max(1, months.length);
+  const x = (i: number) => PAD.left + band * i + band / 2;
+  const y = (v: number) => PAD.top + plotH - ((v - floor) / span) * plotH;
+  const ticks = Array.from({ length: Math.round(span / step) + 1 }, (_, i) => floor + i * step);
+  const line = months
+    .map((m, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(m.balance_minor)}`)
+    .join(' ');
+  const last = months.length - 1;
+  const area = `${line} L${x(last)},${y(floor)} L${x(0)},${y(floor)} Z`;
+  const shown = active === null ? null : months[active];
+  const previous = active !== null && active > 0 ? months[active - 1] : undefined;
+  const change = shown && previous ? shown.balance_minor - previous.balance_minor : null;
+
+  return (
+    <div className="flow-chart">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label="The community's money at the end of each month"
+        className="flow-chart__svg"
+        onMouseLeave={() => setActive(null)}
+      >
+        {ticks.map((t) => (
+          <g key={t}>
+            <line
+              x1={PAD.left}
+              x2={W - PAD.right}
+              y1={y(t)}
+              y2={y(t)}
+              className={t === 0 ? 'flow-chart__baseline' : 'flow-chart__grid'}
+            />
+            <text
+              x={PAD.left - 8}
+              y={y(t)}
+              className="flow-chart__tick"
+              textAnchor="end"
+              dy="0.32em"
+            >
+              {compact(t)}
+            </text>
+          </g>
+        ))}
+        {months.length > 1 && <path d={area} className="balance-chart__area" />}
+        {months.length > 1 && <path d={line} className="balance-chart__line" />}
+        {months.map((m, i) => (
+          <g
+            key={m.month}
+            className={active === i ? 'flow-chart__group is-active' : 'flow-chart__group'}
+            tabIndex={0}
+            aria-label={`${monthName(m.month)}: ${formatAmount(m.balance_minor)}`}
+            onMouseEnter={() => setActive(i)}
+            onFocus={() => setActive(i)}
+            onBlur={() => setActive(null)}
+          >
+            <rect
+              x={x(i) - band / 2}
+              y={PAD.top}
+              width={band}
+              height={plotH}
+              className="flow-chart__hit"
+            />
+            <circle
+              cx={x(i)}
+              cy={y(m.balance_minor)}
+              r={active === i ? 6 : 4}
+              className="balance-chart__point"
+            />
+            <text x={x(i)} y={H - 8} className="flow-chart__label" textAnchor="middle">
+              {monthName(m.month).slice(0, 3)}
+            </text>
+          </g>
+        ))}
+      </svg>
+      {shown && active !== null && (
+        <div
+          className="flow-chart__tooltip"
+          style={{ left: `${Math.min(80, Math.max(20, (x(active) / W) * 100))}%` }}
+          role="status"
+        >
+          <p className="flow-chart__tooltip-title">End of {monthName(shown.month)}</p>
+          <p>
+            <strong>{formatAmount(shown.balance_minor)}</strong>
+          </p>
+          {change !== null && (
+            <p className={change >= 0 ? 'balance-chart__up' : 'balance-chart__down'}>
+              {change >= 0 ? '+' : '−'}
+              {formatAmount(Math.abs(change))} since {monthName(previous?.month ?? '')}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

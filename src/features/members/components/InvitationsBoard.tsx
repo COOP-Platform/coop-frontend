@@ -29,7 +29,7 @@ import {
 import type { BadgeTone } from '@/components/ui';
 import { useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
-import { downloadCsv } from '@/lib/csv';
+import { downloadTablePdf, today } from '@/lib/pdf';
 import { formatDate, formatRelative, formatShortDate } from '@/lib/format/date';
 
 import { useMemberDirectory } from '../api/directory';
@@ -87,18 +87,20 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
   const selected = all.find((i) => i.id === search.selected);
   const closeDetails = () => onSearchChange({ ...search, selected: undefined });
 
-  function exportCsv() {
-    downloadCsv(
-      `${membership?.community.slug ?? 'community'}-invitations.csv`,
-      ['Name', 'Email', 'Status', 'Sent', 'Expires'],
-      filtered.map((i) => [
+  function exportPdf() {
+    void downloadTablePdf({
+      filename: `${membership?.community.slug ?? 'community'}-invitations-${today()}.pdf`,
+      title: 'Invitations',
+      community: membership?.community.name,
+      header: ['Name', 'Email', 'Status', 'Sent', 'Expires'],
+      rows: filtered.map((i) => [
         i.full_name,
         i.email,
         STATUS[effectiveStatus(i)].label,
         formatDate(i.created_at),
         formatDate(i.expires_at),
       ]),
-    );
+    });
   }
 
   if (!canInvite) {
@@ -123,8 +125,8 @@ export function InvitationsBoard({ search, onSearchChange }: InvitationsBoardPro
         subtitle={`${all.length} sent`}
         actions={
           <>
-            <Button variant="tint" inline icon={<IconDownload />} onClick={exportCsv}>
-              Export
+            <Button variant="tint" inline icon={<IconDownload />} onClick={exportPdf}>
+              Download PDF
             </Button>
             <Button
               inline

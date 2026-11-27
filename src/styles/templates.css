@@ -547,3 +547,18 @@
   font-size: var(--text-sm);
   color: var(--color-warning);
 }
+
+/* A wider popup for long forms, with fields side by side (Record payment). */
+.dialog.dialog--lg {
+  width: min(46rem, calc(100vw - 2rem));
+}
+
+/* Fields in a row line up at the top even when one has a hint under it. */
+.dialog .form-row {
+  align-items: start;
+}
+
+/* The payment preview uses the full width, amounts on the right edge. */
+.arrears-first > div {
+  flex: 1;
+}

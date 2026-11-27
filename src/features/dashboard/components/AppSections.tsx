@@ -61,7 +61,7 @@ export function AppSections({ can }: { can: (permission: string) => boolean }) {
         title: app.name,
         icon: app.icon,
         to: app.to,
-        cta: `Open ${app.name}`,
+        cta: 'Open',
       });
     }
   }

@@ -45,7 +45,7 @@ import type { Budget, BudgetDetail, Campaign, CampaignCharge } from '../api/budg
 import { useExpenses, useRecordExpense } from '../api/expenses';
 import { MINOR_PER_MAJOR, chargeText, formatAmount } from '../format';
 import { CampaignPayments } from './CampaignPayments';
-import { dueText } from '../budget-goal';
+import { dueText, organisesEventMoney } from '../budget-goal';
 import { memberStatus, yourPart } from '../your-part';
 import { ProgressRing } from './ProgressRing';
 import { RecordContributionDialog } from './RecordContributionDialog';
@@ -314,7 +314,20 @@ function BudgetCard({
   );
 }
 
-function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: string) => void }) {
+/**
+ * One budget: the same panel in Finance and on its event's page (`embedded`,
+ * where the event already names it). For an event's budget, its organisers
+ * run it too; Finance confirms the payments and approves the spending.
+ */
+export function BudgetDetails({
+  budgetId,
+  onDone,
+  embedded = false,
+}: {
+  budgetId: string;
+  onDone: (m: string) => void;
+  embedded?: boolean;
+}) {
   const { communityId, can } = useWorkspace();
   const detail = useBudgetDetail(communityId, budgetId);
   const close = useCloseBudget();
@@ -334,28 +347,31 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
     );
   }
   const b = detail.data;
-  const canManage = can('finance.budget.manage') && b.status === 'active';
+  const forEvent = b.event !== null && organisesEventMoney(can);
+  const canManage = (can('finance.budget.manage') || forEvent) && b.status === 'active';
   const hasGoal = b.planned_minor > 0;
   const stillNeeded = Math.max(b.planned_minor - b.raised_minor, 0);
   const left = b.raised_minor - b.spent_minor;
   const due = b.status === 'active' ? dueText(asking?.due_date) : null;
 
   return (
-    <section className="details" aria-labelledby="budget-title">
-      <header className="details__head">
-        <div>
-          <p className="section-head__eyebrow">Budget</p>
-          <h2 id="budget-title" className="section-head__title">
-            {b.title}
-          </h2>
-          <p className="section-head__subtitle">
-            Created by {b.created_by.full_name} · {formatDate(b.created_at)}
-          </p>
-        </div>
-        <Badge tone={b.status === 'active' ? 'success' : 'neutral'}>
-          {b.status === 'active' ? 'Open' : 'Closed'}
-        </Badge>
-      </header>
+    <section className="details" aria-labelledby={embedded ? undefined : 'budget-title'}>
+      {!embedded && (
+        <header className="details__head">
+          <div>
+            <p className="section-head__eyebrow">Budget</p>
+            <h2 id="budget-title" className="section-head__title">
+              {b.title}
+            </h2>
+            <p className="section-head__subtitle">
+              Created by {b.created_by.full_name} · {formatDate(b.created_at)}
+            </p>
+          </div>
+          <Badge tone={b.status === 'active' ? 'success' : 'neutral'}>
+            {b.status === 'active' ? 'Open' : 'Closed'}
+          </Badge>
+        </header>
+      )}
 
       {b.description && <p className="details__note">{b.description}</p>}
 
@@ -400,6 +416,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         budgetId={b.id}
         currency={b.currency}
         open={b.status === 'active'}
+        canAdd={can('finance.expense.record') || forEvent}
         onDone={onDone}
       />
 
@@ -486,14 +503,16 @@ function BudgetUses({
   budgetId,
   currency,
   open,
+  canAdd,
   onDone,
 }: {
   budgetId: string;
   currency: string;
   open: boolean;
+  canAdd: boolean;
   onDone: (message: string) => void;
 }) {
-  const { communityId, can } = useWorkspace();
+  const { communityId } = useWorkspace();
   const [adding, setAdding] = useState(false);
   const expenses = useExpenses(communityId, { budget_id: budgetId, page_size: 100 });
   const rows = (expenses.data?.items ?? []).filter(
@@ -504,7 +523,7 @@ function BudgetUses({
     <div className="money-section">
       <div className="section-bar">
         <h2 className="section-title">Used for</h2>
-        {open && can('finance.expense.record') && (
+        {open && canAdd && (
           <div className="section-bar__actions">
             <Button inline variant="secondary" icon={<IconPlus />} onClick={() => setAdding(true)}>
               Add what was used
@@ -794,7 +813,8 @@ function BudgetForm({
   onSaved: (message: string) => void;
 }) {
   const { communityId, can } = useWorkspace();
-  const canAsk = can('finance.campaign.manage');
+  const eventBudget = forEvent !== undefined || (budget !== null && budget.event !== null);
+  const canAsk = can('finance.campaign.manage') || (eventBudget && organisesEventMoney(can));
   const create = useCreateBudget();
   const update = useUpdateBudget();
   const createAsk = useCreateCampaign();

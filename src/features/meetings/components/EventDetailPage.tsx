@@ -35,7 +35,7 @@ import {
   useEvent,
 } from '../api/events';
 import type { CommunityEventDetail } from '../api/events';
-import { EventBudget, EventBudgetStats } from './EventBudget';
+import { EventBudget } from './EventBudget';
 import { EventFormDialog } from './EventFormDialog';
 import { EventResponses, EventRsvp } from './EventRsvp';
 import { EventStatusBadge, HiddenBadge } from './EventsPage';
@@ -196,8 +196,6 @@ function EventDetails({
         </div>
       )}
 
-      <EventBudgetStats event={event} />
-
       <div className="event-detail">
         <SectionCard title="Details">
           <dl className="event-kv">
@@ -240,7 +238,7 @@ function EventDetails({
           </SectionCard>
         )}
 
-        <EventBudget event={event} />
+        <EventBudget event={event} onNotice={onNotice} />
 
         {organises && <EventResponses event={event} />}
 

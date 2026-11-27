@@ -12,7 +12,7 @@ import {
   LoadingState,
   PageHeader,
   SectionCard,
-  Select,
+  SegmentedControl,
   TableFooter,
   usePaged,
 } from '@/components/ui';
@@ -94,19 +94,11 @@ export function EventsPage({
           ) : undefined
         }
       />
+      <SegmentedControl label="Events" options={TABS} value={tab} onChange={onTabChange} />
 
       <SectionCard
         title={`${TABS.find((t) => t.value === tab)?.label ?? ''} events`}
         flush
-        actions={
-          <Select
-            label="Which events"
-            labelHidden
-            options={TABS}
-            value={tab}
-            onChange={(e) => onTabChange(e.target.value as EventsTab)}
-          />
-        }
         footer={
           events.data && events.data.items.length > 0 ? (
             <TableFooter {...paged} onPage={paged.setPage} />

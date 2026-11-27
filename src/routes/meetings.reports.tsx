@@ -1,31 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { requirePermission } from '@/features/auth';
-import { ReportsPage } from '@/features/meetings/components/ReportsPage';
-
-interface Search {
-  /** The attendance register when absent. */
-  tab?: 'summary';
-}
-
+// Reports were removed (everything is on the dashboard). An old link lands
+// on the Meetings dashboard instead of being read as a meeting id.
 export const Route = createFileRoute('/meetings/reports')({
-  // Same permission as the sidebar entry (MEETINGS_APP); without it, the dashboard.
-  beforeLoad: requirePermission(['meeting.attendance.record', 'audit.view'], '/meetings'),
-  validateSearch: (raw: Record<string, unknown>): Search => ({
-    tab: raw.tab === 'summary' ? 'summary' : undefined,
-  }),
-  component: Page,
+  beforeLoad: () => {
+    throw redirect({ to: '/meetings', replace: true });
+  },
 });
-
-function Page() {
-  const { tab } = Route.useSearch();
-  const navigate = Route.useNavigate();
-  return (
-    <ReportsPage
-      tab={tab ?? 'register'}
-      onTabChange={(next) =>
-        void navigate({ search: { tab: next === 'summary' ? 'summary' : undefined } })
-      }
-    />
-  );
-}

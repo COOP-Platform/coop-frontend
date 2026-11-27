@@ -4176,3 +4176,32 @@ button.position-card__main:focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
+
+/* A budget waiting for approval, or rejected: the decision, then the buttons. */
+.budget-decision {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* What was used: when, who recorded and approved it; why it was rejected. */
+.budget-uses__meta,
+.budget-uses__reason {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.budget-uses__reason {
+  color: var(--color-danger, #b42318);
+}
+
+.badge--spaced {
+  margin-left: var(--space-2);
+}
+
+.notice--danger {
+  background-color: var(--color-danger-bg, #fdecea);
+}

@@ -30,6 +30,7 @@ import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
 
 import {
+  useApproveBudget,
   useBudgetDetail,
   useBudgets,
   useCampaignMembers,
@@ -38,6 +39,7 @@ import {
   useCloseCampaign,
   useCreateBudget,
   useCreateCampaign,
+  useRejectBudget,
   useUpdateBudget,
   useUpdateCampaign,
 } from '../api/budgets';
@@ -63,15 +65,38 @@ const toRwf = (minor: number) => String(minor / MINOR_PER_MAJOR);
  * them; the Treasurer and committee (finance.budget.manage /
  * finance.campaign.manage) change them.
  */
-type Period = 'open' | 'past';
+type Period = 'open' | 'past' | 'requests';
 
 const PERIODS: { value: Period; label: string }[] = [
   { value: 'open', label: 'Open' },
   { value: 'past', label: 'Past' },
 ];
 
+/** Who sees proposed and rejected budgets (the API decides the same way). */
+const seesBudgetRequests = (can: (code: string) => boolean) =>
+  [
+    'finance.budget.manage',
+    'finance.budget.approve',
+    'audit.view',
+    'event.create',
+    'event.update',
+  ].some(can);
+
 export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
+  const { communityId, can } = useWorkspace();
   const [notice, setNotice] = useState<string | null>(null);
+  const requests = seesBudgetRequests(can);
+  const waiting = useBudgets(requests ? communityId : undefined, 'proposed');
+  const waitingCount = waiting.data?.total ?? 0;
+  const periods = requests
+    ? [
+        ...PERIODS,
+        {
+          value: 'requests' as const,
+          label: waitingCount > 0 ? `Requests (${waitingCount})` : 'Requests',
+        },
+      ]
+    : PERIODS;
   // Open: what is running now. Past: closed budgets and contributions, kept as a record.
   const [period, setPeriod] = useState<Period>('open');
   return (
@@ -80,7 +105,7 @@ export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
       {!embedded && <SectionHeader title="Budgets" />}
       <SegmentedControl
         label="Budgets"
-        options={PERIODS}
+        options={periods}
         value={period}
         onChange={(value) => {
           setNotice(null);
@@ -90,11 +115,13 @@ export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
       {notice && <SuccessNotice text={notice} />}
       <BudgetsSection onDone={setNotice} period={period} />
       {/* Older money asks with no budget behind them: shown as more cards, no own section. */}
-      <CampaignsSection
-        onDone={setNotice}
-        standalone
-        status={period === 'open' ? 'open' : 'closed'}
-      />
+      {period !== 'requests' && (
+        <CampaignsSection
+          onDone={setNotice}
+          standalone
+          status={period === 'open' ? 'open' : 'closed'}
+        />
+      )}
     </div>
   );
 }
@@ -164,11 +191,28 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
   };
   const navigate = useNavigate();
   const filter: BudgetFilter = period === 'open' ? 'active' : 'closed';
+  const isRequests = period === 'requests';
+  const proposed = useBudgets(isRequests ? communityId : undefined, 'proposed');
+  const rejected = useBudgets(isRequests ? communityId : undefined, 'rejected');
   const [creating, setCreating] = useState(false);
   const [planEvent, setPlanEvent] = useState<{ id: string; title: string } | null>(
     search.plan && canManage ? { id: search.plan, title: search.planTitle ?? 'Event' } : null,
   );
-  const budgets = useBudgets(communityId, filter);
+  const shown = useBudgets(isRequests ? undefined : communityId, filter);
+  // Requests: waiting for approval first, then the ones turned down.
+  const budgets = isRequests
+    ? {
+        data:
+          proposed.data && rejected.data
+            ? {
+                items: [...proposed.data.items, ...rejected.data.items],
+                total: proposed.data.total + rejected.data.total,
+              }
+            : undefined,
+        isPending: proposed.isPending || rejected.isPending,
+        error: proposed.error ?? rejected.error,
+      }
+    : shown;
   // Which budgets are asking members for money right now.
   const openCollections = useCampaigns(communityId, period === 'open' ? 'open' : 'closed');
   const askingFor = (budgetId: string) =>
@@ -191,7 +235,9 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
   return (
     <div className="money-section">
       <div className="section-bar">
-        <h2 className="section-title">{period === 'open' ? 'Budgets' : 'Past budgets'}</h2>
+        <h2 className="section-title">
+          {isRequests ? 'Budget requests' : period === 'open' ? 'Budgets' : 'Past budgets'}
+        </h2>
         <div className="section-bar__actions">
           {canManage && period === 'open' && (
             <Button inline icon={<IconPlus />} onClick={() => setCreating(true)}>
@@ -211,7 +257,13 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
         <section className="card">
           <EmptyState
             icon={<IconFlag />}
-            title={filter === 'active' ? 'No open budgets' : 'No past budgets yet'}
+            title={
+              isRequests
+                ? 'No budget requests'
+                : filter === 'active'
+                  ? 'No open budgets'
+                  : 'No past budgets yet'
+            }
           />
         </section>
       ) : (
@@ -273,6 +325,16 @@ export function BudgetPage({ budgetId }: { budgetId: string }) {
   );
 }
 
+const BUDGET_STATUS: Record<
+  Budget['status'],
+  { label: string; tone: 'success' | 'warning' | 'danger' | 'neutral' }
+> = {
+  proposed: { label: 'Waiting for approval', tone: 'warning' },
+  rejected: { label: 'Rejected', tone: 'danger' },
+  active: { label: 'Open', tone: 'success' },
+  closed: { label: 'Closed', tone: 'neutral' },
+};
+
 function BudgetCard({
   budget,
   asking,
@@ -293,7 +355,11 @@ function BudgetCard({
       <div className="budget-card__goal">
         <div className="budget-card__head">
           <h3 className="budget-card__title">{budget.title}</h3>
-          {budget.status !== 'active' && <Badge tone="neutral">Closed</Badge>}
+          {budget.status !== 'active' && (
+            <Badge tone={BUDGET_STATUS[budget.status].tone}>
+              {BUDGET_STATUS[budget.status].label}
+            </Badge>
+          )}
         </div>
         <p className="budget-card__amounts">
           <strong>{formatAmount(budget.raised_minor)}</strong>{' '}
@@ -328,8 +394,12 @@ export function BudgetDetails({
   onDone: (m: string) => void;
   embedded?: boolean;
 }) {
-  const { communityId, can } = useWorkspace();
+  const { communityId, can, membership } = useWorkspace();
   const detail = useBudgetDetail(communityId, budgetId);
+  const approve = useApproveBudget();
+  const reject = useRejectBudget();
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   const close = useCloseBudget();
   const [editing, setEditing] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -348,7 +418,15 @@ export function BudgetDetails({
   }
   const b = detail.data;
   const forEvent = b.event !== null && organisesEventMoney(can);
-  const canManage = (can('finance.budget.manage') || forEvent) && b.status === 'active';
+  const manages = can('finance.budget.manage') || forEvent;
+  // Edit while active, proposed or rejected (editing a rejected one proposes it again).
+  const canEdit = manages && b.status !== 'closed';
+  const canClose = manages && b.status === 'active';
+  // Approve or reject: someone who approves budgets, never its proposer.
+  const canDecide =
+    b.status === 'proposed' &&
+    can('finance.budget.approve') &&
+    b.created_by.membership_id !== membership?.id;
   const hasGoal = b.planned_minor > 0;
   const stillNeeded = Math.max(b.planned_minor - b.raised_minor, 0);
   const left = b.raised_minor - b.spent_minor;
@@ -367,10 +445,61 @@ export function BudgetDetails({
               Created by {b.created_by.full_name} · {formatDate(b.created_at)}
             </p>
           </div>
-          <Badge tone={b.status === 'active' ? 'success' : 'neutral'}>
-            {b.status === 'active' ? 'Open' : 'Closed'}
-          </Badge>
+          <Badge tone={BUDGET_STATUS[b.status].tone}>{BUDGET_STATUS[b.status].label}</Badge>
         </header>
+      )}
+
+      {/* Approval: a proposed budget takes no money until someone else approves it. */}
+      {b.status === 'proposed' && (
+        <div className="notice notice--warning budget-decision" role="status">
+          <div>
+            <p className="notice__title">Waiting for approval</p>
+            <p className="notice__text">
+              Proposed by {b.created_by.full_name}. Members can contribute and spending can be
+              recorded once someone who approves budgets approves it.
+            </p>
+          </div>
+          {canDecide && (
+            <div className="review-actions">
+              <Button
+                inline
+                disabled={approve.isPending || !communityId}
+                onClick={() =>
+                  communityId &&
+                  approve.mutate(
+                    { communityId, budgetId: b.id },
+                    { onSuccess: () => onDone(`${b.title} approved. Members can contribute now.`) },
+                  )
+                }
+              >
+                {approve.isPending ? 'Approving…' : 'Approve'}
+              </Button>
+              <Button variant="secondary" inline onClick={() => setRejecting(true)}>
+                Reject
+              </Button>
+            </div>
+          )}
+          {approve.error && <p className="form-error">{errorMessage(approve.error)}</p>}
+        </div>
+      )}
+      {b.status === 'rejected' && (
+        <div className="notice notice--danger budget-decision" role="status">
+          <div>
+            <p className="notice__title">
+              Rejected
+              {b.rejected_by ? ` by ${b.rejected_by.full_name}` : ''}
+              {b.rejected_at ? ` on ${formatDate(b.rejected_at)}` : ''}
+            </p>
+            {b.rejection_reason && <p className="notice__text">{b.rejection_reason}</p>}
+            {canEdit && <p className="notice__text">Edit it to propose it again.</p>}
+          </div>
+        </div>
+      )}
+      {b.status === 'active' && b.approved_by && (
+        <p className="table__muted">
+          Approved by {b.approved_by.full_name}
+          {b.approved_at ? ` on ${formatDate(b.approved_at)}` : ''}
+        </p>
       )}
 
       {b.description && <p className="details__note">{b.description}</p>}
@@ -410,7 +539,13 @@ export function BudgetDetails({
         </div>
       </div>
 
-      <CampaignsSection onDone={onDone} budgetId={b.id} status={status} title="Contribute" />
+      <CampaignsSection
+        onDone={onDone}
+        budgetId={b.id}
+        canPay={b.status === 'active'}
+        status={status}
+        title="Contribute"
+      />
 
       <BudgetUses
         budgetId={b.id}
@@ -426,16 +561,72 @@ export function BudgetDetails({
         </p>
       )}
 
-      {canManage && (
+      {(canEdit || canClose) && (
         <div className="review-actions">
-          <Button variant="secondary" inline icon={<IconPencil />} onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          <Button variant="secondary" inline onClick={() => setClosing(true)}>
-            Close budget
-          </Button>
+          {canEdit && (
+            <Button
+              variant="secondary"
+              inline
+              icon={<IconPencil />}
+              onClick={() => setEditing(true)}
+            >
+              Edit
+            </Button>
+          )}
+          {canClose && (
+            <Button variant="secondary" inline onClick={() => setClosing(true)}>
+              Close budget
+            </Button>
+          )}
         </div>
       )}
+
+      <Dialog
+        open={rejecting}
+        onClose={() => setRejecting(false)}
+        title="Reject budget"
+        subtitle="Whoever proposed it sees your reason and can change it and propose it again."
+        icon={
+          <IconTile tone="warning" round>
+            <IconFlag />
+          </IconTile>
+        }
+      >
+        <div className="dialog__form">
+          <Textarea
+            label="Reason"
+            rows={2}
+            maxLength={255}
+            placeholder="e.g. Too expensive for this year; keep it under 300,000."
+            value={rejectReason}
+            onChange={(event) => setRejectReason(event.target.value)}
+          />
+          {reject.error && <p className="form-error">{errorMessage(reject.error)}</p>}
+          <div className="dialog__footer dialog__footer--flush">
+            <Button variant="tint" onClick={() => setRejecting(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={reject.isPending || !communityId || rejectReason.trim() === ''}
+              onClick={() =>
+                communityId &&
+                reject.mutate(
+                  { communityId, budgetId: b.id, reason: rejectReason.trim() },
+                  {
+                    onSuccess: () => {
+                      setRejecting(false);
+                      onDone(`${b.title} rejected. Its proposer is told why.`);
+                    },
+                  },
+                )
+              }
+            >
+              {reject.isPending ? 'Rejecting…' : 'Reject'}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       <BudgetFormDialog
         open={editing}
@@ -515,8 +706,10 @@ function BudgetUses({
   const { communityId } = useWorkspace();
   const [adding, setAdding] = useState(false);
   const expenses = useExpenses(communityId, { budget_id: budgetId, page_size: 100 });
+  // Approved and waiting; rejected ones too, with who, when and why (the API
+  // returns those only to whoever recorded them and to reviewers).
   const rows = (expenses.data?.items ?? []).filter(
-    (e) => e.status === 'approved' || e.status === 'pending',
+    (e) => e.status === 'approved' || e.status === 'pending' || e.status === 'rejected',
   );
 
   return (
@@ -545,6 +738,24 @@ function BudgetUses({
                   <Badge tone="warning" className="budget-uses__badge">
                     Awaiting approval
                   </Badge>
+                )}
+                {e.status === 'rejected' && (
+                  <Badge tone="danger" className="budget-uses__badge">
+                    Rejected
+                  </Badge>
+                )}
+                <span className="budget-uses__meta">
+                  {formatDate(e.spent_at)} · recorded by {e.recorded_by.full_name}
+                  {e.status === 'approved' && e.approved_by
+                    ? ` · approved by ${e.approved_by.full_name}`
+                    : ''}
+                </span>
+                {e.status === 'rejected' && (
+                  <span className="budget-uses__reason">
+                    Rejected{e.rejected_by ? ` by ${e.rejected_by.full_name}` : ''}
+                    {e.rejected_at ? ` on ${formatDate(e.rejected_at)}` : ''}
+                    {e.rejection_reason ? `: ${e.rejection_reason}` : ''}
+                  </span>
                 )}
               </span>
               <strong>
@@ -945,8 +1156,8 @@ function BudgetForm({
           budget
             ? `${body.title} saved.`
             : ask !== 'none'
-              ? `${body.title} created. Members can contribute to it now.`
-              : `${body.title} created.`,
+              ? `${body.title} proposed. Members can contribute once it is approved.`
+              : `${body.title} proposed. It waits for approval.`,
         );
       } catch (error) {
         onError(error);
@@ -1117,12 +1328,15 @@ function CampaignsSection({
   onDone,
   budgetId,
   standalone = false,
+  canPay = true,
   status,
   title = 'Dedicated contributions',
 }: {
   onDone: (message: string) => void;
   /** Open ones, or closed ones kept as a record. */
   status: CampaignFilter;
+  /** False while the budget waits for approval: members cannot pay yet. */
+  canPay?: boolean;
   /** Inside a budget's panel: that budget's open collections only. */
   budgetId?: string;
   /** On the page: only the collections not tied to a budget. */
@@ -1246,7 +1460,7 @@ function CampaignsSection({
                     {budgetId ? 'Who paid' : 'Payments'}
                   </Button>
                 )}
-                {c.status === 'open' && can('finance.contribution.record') && (
+                {c.status === 'open' && canPay && can('finance.contribution.record') && (
                   <Button size="sm" inline onClick={() => setContributingTo(c)}>
                     {yourPart(c.my_share, c.currency).leftMinor > 0
                       ? `Pay ${formatAmount(yourPart(c.my_share, c.currency).leftMinor)}`

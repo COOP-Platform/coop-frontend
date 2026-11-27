@@ -39,7 +39,8 @@ export function CommunityMoney({
   // One per payment: the months one payment was split into count once.
   const toReview = new Set(pending.rows.map((row) => row.payment_group)).size;
   // Who is behind is the Treasurer's to see, like reminders.
-  const canSeeArrears = can('finance.contribution.confirm');
+  // Who is behind: those who confirm payments, and read-only viewers (Secretary, Auditor).
+  const canSeeArrears = can('finance.contribution.confirm') || can('finance.arrears.view');
   const canSeeFines = FINES_ENABLED && (can('finance.fine.issue') || can('finance.fine.manage'));
   // Shared so switching between This month and All payments keeps the month.
   const [month, setMonth] = useState(THIS_MONTH);

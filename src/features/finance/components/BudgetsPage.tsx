@@ -1,4 +1,4 @@
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -12,6 +12,7 @@ import {
   ErrorState,
   IconCalendar,
   IconFlag,
+  IconArrowLeft,
   IconFile,
   IconHandHeart,
   IconPencil,
@@ -156,14 +157,12 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
   const canManage = can('finance.budget.manage');
   // Links from an event's page: open its budget, or plan one for it.
   const search = useSearch({ strict: false }) as {
-    budget?: string;
     plan?: string;
     planTitle?: string;
   };
   const navigate = useNavigate();
   const filter: BudgetFilter = period === 'open' ? 'active' : 'closed';
   const [creating, setCreating] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(search.budget ?? null);
   const [planEvent, setPlanEvent] = useState<{ id: string; title: string } | null>(
     search.plan && canManage ? { id: search.plan, title: search.planTitle ?? 'Event' } : null,
   );
@@ -175,12 +174,11 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
 
   /** Forget the event link once used, so a refresh does not reopen it. */
   function clearLink() {
-    if (search.budget || search.plan)
+    if (search.plan)
       void navigate({
         to: '.',
         search: (prev: Record<string, unknown>) => ({
           ...prev,
-          budget: undefined,
           plan: undefined,
           planTitle: undefined,
         }),
@@ -221,7 +219,12 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
               <BudgetCard
                 budget={budget}
                 asking={askingFor(budget.id)}
-                onOpen={() => setOpenId(budget.id)}
+                onOpen={() =>
+                  void navigate({
+                    to: '/finance/budget/$budgetId',
+                    params: { budgetId: budget.id },
+                  })
+                }
               />
             </li>
           ))}
@@ -244,26 +247,26 @@ function BudgetsSection({ onDone, period }: { onDone: (message: string) => void;
           onDone(message);
         }}
       />
+    </div>
+  );
+}
 
-      <Drawer
-        open={openId !== null}
-        onClose={() => {
-          setOpenId(null);
-          clearLink();
-        }}
-        label="Budget details"
-      >
-        {openId && (
-          <BudgetDetails
-            budgetId={openId}
-            onDone={(message) => {
-              setOpenId(null);
-              clearLink();
-              onDone(message);
-            }}
-          />
-        )}
-      </Drawer>
+/**
+ * One budget on its own page (it is too large for a side panel): its lines,
+ * money in and out, and what members pay towards it, with Contribute.
+ */
+export function BudgetPage({ budgetId }: { budgetId: string }) {
+  const [notice, setNotice] = useState<string | null>(null);
+  return (
+    <div className="page budget-page">
+      <Link to="/finance/planning" className="meeting-back">
+        <IconArrowLeft aria-hidden="true" />
+        Budgets
+      </Link>
+      {notice && <SuccessNotice text={notice} />}
+      <section className="card budget-page__body">
+        <BudgetDetails budgetId={budgetId} onDone={setNotice} />
+      </section>
     </div>
   );
 }
@@ -913,7 +916,7 @@ function CampaignsSection({
           </p>
         ) : null
       ) : (
-        <ul className="budget-cards" role="list">
+        <ul className={budgetId ? 'budget-contribute-list' : 'budget-cards'} role="list">
           {shownCampaigns(campaigns.data.items, budgetId, standalone).map((c) => (
             <li
               key={c.id}

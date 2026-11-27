@@ -53,6 +53,7 @@ import { Route as CommunityMembersIndexRouteImport } from './routes/community.me
 import { Route as CommunityMembersMemberIdRouteImport } from './routes/community.members.$memberId';
 import { Route as CommunityPositionsIndexRouteImport } from './routes/community.positions.index';
 import { Route as CommunityPositionsPositionIdRouteImport } from './routes/community.positions.$positionId';
+import { Route as FinanceBudgetBudgetIdRouteImport } from './routes/finance.budget.$budgetId';
 import { Route as MeetingsEventsIndexRouteImport } from './routes/meetings.events.index';
 import { Route as MeetingsEventsEventIdRouteImport } from './routes/meetings.events.$eventId';
 import { Route as PlatformCommunitiesIndexRouteImport } from './routes/platform.communities.index';
@@ -281,6 +282,11 @@ const CommunityPositionsPositionIdRoute =
     path: '/positions/$positionId',
     getParentRoute: () => CommunityRoute,
   } as any);
+const FinanceBudgetBudgetIdRoute = FinanceBudgetBudgetIdRouteImport.update({
+  id: '/budget/$budgetId',
+  path: '/budget/$budgetId',
+  getParentRoute: () => FinanceRoute,
+} as any);
 const MeetingsEventsIndexRoute = MeetingsEventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
@@ -346,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
+  '/finance/budget/$budgetId': typeof FinanceBudgetBudgetIdRoute;
   '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
   '/platform/communities/$communityId': typeof PlatformCommunitiesCommunityIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
+  '/finance/budget/$budgetId': typeof FinanceBudgetBudgetIdRoute;
   '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
   '/platform/communities/$communityId': typeof PlatformCommunitiesCommunityIdRoute;
   '/community/invitations': typeof CommunityInvitationsIndexRoute;
@@ -443,6 +451,7 @@ export interface FileRoutesById {
   '/community/invitations/new': typeof CommunityInvitationsNewRoute;
   '/community/members/$memberId': typeof CommunityMembersMemberIdRoute;
   '/community/positions/$positionId': typeof CommunityPositionsPositionIdRoute;
+  '/finance/budget/$budgetId': typeof FinanceBudgetBudgetIdRoute;
   '/meetings/events/$eventId': typeof MeetingsEventsEventIdRoute;
   '/platform/communities/$communityId': typeof PlatformCommunitiesCommunityIdRoute;
   '/community/invitations/': typeof CommunityInvitationsIndexRoute;
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
+    | '/finance/budget/$budgetId'
     | '/meetings/events/$eventId'
     | '/platform/communities/$communityId'
     | '/community/invitations/'
@@ -541,6 +551,7 @@ export interface FileRouteTypes {
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
+    | '/finance/budget/$budgetId'
     | '/meetings/events/$eventId'
     | '/platform/communities/$communityId'
     | '/community/invitations'
@@ -591,6 +602,7 @@ export interface FileRouteTypes {
     | '/community/invitations/new'
     | '/community/members/$memberId'
     | '/community/positions/$positionId'
+    | '/finance/budget/$budgetId'
     | '/meetings/events/$eventId'
     | '/platform/communities/$communityId'
     | '/community/invitations/'
@@ -929,6 +941,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommunityPositionsPositionIdRouteImport;
       parentRoute: typeof CommunityRoute;
     };
+    '/finance/budget/$budgetId': {
+      id: '/finance/budget/$budgetId';
+      path: '/budget/$budgetId';
+      fullPath: '/finance/budget/$budgetId';
+      preLoaderRoute: typeof FinanceBudgetBudgetIdRouteImport;
+      parentRoute: typeof FinanceRoute;
+    };
     '/meetings/events/': {
       id: '/meetings/events/';
       path: '/events';
@@ -1000,6 +1019,7 @@ interface FinanceRouteChildren {
   FinanceSharesRoute: typeof FinanceSharesRoute;
   FinanceStatementsRoute: typeof FinanceStatementsRoute;
   FinanceIndexRoute: typeof FinanceIndexRoute;
+  FinanceBudgetBudgetIdRoute: typeof FinanceBudgetBudgetIdRoute;
 }
 
 const FinanceRouteChildren: FinanceRouteChildren = {
@@ -1016,6 +1036,7 @@ const FinanceRouteChildren: FinanceRouteChildren = {
   FinanceSharesRoute: FinanceSharesRoute,
   FinanceStatementsRoute: FinanceStatementsRoute,
   FinanceIndexRoute: FinanceIndexRoute,
+  FinanceBudgetBudgetIdRoute: FinanceBudgetBudgetIdRoute,
 };
 
 const FinanceRouteWithChildren =

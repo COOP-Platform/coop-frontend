@@ -143,8 +143,8 @@ function BudgetBody({ budgetId }: { budgetId: string }) {
         actions={
           can('finance.report.view') ? (
             <Link
-              to="/finance/planning"
-              search={{ budget: b.id }}
+              to="/finance/budget/$budgetId"
+              params={{ budgetId: b.id }}
               className="btn btn--secondary btn--inline"
             >
               <IconWallet width={16} height={16} aria-hidden="true" />
@@ -220,7 +220,11 @@ function BudgetLines({ budget: b }: { budget: BudgetDetail }) {
       className="event-detail__wide"
       flush={b.lines.length > 0}
       footer={
-        <Link to="/finance/planning" search={{ budget: b.id }} className="event-budget__more">
+        <Link
+          to="/finance/budget/$budgetId"
+          params={{ budgetId: b.id }}
+          className="event-budget__more"
+        >
           Open in Finance
         </Link>
       }

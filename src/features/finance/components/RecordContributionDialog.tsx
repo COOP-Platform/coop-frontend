@@ -233,6 +233,9 @@ export function RecordContributionDialog({
   initial,
   forMember = false,
 }: RecordContributionDialogProps) {
+  const { can } = useWorkspace();
+  // Whoever confirms payments needs no review of what they record (27 Nov).
+  const countsAtOnce = can('finance.contribution.confirm');
   return (
     <Dialog
       open={open}
@@ -240,9 +243,11 @@ export function RecordContributionDialog({
       size="lg"
       title={forMember ? 'Record a payment for a member' : 'Record Contribution'}
       subtitle={
-        forMember
-          ? 'Pending until someone else confirms it.'
-          : 'Pending until the Treasurer confirms it.'
+        countsAtOnce
+          ? 'You confirm payments, so it counts as soon as you save it.'
+          : forMember
+            ? 'Pending until someone else confirms it.'
+            : 'Pending until the Treasurer confirms it.'
       }
       icon={
         <IconTile tone="brand" round>
@@ -693,7 +698,11 @@ function RecordContributionForm({
           Cancel
         </Button>
         <Button type="submit" icon={<IconPlusCircle />} disabled={record.isPending}>
-          {record.isPending ? 'Sending…' : 'Send for review'}
+          {record.isPending
+            ? 'Sending…'
+            : can('finance.contribution.confirm')
+              ? 'Save payment'
+              : 'Send for review'}
         </Button>
       </div>
     </form>

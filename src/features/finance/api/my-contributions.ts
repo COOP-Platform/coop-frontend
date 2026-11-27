@@ -8,6 +8,8 @@ import type { ContributionStatus, ContributionType, MemberRef, PaymentMethod } f
 /** One contribution, as `GET /communities/{id}/contributions/...` returns it. */
 export interface Contribution {
   id: string;
+  /** The same for every row one payment was split into (one month each). */
+  payment_group: string;
   member: MemberRef;
   member_category: { id: string; name: string };
   amount_minor: number;

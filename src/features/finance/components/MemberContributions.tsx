@@ -35,6 +35,8 @@ import { usePendingForMe, useReviewRights } from '../review-rights';
 import { ContributionDrawerContent } from './ContributionDrawer';
 import { Money } from './Money';
 import { MonthPicker } from './MonthPicker';
+import { coversLabel } from '../payment-groups';
+import { PaymentGroupActions } from './PaymentGroupActions';
 import { RemindersDialog, ReviewActions } from './ReviewActions';
 import { SuccessNotice } from './SuccessNotice';
 
@@ -164,7 +166,9 @@ export function ReviewQueue() {
   const pending = usePendingForMe();
   const [selected, setSelected] = useState<Contribution | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const paged = usePaged(pending.rows);
+  // One row per payment: the months one payment was split into go together.
+  const payments = groupByPayment(pending.rows);
+  const paged = usePaged(payments);
 
   function done(message: string) {
     setNotice(message);
@@ -186,11 +190,9 @@ export function ReviewQueue() {
       <SectionCard
         title="To review"
         flush
-        footer={
-          pending.rows.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined
-        }
+        footer={payments.length > 0 ? <TableFooter {...paged} onPage={paged.setPage} /> : undefined}
       >
-        {pending.rows.length === 0 ? (
+        {payments.length === 0 ? (
           <EmptyState icon={<IconCheckCircle width={28} height={28} />} title="Nothing to review" />
         ) : (
           <div className="table-scroll">
@@ -206,34 +208,53 @@ export function ReviewQueue() {
                 </tr>
               </thead>
               <tbody>
-                {paged.rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="table__row--clickable"
-                    onClick={(event) => {
-                      if (!(event.target as HTMLElement).closest('button')) setSelected(row);
-                    }}
-                  >
-                    <td>
-                      <MemberCell row={row} />
-                    </td>
-                    <td>
-                      <PurposeCell row={row} />
-                    </td>
-                    <td>
-                      <span className="table__stack">
-                        <span className="table__amount">
-                          <Money minor={row.amount_minor} currency={row.currency} />
+                {paged.rows.map((rows) => {
+                  const row = rows[0];
+                  if (!row) return null;
+                  const total = rows.reduce((sum, r) => sum + r.amount_minor, 0);
+                  return (
+                    <tr
+                      key={row.payment_group}
+                      className="table__row--clickable"
+                      onClick={(event) => {
+                        if (!(event.target as HTMLElement).closest('button')) setSelected(row);
+                      }}
+                    >
+                      <td>
+                        <MemberCell row={row} />
+                      </td>
+                      <td>
+                        {rows.length === 1 ? (
+                          <PurposeCell row={row} />
+                        ) : (
+                          <span className="table__stack">
+                            <span>{TYPE_LABEL.monthly}</span>
+                            <span className="table__muted">{coversLabel(rows)}</span>
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <span className="table__stack">
+                          <span className="table__amount">
+                            <Money minor={total} currency={row.currency} />
+                          </span>
+                          <MethodCell row={row} />
+                          <span className="table__muted">
+                            {formatDate(row.paid_at)}
+                            {row.proof_count > 0 && ' · proof attached'}
+                          </span>
                         </span>
-                        <MethodCell row={row} />
-                        <span className="table__muted">{formatDate(row.paid_at)}</span>
-                      </span>
-                    </td>
-                    <td className="table__action-col">
-                      <ReviewActions row={row} compact onDone={done} />
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="table__action-col">
+                        {rows.length === 1 ? (
+                          <ReviewActions row={row} compact onDone={done} />
+                        ) : (
+                          <PaymentGroupActions rows={rows} onDone={done} />
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -472,6 +493,21 @@ function PaymentDrawer({
         />
       )}
     </Drawer>
+  );
+}
+
+/** Rows of the same payment together, oldest month first; payments in list order. */
+function groupByPayment(rows: readonly Contribution[]): Contribution[][] {
+  const groups = new Map<string, Contribution[]>();
+  for (const row of rows) {
+    const list = groups.get(row.payment_group) ?? [];
+    list.push(row);
+    groups.set(row.payment_group, list);
+  }
+  return [...groups.values()].map((list) =>
+    [...list].sort(
+      (a, b) => a.period_year - b.period_year || (a.period_month ?? 0) - (b.period_month ?? 0),
+    ),
   );
 }
 

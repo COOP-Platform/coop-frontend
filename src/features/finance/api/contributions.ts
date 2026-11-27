@@ -75,7 +75,7 @@ interface DecisionInput {
 }
 
 /** Any money decision changes every finance figure: refresh them all. */
-function useFinanceMutation<TInput extends DecisionInput, TResult>(
+function useFinanceMutation<TInput extends { communityId: string }, TResult>(
   request: (input: TInput) => Promise<TResult>,
 ) {
   const queryClient = useQueryClient();
@@ -108,6 +108,26 @@ export function useRejectContribution() {
       method: 'POST',
       body: { reason: input.reason },
     }),
+  );
+}
+
+/** Every pending month of one payment -> confirmed, together. The member is told once. */
+export function useConfirmPayment() {
+  return useFinanceMutation((input: { communityId: string; group: string; accountId?: string }) =>
+    apiFetch<unknown>(
+      `/communities/${input.communityId}/contributions/groups/${input.group}/confirm/`,
+      { method: 'POST', ...(input.accountId ? { body: { account_id: input.accountId } } : {}) },
+    ),
+  );
+}
+
+/** Every pending month of one payment -> rejected, with one reason. */
+export function useRejectPayment() {
+  return useFinanceMutation((input: { communityId: string; group: string; reason: string }) =>
+    apiFetch<unknown>(
+      `/communities/${input.communityId}/contributions/groups/${input.group}/reject/`,
+      { method: 'POST', body: { reason: input.reason } },
+    ),
   );
 }
 

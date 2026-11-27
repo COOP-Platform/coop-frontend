@@ -210,10 +210,15 @@ export function MyContributions({
         <div className="notice notice--success" role="status">
           <IconCheckCircle width={20} height={20} aria-hidden="true" />
           <div>
-            <p className="notice__title">Sent for review</p>
+            <p className="notice__title">
+              {justRecorded.status === 'confirmed' ? 'Recorded' : 'Sent for review'}
+            </p>
             <p className="notice__text">
               {currency} {formatAmount(recordedTotal(justRecorded))} paid on{' '}
-              {formatDate(justRecorded.paid_at)} is pending until the Treasurer confirms it.
+              {formatDate(justRecorded.paid_at)}{' '}
+              {justRecorded.status === 'confirmed'
+                ? 'counts now: you confirm payments, so it needs no review.'
+                : 'is pending until the Treasurer confirms it.'}
             </p>
             {(justRecorded.split?.length ?? 0) > 1 && (
               <p className="notice__text">

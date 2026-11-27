@@ -36,7 +36,8 @@ export function CommunityMoney({
   const { can } = useWorkspace();
   const pending = usePendingForMe();
   const reviews = pending.isReviewer;
-  const toReview = pending.rows.length;
+  // One per payment: the months one payment was split into count once.
+  const toReview = new Set(pending.rows.map((row) => row.payment_group)).size;
   // Who is behind is the Treasurer's to see, like reminders.
   const canSeeArrears = can('finance.contribution.confirm');
   const canSeeFines = FINES_ENABLED && (can('finance.fine.issue') || can('finance.fine.manage'));
@@ -103,7 +104,14 @@ export function CommunityMoney({
           onRecorded={(contribution) => {
             setRecordingForMember(false);
             setNotice(
-              `${contribution.currency} ${formatAmount(contribution.amount_minor)} recorded for ${contribution.member.full_name}. Pending until someone else confirms it.`,
+              `${contribution.currency} ${formatAmount(
+                contribution.split?.reduce((sum, r) => sum + r.amount_minor, 0) ??
+                  contribution.amount_minor,
+              )} recorded for ${contribution.member.full_name}. ${
+                contribution.status === 'confirmed'
+                  ? 'It counts now: you confirm payments.'
+                  : 'Pending until someone else confirms it.'
+              }`,
             );
           }}
         />

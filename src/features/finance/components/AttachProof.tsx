@@ -24,7 +24,8 @@ export function AttachProof({ row }: { row: Contribution }) {
   const mine =
     membership !== undefined &&
     (row.member.membership_id === membership.id || row.recorded_by.membership_id === membership.id);
-  if (row.status !== 'pending' || !mine) return null;
+  // Only for a payment sent without proof; once one is attached, that is enough.
+  if (row.status !== 'pending' || !mine || row.proof_count > 0) return null;
 
   if (done) {
     return <p className="details__note">Proof attached.</p>;

@@ -13,13 +13,24 @@ interface DialogProps {
   children: ReactNode;
   /** Buttons row at the bottom. */
   footer?: ReactNode;
+  /** lg for long forms (fields side by side); md by default. */
+  size?: 'md' | 'lg';
 }
 
 /**
  * Modal built on the native `<dialog>`: the browser handles focus trapping,
  * Escape and the inert background, so none of that is reimplemented here.
  */
-export function Dialog({ open, onClose, title, subtitle, icon, children, footer }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  subtitle,
+  icon,
+  children,
+  footer,
+  size = 'md',
+}: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -33,7 +44,7 @@ export function Dialog({ open, onClose, title, subtitle, icon, children, footer 
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={size === 'lg' ? 'dialog dialog--lg' : 'dialog'}
       aria-labelledby={titleId}
       onClose={onClose}
       // A click on the backdrop lands on the <dialog> element itself.

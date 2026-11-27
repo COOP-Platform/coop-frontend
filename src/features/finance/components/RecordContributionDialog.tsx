@@ -237,6 +237,7 @@ export function RecordContributionDialog({
     <Dialog
       open={open}
       onClose={onClose}
+      size="lg"
       title={forMember ? 'Record a payment for a member' : 'Record Contribution'}
       subtitle={
         forMember
@@ -629,49 +630,53 @@ function RecordContributionForm({
         </div>
       )}
 
-      <Input
-        label="Date paid"
-        type="date"
-        value={paidAt}
-        max={toIsoDate(today)}
-        onChange={(event) => setPaidAt(event.target.value)}
-        error={errors.paid_at}
-        required
-      />
-
-      <Select
-        label="Payment method"
-        value={method}
-        onChange={(event) => setMethod(event.target.value as PaymentMethod)}
-        options={METHOD_ORDER.map((m) => ({ value: m, label: METHOD_LABEL[m].label }))}
-        error={errors.payment_method}
-      />
-
-      {channels.length > 0 && (
-        <Select
-          label="Paid into"
-          hint="The account the money went into."
-          placeholder="Choose the account"
-          value={channel}
-          onChange={(event) => setPickedChannel(event.target.value)}
-          options={channels.map((c) => ({
-            value: c.id,
-            label: c.number ? `${c.name} · ${c.number}` : c.name,
-          }))}
-          error={errors.account_id}
+      <div className="form-row">
+        <Input
+          label="Date paid"
+          type="date"
+          value={paidAt}
+          max={toIsoDate(today)}
+          onChange={(event) => setPaidAt(event.target.value)}
+          error={errors.paid_at}
           required
         />
-      )}
 
-      <Input
-        label="Transaction reference"
-        optional
-        placeholder={method === 'bank_transfer' ? 'Bank reference' : 'e.g. MoMo transaction ID'}
-        maxLength={120}
-        value={reference}
-        onChange={(event) => setReference(event.target.value)}
-        error={errors.payment_reference}
-      />
+        <Select
+          label="Payment method"
+          value={method}
+          onChange={(event) => setMethod(event.target.value as PaymentMethod)}
+          options={METHOD_ORDER.map((m) => ({ value: m, label: METHOD_LABEL[m].label }))}
+          error={errors.payment_method}
+        />
+      </div>
+
+      <div className="form-row">
+        {channels.length > 0 && (
+          <Select
+            label="Paid into"
+            hint="The account the money went into."
+            placeholder="Choose the account"
+            value={channel}
+            onChange={(event) => setPickedChannel(event.target.value)}
+            options={channels.map((c) => ({
+              value: c.id,
+              label: c.number ? `${c.name} · ${c.number}` : c.name,
+            }))}
+            error={errors.account_id}
+            required
+          />
+        )}
+
+        <Input
+          label="Transaction reference"
+          optional
+          placeholder={method === 'bank_transfer' ? 'Bank reference' : 'e.g. MoMo transaction ID'}
+          maxLength={120}
+          value={reference}
+          onChange={(event) => setReference(event.target.value)}
+          error={errors.payment_reference}
+        />
+      </div>
 
       <FilePicker
         label="Proof of payment"

@@ -53,6 +53,8 @@ export interface ExpenseFilters {
   month?: string;
   status?: ExpenseStatus;
   category?: string;
+  /** Only what was spent from this budget. */
+  budget_id?: string;
   search?: string;
   page?: number;
   page_size?: number;

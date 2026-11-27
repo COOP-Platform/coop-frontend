@@ -116,13 +116,16 @@ export function EventRsvp({
  * is hidden from are never listed (the API leaves them out).
  */
 export function EventResponses({ event }: { event: CommunityEventDetail }) {
-  const coming = event.responses.filter((r) => r.response === 'confirmed');
-  const apologies = event.responses.filter((r) => r.response === 'apology');
+  // Null for members who do not organise events: nothing to list.
+  if (event.responses === null) return null;
+  const responses = event.responses;
+  const coming = responses.filter((r) => r.response === 'confirmed');
+  const apologies = responses.filter((r) => r.response === 'apology');
   const showApologies = event.responses_include_apologies;
 
   return (
     <SectionCard title="Who answered" className="event-detail__wide">
-      {event.responses.length === 0 ? (
+      {responses.length === 0 ? (
         <p className="table__muted">No answers yet.</p>
       ) : (
         <div className="event-answers">

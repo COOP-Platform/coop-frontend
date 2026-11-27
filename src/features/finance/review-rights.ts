@@ -1,4 +1,4 @@
-import { useWorkspace } from '@/features/auth';
+import { reviewsContributions, useWorkspace } from '@/features/auth';
 
 import { useCommunityContributions } from './api/contributions';
 import type { Contribution } from './api/my-contributions';
@@ -7,6 +7,8 @@ import type { Contribution } from './api/my-contributions';
 export function useReviewRights() {
   const { can, membership } = useWorkspace();
   return {
+    /** Sees pending, rejected and reversed payments (reviewers and the Auditor). */
+    oversees: reviewsContributions(can),
     canConfirm: can('finance.contribution.confirm'),
     canReject: can('finance.contribution.reject'),
     canReverse: can('finance.contribution.reverse'),

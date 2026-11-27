@@ -16,10 +16,10 @@ import {
   TableFooter,
   usePaged,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { organisesEvents, useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 
-import { eventTypeLabel, useEvents } from '../api/events';
+import { NO_COUNTS, eventTypeLabel, useEvents } from '../api/events';
 import type { CommunityEvent, EventListFilter } from '../api/events';
 import { formatMeetingDay, formatMeetingTime } from '../api/meetings';
 import { EventFormDialog } from './EventFormDialog';
@@ -76,7 +76,7 @@ export function EventsPage({
 }) {
   const { communityId, can } = useWorkspace();
   // Members see each event and its report; who is coming is for organisers.
-  const organises = can('event.create') || can('event.update');
+  const organises = organisesEvents(can);
   const navigate = useNavigate();
   const events = useEvents(communityId, FILTER[tab]);
   const [creating, setCreating] = useState(false);
@@ -167,7 +167,7 @@ export function EventsPage({
 }
 
 function EventRow({ event, organises }: { event: CommunityEvent; organises: boolean }) {
-  const { confirmed, apologies, guests } = event.rsvp;
+  const { confirmed, apologies, guests } = event.rsvp ?? NO_COUNTS;
   const cancelled = event.status === 'cancelled';
   return (
     <tr>

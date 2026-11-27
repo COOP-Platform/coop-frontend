@@ -19,7 +19,7 @@ import {
   Select,
   StatCard,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { seesAccountBalances, useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
@@ -73,7 +73,7 @@ export function AccountsPage({ embedded = false }: { embedded?: boolean }) {
   const canManage = can('finance.account.manage');
   // Balances, the reconciliation and history are for the Treasurer; members
   // see which accounts to pay into.
-  const seesDetails = canManage || can('finance.contribution.confirm');
+  const seesDetails = seesAccountBalances(can);
   const accounts = useAccounts(communityId);
   const wallet = useCashFlow(communityId, THIS_MONTH, THIS_MONTH);
   const [notice, setNotice] = useState<string | null>(null);
@@ -418,12 +418,12 @@ function BalanceBreakdown({ account }: { account: Account }) {
       `Opening ${formatAmount(account.latest_balance.balance_minor)} · ${formatDate(account.latest_balance.as_of)}`,
     );
   }
-  if (account.contributions_since_minor !== 0)
-    lines.push(`+ ${formatAmount(account.contributions_since_minor)} payments`);
-  if (account.movements_since_minor > 0)
-    lines.push(`+ ${formatAmount(account.movements_since_minor)} by hand`);
-  if (account.movements_since_minor < 0)
-    lines.push(`− ${formatAmount(-account.movements_since_minor)} by hand`);
+  // Null for members who may not see balances (they never get here anyway).
+  const payments = account.contributions_since_minor ?? 0;
+  const byHand = account.movements_since_minor ?? 0;
+  if (payments !== 0) lines.push(`+ ${formatAmount(payments)} payments`);
+  if (byHand > 0) lines.push(`+ ${formatAmount(byHand)} by hand`);
+  if (byHand < 0) lines.push(`− ${formatAmount(-byHand)} by hand`);
   if (lines.length === 0) return null;
   return (
     <ul

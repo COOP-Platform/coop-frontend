@@ -201,7 +201,7 @@ export function CommunityDashboard() {
         />
 
         {/* Recent activity is for whoever manages members, not every member. */}
-        {(canInvite || can('member.update')) && (
+        {(canInvite || can('member.update') || can('audit.view')) && (
           <RecentActivity
             entries={buildActivity(members, invitations.data ?? [], canInvite).slice(0, 5)}
           />

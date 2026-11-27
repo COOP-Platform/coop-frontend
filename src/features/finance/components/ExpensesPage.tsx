@@ -23,7 +23,7 @@ import {
   StatCard,
   TableFooter,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { reviewsExpenses, useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate, formatLongDate } from '@/lib/format/date';
 
@@ -78,7 +78,7 @@ export function ExpensesPage({
 
   const [month, setMonth] = useState(THIS_MONTH);
   // Only approvers see pending, rejected and reversed expenses.
-  const reviews = can('finance.expense.approve');
+  const reviews = reviewsExpenses(can);
   const [chosenStatus, setStatus] = useState<StatusFilter>('all');
   const status: StatusFilter = reviews ? chosenStatus : 'approved';
   const [search, setSearch] = useState('');

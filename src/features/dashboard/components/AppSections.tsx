@@ -14,7 +14,13 @@ import type { AppDefinition } from '@/config/apps';
 
 /** The permission codes an app's own sidebar is gated on. */
 function appPermissions(app: AppDefinition): string[] {
-  return app.nav.flatMap((item) => (item.permission ? [item.permission] : []));
+  return app.nav.flatMap((item) =>
+    item.permission === undefined
+      ? []
+      : typeof item.permission === 'string'
+        ? [item.permission]
+        : [...item.permission],
+  );
 }
 
 /** Rights that make someone a manager of members or positions. */

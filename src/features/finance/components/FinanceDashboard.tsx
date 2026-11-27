@@ -14,7 +14,7 @@ import {
   SectionCard,
   StatCard,
 } from '@/components/ui';
-import { useWorkspace } from '@/features/auth';
+import { reviewsContributions, reviewsExpenses, useWorkspace } from '@/features/auth';
 import { errorMessage } from '@/lib/api/errors';
 
 import { useCashFlow } from '../api/cashflow';
@@ -216,13 +216,12 @@ export function FinanceDashboard() {
       </div>
 
       {/* Recent activity is for whoever reviews money, not every member. */}
-      {summary.recent_activity !== null &&
-        (can('finance.contribution.confirm') || can('finance.expense.approve')) && (
-          <RecentFinancialActivity
-            entries={summary.recent_activity}
-            showAllLink={canViewContributions}
-          />
-        )}
+      {summary.recent_activity !== null && (reviewsContributions(can) || reviewsExpenses(can)) && (
+        <RecentFinancialActivity
+          entries={summary.recent_activity}
+          showAllLink={canViewContributions}
+        />
+      )}
     </div>
   );
 }

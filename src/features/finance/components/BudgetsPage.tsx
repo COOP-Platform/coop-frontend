@@ -21,6 +21,7 @@ import {
   IconTrash,
   Input,
   LoadingState,
+  SegmentedControl,
   Select,
   Textarea,
 } from '@/components/ui';
@@ -59,15 +60,38 @@ const toRwf = (minor: number) => String(minor / MINOR_PER_MAJOR);
  * them; the Treasurer and committee (finance.budget.manage /
  * finance.campaign.manage) change them.
  */
+type Period = 'open' | 'past';
+
+const PERIODS: { value: Period; label: string }[] = [
+  { value: 'open', label: 'Open' },
+  { value: 'past', label: 'Past' },
+];
+
 export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
   const [notice, setNotice] = useState<string | null>(null);
+  // Open: what is running now. Past: closed budgets and contributions, kept as a record.
+  const [period, setPeriod] = useState<Period>('open');
   return (
     <div className="page">
       {/* Inside Budgets & Shares the tab already names the section: no heading. */}
       {!embedded && <SectionHeader title="Budgets" />}
+      <SegmentedControl
+        label="Budgets"
+        options={PERIODS}
+        value={period}
+        onChange={(value) => {
+          setNotice(null);
+          setPeriod(value);
+        }}
+      />
       {notice && <SuccessNotice text={notice} />}
-      <BudgetsSection onDone={setNotice} />
-      <CampaignsSection onDone={setNotice} standalone title="Other collections" />
+      <BudgetsSection onDone={setNotice} period={period} />
+      <CampaignsSection
+        onDone={setNotice}
+        standalone
+        status={period === 'open' ? 'open' : 'closed'}
+        title="Other contributions"
+      />
     </div>
   );
 }
@@ -127,7 +151,7 @@ export function Meter({
 
 type BudgetFilter = 'active' | 'closed';
 
-function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
+function BudgetsSection({ onDone, period }: { onDone: (message: string) => void; period: Period }) {
   const { communityId, can } = useWorkspace();
   const canManage = can('finance.budget.manage');
   // Links from an event's page: open its budget, or plan one for it.
@@ -137,13 +161,17 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
     planTitle?: string;
   };
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<BudgetFilter>('active');
+  const filter: BudgetFilter = period === 'open' ? 'active' : 'closed';
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(search.budget ?? null);
   const [planEvent, setPlanEvent] = useState<{ id: string; title: string } | null>(
     search.plan && canManage ? { id: search.plan, title: search.planTitle ?? 'Event' } : null,
   );
   const budgets = useBudgets(communityId, filter);
+  // Which budgets are asking members for money right now.
+  const openCollections = useCampaigns(communityId, 'open');
+  const askingFor = (budgetId: string) =>
+    openCollections.data?.items.find((c) => c.budget?.id === budgetId) ?? null;
 
   /** Forget the event link once used, so a refresh does not reopen it. */
   function clearLink() {
@@ -163,19 +191,9 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
   return (
     <div className="money-section">
       <div className="section-bar">
-        <h2 className="section-title">Budgets</h2>
+        <h2 className="section-title">{period === 'open' ? 'Budgets' : 'Past budgets'}</h2>
         <div className="section-bar__actions">
-          <Select
-            label="Status"
-            labelHidden
-            options={[
-              { value: 'active', label: 'Open' },
-              { value: 'closed', label: 'Closed' },
-            ]}
-            value={filter}
-            onChange={(event) => setFilter(event.target.value as BudgetFilter)}
-          />
-          {canManage && (
+          {canManage && period === 'open' && (
             <Button inline icon={<IconPlus />} onClick={() => setCreating(true)}>
               New budget
             </Button>
@@ -193,14 +211,18 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
         <section className="card">
           <EmptyState
             icon={<IconFlag />}
-            title={filter === 'active' ? 'No open budgets' : 'No closed budgets'}
+            title={filter === 'active' ? 'No open budgets' : 'No past budgets yet'}
           />
         </section>
       ) : (
         <ul className="budget-cards" role="list">
           {budgets.data.items.map((budget) => (
             <li key={budget.id}>
-              <BudgetCard budget={budget} onOpen={() => setOpenId(budget.id)} />
+              <BudgetCard
+                budget={budget}
+                asking={askingFor(budget.id)}
+                onOpen={() => setOpenId(budget.id)}
+              />
             </li>
           ))}
         </ul>
@@ -246,7 +268,16 @@ function BudgetsSection({ onDone }: { onDone: (message: string) => void }) {
   );
 }
 
-function BudgetCard({ budget, onOpen }: { budget: Budget; onOpen: () => void }) {
+function BudgetCard({
+  budget,
+  asking,
+  onOpen,
+}: {
+  budget: Budget;
+  /** The budget's open collection, when members are asked to contribute. */
+  asking: Campaign | null;
+  onOpen: () => void;
+}) {
   const { can } = useWorkspace();
   return (
     <button type="button" className="card budget-card" onClick={onOpen}>
@@ -287,6 +318,12 @@ function BudgetCard({ budget, onOpen }: { budget: Budget; onOpen: () => void }) 
         {budget.from_wallet_minor > 0 &&
           ` · ${formatAmount(budget.from_wallet_minor)} taken from the cash box`}
       </p>
+      {asking && budget.status === 'active' && (
+        <p className="budget-card__asking">
+          <IconHandHeart width={16} height={16} aria-hidden="true" />
+          Open for contributions · {chargeText(asking.charge, asking.amount_minor, asking.currency)}
+        </p>
+      )}
     </button>
   );
 }
@@ -392,9 +429,12 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
         </table>
       </div>
 
-      {b.status === 'active' && (
-        <CampaignsSection onDone={onDone} budgetId={b.id} title="Contribute" />
-      )}
+      <CampaignsSection
+        onDone={onDone}
+        budgetId={b.id}
+        status={b.status === 'active' ? 'open' : 'closed'}
+        title="Contributions"
+      />
 
       {b.close_note && (
         <p className="details__note">
@@ -726,9 +766,12 @@ function CampaignsSection({
   onDone,
   budgetId,
   standalone = false,
+  status,
   title = 'Dedicated contributions',
 }: {
   onDone: (message: string) => void;
+  /** Open ones, or closed ones kept as a record. */
+  status: CampaignFilter;
   /** Inside a budget's panel: that budget's open collections only. */
   budgetId?: string;
   /** On the page: only the collections not tied to a budget. */
@@ -737,8 +780,7 @@ function CampaignsSection({
 }) {
   const { communityId, can } = useWorkspace();
   const canManage = can('finance.campaign.manage');
-  const [chosenFilter, setFilter] = useState<CampaignFilter>('open');
-  const filter: CampaignFilter = budgetId ? 'open' : chosenFilter;
+  const filter = status;
   const [contributingTo, setContributingTo] = useState<Campaign | null>(null);
   const [editing, setEditing] = useState<Campaign | 'new' | null>(null);
   const [closingId, setClosingId] = useState<Campaign | null>(null);
@@ -750,18 +792,8 @@ function CampaignsSection({
     <div className="money-section">
       <div className="section-bar">
         <h2 className="section-title">{title}</h2>
-        {!budgetId && (
+        {!budgetId && filter === 'open' && (
           <div className="section-bar__actions">
-            <Select
-              label="Status"
-              labelHidden
-              options={[
-                { value: 'open', label: 'Open' },
-                { value: 'closed', label: 'Closed' },
-              ]}
-              value={filter}
-              onChange={(event) => setFilter(event.target.value as CampaignFilter)}
-            />
             {canManage && (
               <Button inline icon={<IconPlus />} onClick={() => setEditing('new')}>
                 New collection
@@ -780,29 +812,40 @@ function CampaignsSection({
       ) : shownCampaigns(campaigns.data.items, budgetId, standalone).length === 0 ? (
         budgetId ? (
           <p className="table__muted">
-            No collection for this budget yet.
-            {can('finance.campaign.manage') && ' Use "Ask members" to start one.'}
+            {filter === 'open'
+              ? `Members are not asked to contribute to this budget yet.${
+                  can('finance.campaign.manage') ? ' Use "Ask members" to start.' : ''
+                }`
+              : 'Members were not asked to contribute to this budget.'}
           </p>
         ) : (
           <section className="card">
             <EmptyState
               icon={<IconHandHeart />}
               size="sm"
-              title={filter === 'open' ? 'No open collections' : 'No closed collections'}
+              title={
+                filter === 'open' ? 'No other open contributions' : 'No other past contributions'
+              }
             />
           </section>
         )
       ) : (
         <ul className="budget-cards" role="list">
           {shownCampaigns(campaigns.data.items, budgetId, standalone).map((c) => (
-            <li key={c.id} className="card budget-card budget-card--static">
-              <div className="budget-card__head">
-                <h3 className="budget-card__title">{c.title}</h3>
-                <Badge tone={c.status === 'open' ? 'success' : 'neutral'}>
-                  {c.status === 'open' ? 'Open' : 'Closed'}
-                </Badge>
-              </div>
+            <li
+              key={c.id}
+              className={budgetId ? 'budget-contribute' : 'card budget-card budget-card--static'}
+            >
+              {!budgetId && (
+                <div className="budget-card__head">
+                  <h3 className="budget-card__title">{c.title}</h3>
+                  <Badge tone={c.status === 'open' ? 'success' : 'neutral'}>
+                    {c.status === 'open' ? 'Open' : 'Closed'}
+                  </Badge>
+                </div>
+              )}
               <p className="table__muted">
+                {budgetId && (filter === 'open' ? 'Members are asked: ' : 'Members were asked: ')}
                 {chargeText(c.charge, c.amount_minor, c.currency)} ·{' '}
                 {c.required ? 'Required' : 'Voluntary'}
                 {c.due_date && ` · due ${formatDate(c.due_date)}`}
@@ -848,7 +891,7 @@ function CampaignsSection({
                   icon={<IconFile />}
                   onClick={() => setPaymentsOf(c)}
                 >
-                  Payments
+                  {budgetId ? 'Who paid' : 'Payments'}
                 </Button>
                 {c.status === 'open' &&
                   can('finance.contribution.record') &&
@@ -866,10 +909,10 @@ function CampaignsSection({
                       icon={<IconPencil />}
                       onClick={() => setEditing(c)}
                     >
-                      Edit
+                      {budgetId ? 'Edit request' : 'Edit'}
                     </Button>
                     <Button variant="secondary" size="sm" inline onClick={() => setClosingId(c)}>
-                      Close
+                      {budgetId ? 'Stop collecting' : 'Close'}
                     </Button>
                   </>
                 )}

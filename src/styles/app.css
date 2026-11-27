@@ -3719,6 +3719,28 @@ button.position-card__main:focus-visible {
   background-color: var(--color-accent-deep);
 }
 
+/* A budget's card says when members can contribute to it. */
+.budget-card__asking {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-brand-text);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+/* Inside a budget, its contribution reads as part of the budget. */
+.budget-contribute {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.budget-contribute + .budget-contribute {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
 .campaign-mine {
   width: 100%;
   border-radius: var(--radius-md);
@@ -3838,4 +3860,9 @@ button.position-card__main:focus-visible {
   justify-content: space-between;
   gap: var(--space-4);
   font-variant-numeric: tabular-nums;
+}
+
+/* Budget lines: an amount never breaks across two lines. */
+.budget-lines .statement-table__num {
+  white-space: nowrap;
 }

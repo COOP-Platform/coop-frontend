@@ -65,6 +65,12 @@ interface Piece {
   ahead: boolean;
 }
 
+/** "2026-03" -> [2026, 3]. */
+const periodParts = (period: string): [number, number] => {
+  const [y = 0, m = 0] = period.split('-').map(Number);
+  return [y, m];
+};
+
 const nextMonth = (y: number, m: number): [number, number] => (m === 12 ? [y + 1, 1] : [y, m + 1]);
 const before = (a: [number, number], b: [number, number]) =>
   a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]);
@@ -298,9 +304,13 @@ function RecordContributionForm({
   const [type, setType] = useState<ContributionType>(startType(initial?.type));
   const [campaignId, setCampaignId] = useState(initial?.campaignId ?? '');
   const [fineId, setFineId] = useState(initial?.fineId ?? '');
-  const [period, setPeriod] = useState(initial?.period ?? toIsoMonth(today));
   const [amount, setAmount] = useState(toInput(initial?.amountMinor ?? monthly));
   const [paidAt, setPaidAt] = useState(toIsoDate(today));
+  // The month is not asked any more: the server takes the month of the date
+  // paid and settles the oldest unpaid months first. Only a "Pay" from the
+  // Ibirarane list names one month on purpose.
+  const [chosenPeriod, setPeriod] = useState<string | null>(initial?.period ?? null);
+  const period = chosenPeriod ?? (paidAt === '' ? toIsoMonth(today) : paidAt.slice(0, 7));
   const [method, setMethod] = useState<PaymentMethod>('mobile_money');
   const channels = useChannels(communityId);
   // Suggested from the payment method until the payer picks one themselves.
@@ -358,12 +368,8 @@ function RecordContributionForm({
   function changeType(next: ContributionType) {
     setType(next);
     setErrors({});
-    if (next === 'monthly') {
-      setPeriod(toIsoMonth(today));
-      setAmount(toInput(monthly));
-    } else if (next === 'arrears') {
-      const last = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      setPeriod(toIsoMonth(last));
+    if (next === 'monthly' || next === 'arrears') {
+      setPeriod(null);
       setAmount(toInput(monthly));
     } else if (next === 'dedicated') {
       const first = openCampaigns[0];
@@ -400,7 +406,7 @@ function RecordContributionForm({
     setWho(next);
     setErrors({});
     setType('monthly');
-    setPeriod(toIsoMonth(today));
+    setPeriod(null);
     setCampaignId('');
     setFineId('');
     setAmount(
@@ -421,9 +427,6 @@ function RecordContributionForm({
     if (paidAt === '') problems.paid_at = 'Enter the day you paid.';
     else if (paidAt > toIsoDate(today))
       problems.paid_at = 'The payment date cannot be in the future.';
-    if (hasPeriod && period === '') problems.period = 'Choose the month this payment is for.';
-    if (type === 'arrears' && period >= toIsoMonth(today))
-      problems.period = 'Arrears pay for a past month. Choose an earlier month.';
     if (type === 'dedicated' && campaignId === '')
       problems.campaign_id = 'Choose the dedicated contribution you paid into.';
     if (type === 'fine' && openFines.length > 0 && fineId === '')
@@ -442,8 +445,10 @@ function RecordContributionForm({
         campaign_id: type === 'dedicated' ? campaignId : undefined,
         ...(type === 'fine' && openFines.some((f) => f.id === fineId) ? { fine_id: fineId } : {}),
         paid_at: paidAt,
-        period_year: hasPeriod ? year : undefined,
-        period_month: hasPeriod ? month : undefined,
+        // Sent only when a month was named (a "Pay" from Ibirarane); otherwise
+        // the server uses the month of the date paid.
+        period_year: hasPeriod && chosenPeriod !== null ? year : undefined,
+        period_month: hasPeriod && chosenPeriod !== null ? month : undefined,
         settle_arrears: settles ? true : undefined,
         payment_method: method,
         payment_reference: reference.trim() || undefined,
@@ -558,16 +563,8 @@ function RecordContributionForm({
         />
       )}
 
-      {hasPeriod && (
-        <Input
-          label="Month paid for"
-          type="month"
-          value={period}
-          max={toIsoMonth(today)}
-          onChange={(event) => setPeriod(event.target.value)}
-          error={errors.period}
-          required
-        />
+      {hasPeriod && chosenPeriod !== null && (
+        <p className="table__muted">Paying for {periodLabel(...periodParts(chosenPeriod))}.</p>
       )}
 
       <Input

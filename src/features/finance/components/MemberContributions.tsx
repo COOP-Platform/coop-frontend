@@ -92,7 +92,7 @@ export function MonthOverview({ month, onMonthChange }: MonthProps) {
           <ErrorState message={errorMessage(summaryQuery.error)} />
         )
       ) : (
-        <MonthCards summary={summaryQuery.data.summary} showPending={rights.oversees} />
+        <MonthCards summary={summaryQuery.data.summary} showPending />
       )}
 
       <RemindersDialog
@@ -259,16 +259,21 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: 'reversed', label: 'Reversed' },
 ];
 
+/** Members (not reviewers) see paid payments and those still in review. */
+const MEMBER_STATUS_OPTIONS = STATUS_OPTIONS.filter((o) =>
+  ['all', 'pending', 'confirmed'].includes(o.value),
+);
+
 /** Every payment members recorded for the month: search, filter, open. */
 export function AllPayments({ month, onMonthChange }: MonthProps) {
   const searchId = useId();
   const { communityId } = useWorkspace();
   const rights = useReviewRights();
-  // Only those who review payments see pending, rejected and reversed ones;
-  // everyone else sees who paid.
+  // Reviewers see every status; members see paid payments and those in review.
   const reviews = rights.oversees;
   const [chosenStatus, setStatus] = useState<StatusFilter>('all');
-  const status: StatusFilter = reviews ? chosenStatus : 'confirmed';
+  // Members pick among All / Pending / Paid; reviewers among every status.
+  const status: StatusFilter = chosenStatus;
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Contribution | null>(null);
@@ -297,7 +302,7 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
       {notice && <SuccessNotice text={notice} />}
 
       <SectionCard
-        title={reviews ? `Payments · ${label}` : `Paid · ${label}`}
+        title={`Payments · ${label}`}
         flush
         actions={
           <>
@@ -320,18 +325,16 @@ export function AllPayments({ month, onMonthChange }: MonthProps) {
                 }}
               />
             </div>
-            {reviews && (
-              <Select
-                label="Status"
-                labelHidden
-                value={status}
-                onChange={(event) => {
-                  setStatus(event.target.value as StatusFilter);
-                  setPage(1);
-                }}
-                options={STATUS_OPTIONS}
-              />
-            )}
+            <Select
+              label="Status"
+              labelHidden
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as StatusFilter);
+                setPage(1);
+              }}
+              options={reviews ? STATUS_OPTIONS : MEMBER_STATUS_OPTIONS}
+            />
             <MonthPicker
               value={month}
               labelHidden

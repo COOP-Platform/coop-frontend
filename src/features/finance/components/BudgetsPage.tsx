@@ -25,7 +25,7 @@ import {
   Select,
   Textarea,
 } from '@/components/ui';
-import { reviewsContributions, reviewsExpenses, useWorkspace } from '@/features/auth';
+import { reviewsExpenses, useWorkspace } from '@/features/auth';
 import { ApiError } from '@/lib/api/client';
 import { errorMessage } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/date';
@@ -842,7 +842,6 @@ function CampaignsSection({ onDone }: { onDone: (message: string) => void }) {
               <p className="table__muted">
                 {c.paid_count} of {c.member_count} members have paid
                 {c.pending_minor > 0 &&
-                  reviewsContributions(can) &&
                   ` · ${formatAmount(c.pending_minor)} ${c.currency} awaiting review`}
               </p>
               <div className="campaign-mine">

@@ -17,7 +17,14 @@ import type { MemberRef } from './types';
  */
 
 /** per_share: amount x shares; fixed: the same per member; any: each member decides. */
-export type CampaignCharge = 'per_share' | 'fixed' | 'any';
+export type CampaignCharge = 'per_share' | 'fixed' | 'any' | 'per_category';
+
+/** per_category: what each member category pays (0 = not asked). */
+export interface CategoryAmount {
+  category_id: string;
+  name: string;
+  amount_minor: number;
+}
 
 export interface Budget {
   id: string;
@@ -142,8 +149,10 @@ export interface Campaign {
   title: string;
   budget: { id: string; title: string } | null;
   charge: CampaignCharge;
-  /** Per share when per_share, per member when fixed; null when any. */
+  /** Per share when per_share, per member when fixed; null when any or per_category. */
   amount_minor: number | null;
+  /** per_category only; empty otherwise. */
+  category_amounts: CategoryAmount[];
   currency: string;
   /** False: voluntary, nothing is owed. */
   required: boolean;
@@ -191,6 +200,8 @@ export interface CampaignInput {
   charge?: CampaignCharge;
   /** Left out for any amount. */
   amount_minor?: number | null;
+  /** per_category: what each member category pays. */
+  category_amounts?: { category_id: string; amount_minor: number }[];
   required?: boolean;
   due_date?: string | null;
   budget_id?: string | null;
@@ -211,12 +222,13 @@ export function useUpdateCampaign() {
       description,
       charge,
       amount_minor,
+      category_amounts,
       required,
       due_date,
     }: CampaignInput & { campaignId: string }) =>
       apiFetch<CampaignDetail>(`/communities/${communityId}/campaigns/${campaignId}/`, {
         method: 'PATCH',
-        body: { title, description, charge, amount_minor, required, due_date },
+        body: { title, description, charge, amount_minor, category_amounts, required, due_date },
       }),
   );
 }

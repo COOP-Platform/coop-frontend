@@ -3890,3 +3890,33 @@ button.position-card__main:focus-visible {
 .budget-contribute .campaign-mine {
   justify-self: start;
 }
+
+/* Budget form: one amount per member category. */
+.budget-ask__categories {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.budget-ask__category {
+  display: grid;
+  grid-template-columns: 1fr 12rem;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* A budget's page: what each member category pays. */
+.category-amounts {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+}
+
+.category-amounts li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}

@@ -98,7 +98,10 @@ export function MyContributions({
   const current: MyContributionsView = view === 'fines' && !hasFines ? 'payments' : view;
   const sections: { value: MyContributionsView; label: string }[] = [
     { value: 'payments', label: 'Payments' },
-    { value: 'arrears', label: monthsBehind > 0 ? `Ibirarane (${monthsBehind})` : 'Ibirarane' },
+    {
+      value: 'arrears',
+      label: monthsBehind > 0 ? `Unpaid months (${monthsBehind})` : 'Unpaid months',
+    },
     ...(hasFines
       ? [{ value: 'fines' as const, label: finesToPay > 0 ? `Fines (${finesToPay})` : 'Fines' }]
       : []),
@@ -258,7 +261,7 @@ export function MyContributions({
           tone="info"
         />
         <StatCard
-          label="Ibirarane paid"
+          label="Paid for past months"
           value={<Money minor={arrearsPaidMinor} currency={currency} />}
           caption={
             arrearsWaitingMinor > 0 ? (

@@ -24,7 +24,8 @@ import { THIS_MONTH } from '../month';
 import { addMonths } from '../period';
 import { Money } from './Money';
 import { RecentFinancialActivity } from './RecentFinancialActivity';
-import { CollectedBars } from './StatementCharts';
+import { formatAmount } from '../format';
+import { BalanceLine, CollectedBars } from './StatementCharts';
 import {
   ACTION_ICONS,
   AccountBalances,
@@ -46,6 +47,13 @@ export function FinanceDashboard() {
   // Every member reads the cash box (finance.cashflow.view); without it, no request.
   const canViewCashFlow = can('finance.cashflow.view');
   const cashFlow = useCashFlow(canViewCashFlow ? communityId : undefined, CHART_FROM, THIS_MONTH);
+  // How the community's money grew over the chart's six months.
+  const balances = cashFlow.data?.months ?? [];
+  const growth =
+    balances.length > 1
+      ? (balances[balances.length - 1]?.closing_balance_minor ?? 0) -
+        (balances[0]?.closing_balance_minor ?? 0)
+      : null;
   // Collected vs expected per month: what a savings group watches.
   const collected = useMonthSummaries(
     can('finance.contribution.view') ? communityId : undefined,
@@ -179,38 +187,74 @@ export function FinanceDashboard() {
       </div>
 
       <div className="statement-grid">
-        {can('finance.contribution.view') && (
-          <SectionCard
-            title="Contributions: collected vs expected"
-            actions={
-              <p className="chart-legend">
-                <span>
-                  <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> Collected
-                </span>
-                <span>
-                  <span className="legend-swatch legend-swatch--expected" aria-hidden="true" />{' '}
-                  Expected
-                </span>
-              </p>
-            }
-          >
-            {collected.every((q) => q.data) ? (
-              <CollectedBars
-                months={collected.map((q, i) => ({
-                  month: CHART_MONTHS[i] ?? '',
-                  expected_minor: q.data?.summary.expected_minor ?? 0,
-                  received_minor: q.data?.summary.received_minor ?? 0,
-                  paid_count: q.data?.summary.paid_count ?? 0,
-                  member_count: q.data?.summary.member_count ?? 0,
-                }))}
-              />
-            ) : collected.some((q) => q.error) ? (
-              <ErrorState message={errorMessage(collected.find((q) => q.error)?.error)} />
-            ) : (
-              <LoadingState />
-            )}
-          </SectionCard>
-        )}
+        <div className="finance-grid__main">
+          {can('finance.contribution.view') && (
+            <SectionCard
+              title="Contributions: collected vs expected"
+              actions={
+                <p className="chart-legend">
+                  <span>
+                    <span className="legend-swatch legend-swatch--in" aria-hidden="true" />{' '}
+                    Collected
+                  </span>
+                  <span>
+                    <span className="legend-swatch legend-swatch--expected" aria-hidden="true" />{' '}
+                    Expected
+                  </span>
+                </p>
+              }
+            >
+              {collected.every((q) => q.data) ? (
+                <CollectedBars
+                  months={collected.map((q, i) => ({
+                    month: CHART_MONTHS[i] ?? '',
+                    expected_minor: q.data?.summary.expected_minor ?? 0,
+                    received_minor: q.data?.summary.received_minor ?? 0,
+                    paid_count: q.data?.summary.paid_count ?? 0,
+                    member_count: q.data?.summary.member_count ?? 0,
+                  }))}
+                />
+              ) : collected.some((q) => q.error) ? (
+                <ErrorState message={errorMessage(collected.find((q) => q.error)?.error)} />
+              ) : (
+                <LoadingState />
+              )}
+            </SectionCard>
+          )}
+
+          {canViewCashFlow && (
+            <SectionCard
+              title="Community savings"
+              actions={
+                growth !== null && (
+                  <p
+                    className={
+                      growth >= 0
+                        ? 'chart-legend balance-chart__up'
+                        : 'chart-legend balance-chart__down'
+                    }
+                  >
+                    {growth >= 0 ? '+' : '−'}
+                    {formatAmount(Math.abs(growth))} in 6 months
+                  </p>
+                )
+              }
+            >
+              {cashFlow.data ? (
+                <BalanceLine
+                  months={cashFlow.data.months.map((m) => ({
+                    month: m.month,
+                    balance_minor: m.closing_balance_minor,
+                  }))}
+                />
+              ) : cashFlow.error ? (
+                <ErrorState message={errorMessage(cashFlow.error)} />
+              ) : (
+                <LoadingState />
+              )}
+            </SectionCard>
+          )}
+        </div>
 
         <div className="finance-grid__side">
           <QuickTreasuryActions actions={actions} />

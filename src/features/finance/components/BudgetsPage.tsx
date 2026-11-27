@@ -282,17 +282,20 @@ function BudgetCard({
   asking: Campaign | null;
   onOpen: () => void;
 }) {
-  const { can } = useWorkspace();
+  const collecting = asking !== null && budget.status === 'active';
+  // Clean card: name, what is planned, money in and out. The rest is on the budget's page.
   return (
     <button type="button" className="card budget-card" onClick={onOpen}>
       <div className="budget-card__head">
         <h3 className="budget-card__title">{budget.title}</h3>
-        <Badge tone={budget.status === 'active' ? 'success' : 'neutral'}>
-          {budget.status === 'active' ? 'Open' : 'Closed'}
-        </Badge>
+        {budget.status !== 'active' ? (
+          <Badge tone="neutral">Closed</Badge>
+        ) : (
+          collecting && <Badge tone="success">Open for contributions</Badge>
+        )}
       </div>
       {budget.event && (
-        <p className="table__muted">
+        <p className="budget-card__event">
           <IconCalendar width={14} height={14} aria-hidden="true" /> {budget.event.title}
         </p>
       )}
@@ -300,34 +303,16 @@ function BudgetCard({
         {formatAmount(budget.planned_minor)}{' '}
         <span className="money__unit">{budget.currency} planned</span>
       </p>
-      <Meter
-        label="Raised"
-        value={budget.raised_minor}
-        of={budget.planned_minor}
-        currency={budget.currency}
-        tone="in"
-      />
-      <Meter
-        label="Spent"
-        value={budget.spent_minor}
-        of={budget.planned_minor}
-        currency={budget.currency}
-        tone="out"
-        pending={reviewsExpenses(can) ? budget.pending_spent_minor : 0}
-      />
-      <p className="budget-card__left">
-        {budget.left_to_spend_minor >= 0
-          ? `${formatAmount(budget.left_to_spend_minor)} ${budget.currency} left to spend`
-          : `Overspent by ${formatAmount(-budget.left_to_spend_minor)} ${budget.currency}`}
-        {budget.from_wallet_minor > 0 &&
-          ` · ${formatAmount(budget.from_wallet_minor)} taken from the cash box`}
-      </p>
-      {asking && budget.status === 'active' && (
-        <p className="budget-card__asking">
-          <IconHandHeart width={16} height={16} aria-hidden="true" />
-          Open for contributions · {chargeText(asking.charge, asking.amount_minor, asking.currency)}
-        </p>
-      )}
+      <dl className="budget-card__figures">
+        <div>
+          <dt>Raised</dt>
+          <dd>{formatAmount(budget.raised_minor)}</dd>
+        </div>
+        <div>
+          <dt>Spent</dt>
+          <dd>{formatAmount(budget.spent_minor)}</dd>
+        </div>
+      </dl>
     </button>
   );
 }
@@ -989,18 +974,17 @@ function CampaignsSection({
                 <div className="budget-card__head">
                   <h3 className="budget-card__title">{c.title}</h3>
                   <Badge tone={c.status === 'open' ? 'success' : 'neutral'}>
-                    {c.status === 'open' ? 'Open' : 'Closed'}
+                    {c.status === 'open' ? 'Open for contributions' : 'Closed'}
                   </Badge>
                 </div>
               )}
-              <p className="table__muted">
+              <p className={budgetId ? 'table__muted' : 'budget-card__event'}>
                 {budgetId && (filter === 'open' ? 'Members are asked: ' : 'Members were asked: ')}
-                {chargeText(c.charge, c.amount_minor, c.currency)} ·{' '}
-                {c.required ? 'Required' : 'Voluntary'}
+                {chargeText(c.charge, c.amount_minor, c.currency)}
+                {budgetId && ` · ${c.required ? 'Required' : 'Voluntary'}`}
                 {c.due_date && ` · due ${formatDate(c.due_date)}`}
-                {c.budget && !budgetId && ` · for ${c.budget.title}`}
               </p>
-              {c.charge === 'per_category' && c.category_amounts.length > 0 && (
+              {budgetId && c.charge === 'per_category' && c.category_amounts.length > 0 && (
                 <ul className="category-amounts" role="list" aria-label="What each category pays">
                   {c.category_amounts.map((row) => (
                     <li key={row.category_id}>
@@ -1014,7 +998,7 @@ function CampaignsSection({
                   ))}
                 </ul>
               )}
-              {c.expected_minor !== null ? (
+              {budgetId && c.expected_minor !== null ? (
                 <Meter
                   label="Collected"
                   value={c.collected_minor}
@@ -1028,24 +1012,43 @@ function CampaignsSection({
                   <span className="money__unit">{c.currency} collected</span>
                 </p>
               )}
-              <p className="table__muted">
-                {c.paid_count} of {c.member_count} members have paid
-                {c.pending_minor > 0 &&
-                  reviewsContributions(can) &&
-                  ` · ${formatAmount(c.pending_minor)} ${c.currency} awaiting review`}
-              </p>
-              <div className="campaign-mine">
-                <strong>You:</strong>{' '}
-                {c.my_share.owed_minor === null
-                  ? `voluntary · paid ${formatAmount(c.my_share.paid_minor)} ${c.currency}`
-                  : c.my_share.owed_minor === 0
-                    ? 'not asked to pay'
-                    : `owe ${formatAmount(c.my_share.owed_minor)}, paid ${formatAmount(c.my_share.paid_minor)}${
-                        c.my_share.outstanding_minor
-                          ? `, ${formatAmount(c.my_share.outstanding_minor)} ${c.currency} still to pay`
-                          : ' · all paid'
-                      }`}
-              </div>
+              {!budgetId && (
+                // Clean card: who paid and your part, in two figures.
+                <dl className="budget-card__figures">
+                  <div>
+                    <dt>Paid</dt>
+                    <dd>
+                      {c.paid_count} of {c.member_count}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>You paid</dt>
+                    <dd>{formatAmount(c.my_share.paid_minor)}</dd>
+                  </div>
+                </dl>
+              )}
+              {budgetId && (
+                <p className="table__muted">
+                  {c.paid_count} of {c.member_count} members have paid
+                  {c.pending_minor > 0 &&
+                    reviewsContributions(can) &&
+                    ` · ${formatAmount(c.pending_minor)} ${c.currency} awaiting review`}
+                </p>
+              )}
+              {budgetId && (
+                <div className="campaign-mine">
+                  <strong>You:</strong>{' '}
+                  {c.my_share.owed_minor === null
+                    ? `voluntary · paid ${formatAmount(c.my_share.paid_minor)} ${c.currency}`
+                    : c.my_share.owed_minor === 0
+                      ? 'not asked to pay'
+                      : `owe ${formatAmount(c.my_share.owed_minor)}, paid ${formatAmount(c.my_share.paid_minor)}${
+                          c.my_share.outstanding_minor
+                            ? `, ${formatAmount(c.my_share.outstanding_minor)} ${c.currency} still to pay`
+                            : ' · all paid'
+                        }`}
+                </div>
+              )}
               <div className="review-actions">
                 <Button
                   variant="secondary"

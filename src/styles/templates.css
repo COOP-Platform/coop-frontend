@@ -562,3 +562,12 @@
 .arrears-first > div {
   flex: 1;
 }
+
+/* Collected vs expected: expected is a quiet bar behind the collected green. */
+.flow-chart__bar--expected {
+  fill: var(--color-border-strong, #c9ced6);
+}
+
+.legend-swatch--expected {
+  background-color: var(--color-border-strong, #c9ced6);
+}

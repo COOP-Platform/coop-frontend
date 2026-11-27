@@ -18,12 +18,13 @@ import { reviewsContributions, reviewsExpenses, useWorkspace } from '@/features/
 import { errorMessage } from '@/lib/api/errors';
 
 import { useCashFlow } from '../api/cashflow';
+import { useMonthSummaries } from '../api/contributions';
 import { useFinanceSummary } from '../api/summary';
 import { THIS_MONTH } from '../month';
 import { addMonths } from '../period';
 import { Money } from './Money';
 import { RecentFinancialActivity } from './RecentFinancialActivity';
-import { CashFlowBars } from './StatementCharts';
+import { CollectedBars } from './StatementCharts';
 import {
   ACTION_ICONS,
   AccountBalances,
@@ -35,6 +36,8 @@ import type { QuickAction } from './TreasuryPanels';
 const THIS_YEAR = new Date().getFullYear();
 /** The chart and the trend lines: the last six months, this one included. */
 const CHART_FROM = addMonths(THIS_MONTH, -5);
+/** The six months of the collected-vs-expected chart, oldest first. */
+const CHART_MONTHS = [5, 4, 3, 2, 1, 0].map((back) => addMonths(THIS_MONTH, -back));
 
 export function FinanceDashboard() {
   const navigate = useNavigate();
@@ -43,6 +46,11 @@ export function FinanceDashboard() {
   // Every member reads the cash box (finance.cashflow.view); without it, no request.
   const canViewCashFlow = can('finance.cashflow.view');
   const cashFlow = useCashFlow(canViewCashFlow ? communityId : undefined, CHART_FROM, THIS_MONTH);
+  // Collected vs expected per month: what a savings group watches.
+  const collected = useMonthSummaries(
+    can('finance.contribution.view') ? communityId : undefined,
+    CHART_MONTHS,
+  );
 
   // Every member may record their own payment; spending the community's money
   // is the Treasurer's. The backend refuses it for anyone else regardless.
@@ -171,30 +179,33 @@ export function FinanceDashboard() {
       </div>
 
       <div className="statement-grid">
-        {canViewCashFlow && (
+        {can('finance.contribution.view') && (
           <SectionCard
-            title="Money in and out"
+            title="Contributions: collected vs expected"
             actions={
               <p className="chart-legend">
                 <span>
-                  <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> In
+                  <span className="legend-swatch legend-swatch--in" aria-hidden="true" /> Collected
                 </span>
                 <span>
-                  <span className="legend-swatch legend-swatch--out" aria-hidden="true" /> Out
+                  <span className="legend-swatch legend-swatch--expected" aria-hidden="true" />{' '}
+                  Expected
                 </span>
               </p>
             }
           >
-            {cashFlow.data ? (
-              <CashFlowBars
-                months={cashFlow.data.months.map((m) => ({
-                  month: m.month,
-                  in_minor: m.money_in.total_minor,
-                  out_minor: m.money_out.total_minor,
+            {collected.every((q) => q.data) ? (
+              <CollectedBars
+                months={collected.map((q, i) => ({
+                  month: CHART_MONTHS[i] ?? '',
+                  expected_minor: q.data?.summary.expected_minor ?? 0,
+                  received_minor: q.data?.summary.received_minor ?? 0,
+                  paid_count: q.data?.summary.paid_count ?? 0,
+                  member_count: q.data?.summary.member_count ?? 0,
                 }))}
               />
-            ) : cashFlow.error ? (
-              <ErrorState message={errorMessage(cashFlow.error)} />
+            ) : collected.some((q) => q.error) ? (
+              <ErrorState message={errorMessage(collected.find((q) => q.error)?.error)} />
             ) : (
               <LoadingState />
             )}

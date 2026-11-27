@@ -1,4 +1,10 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query-keys';
@@ -50,6 +56,27 @@ function toQuery(filters: ContributionFilters): string {
     if (value !== undefined && value !== '') params.set(key, String(value));
   }
   return params.toString();
+}
+
+/**
+ * The monthly contribution summary for several months (expected, received,
+ * who paid) -- the same request as one page of the list, so it is cached
+ * with it. For the dashboard's "collected vs expected" chart.
+ */
+export function useMonthSummaries(communityId: string | undefined, months: readonly string[]) {
+  return useQueries({
+    queries: months.map((month) => {
+      const filters = { month, page_size: 1 };
+      return {
+        queryKey: queryKeys.finance.contributions(communityId ?? '', { ...filters }),
+        queryFn: () =>
+          apiFetch<CommunityContributions>(
+            `/communities/${communityId ?? ''}/contributions/?${toQuery(filters)}`,
+          ),
+        enabled: communityId !== undefined,
+      };
+    }),
+  });
 }
 
 /** Every member reads every record (1 Nov decision); reviewers act on them. */

@@ -267,6 +267,24 @@ function MinutesView({
         </SectionCard>
       )}
 
+      {/* Who attended: present members only, as recorded at the roll-call. */}
+      <SectionCard
+        title={`Attendance${minutes.attended && minutes.attended.length > 0 ? ` (${minutes.attended.length})` : ''}`}
+      >
+        {minutes.attended && minutes.attended.length > 0 ? (
+          <ul className="minutes-view__attended" role="list">
+            {minutes.attended.map((person) => (
+              <li key={person.membership_id}>
+                {person.full_name}
+                {person.channel === 'virtual' && <span className="table__muted"> · online</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="table__muted">Nobody was marked present.</p>
+        )}
+      </SectionCard>
+
       <SectionCard title="Notes">
         {minutes.discussion.trim() ? (
           <p className="minutes-view__notes">{minutes.discussion}</p>

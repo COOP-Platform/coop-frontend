@@ -4219,3 +4219,20 @@ button.position-card__main:focus-visible {
   flex: 1;
   min-width: 0;
 }
+
+/* Minutes: who attended, as a compact list of names. */
+.minutes-view__attended {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.minutes-view__attended li {
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  background-color: var(--color-surface-tint);
+  font-size: var(--text-sm);
+}

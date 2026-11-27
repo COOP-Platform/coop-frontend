@@ -497,6 +497,9 @@ function RecordContributionForm({
   }
 
   const selectedCampaign = openCampaigns.find((c) => c.id === campaignId);
+  // Opened from a budget: it is already chosen, so no "what for / which one" questions.
+  const fixedFor =
+    initial?.type === 'dedicated' && initial.campaignId ? selectedCampaign : undefined;
   const selectedFine = openFines.find((f) => f.id === fineId);
 
   return (
@@ -525,7 +528,16 @@ function RecordContributionForm({
       )}
 
       {/* Only a choice while an event collects money; otherwise it is the monthly contribution. */}
-      {typeOptions.length > 1 && (
+      {fixedFor && (
+        <p className="details__note">
+          For <strong>{fixedFor.title}</strong>
+          {fixedFor.my_share.outstanding_minor
+            ? ` · you owe ${formatAmount(fixedFor.my_share.outstanding_minor)} ${fixedFor.currency}`
+            : ''}
+        </p>
+      )}
+
+      {!fixedFor && typeOptions.length > 1 && (
         <Select
           label="What is this payment for?"
           value={type}
@@ -535,9 +547,9 @@ function RecordContributionForm({
         />
       )}
 
-      {type === 'dedicated' && (
+      {type === 'dedicated' && !fixedFor && (
         <Select
-          label="Which event?"
+          label="Which event or budget?"
           value={campaignId}
           onChange={(event) => changeCampaign(event.target.value)}
           options={openCampaigns.map((c) => ({ value: c.id, label: c.title }))}

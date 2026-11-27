@@ -86,11 +86,11 @@ export function BudgetsPage({ embedded = false }: { embedded?: boolean }) {
       />
       {notice && <SuccessNotice text={notice} />}
       <BudgetsSection onDone={setNotice} period={period} />
+      {/* Older money asks with no budget behind them: shown as more cards, no own section. */}
       <CampaignsSection
         onDone={setNotice}
         standalone
         status={period === 'open' ? 'open' : 'closed'}
-        title="Other contributions"
       />
     </div>
   );
@@ -335,7 +335,9 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
   const [editing, setEditing] = useState(false);
   const [closing, setClosing] = useState(false);
   const [note, setNote] = useState('');
-  const [openingCampaign, setOpeningCampaign] = useState(false);
+  // What members are asked to pay towards this budget, set in Edit.
+  const openAsks = useCampaigns(communityId, 'open');
+  const asking = openAsks.data?.items.find((c) => c.budget?.id === budgetId) ?? null;
   const [usingPocket, setUsingPocket] = useState(false);
 
   if (detail.data === undefined) {
@@ -444,11 +446,6 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
 
       {canManage && (
         <div className="review-actions">
-          {can('finance.campaign.manage') && (
-            <Button inline icon={<IconHandHeart />} onClick={() => setOpeningCampaign(true)}>
-              Ask members
-            </Button>
-          )}
           <Button variant="secondary" inline icon={<IconPencil />} onClick={() => setEditing(true)}>
             Edit
           </Button>
@@ -461,6 +458,7 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
       <BudgetFormDialog
         open={editing}
         budget={b}
+        asking={asking}
         onClose={() => setEditing(false)}
         onSaved={(message) => {
           setEditing(false);
@@ -490,17 +488,6 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
           onDone(
             'Expense recorded. It shows as awaiting approval on the budget and counts once someone else approves it in Expenses & Income.',
           );
-        }}
-      />
-
-      <CampaignFormDialog
-        open={openingCampaign}
-        campaign={null}
-        budgetId={b.id}
-        onClose={() => setOpeningCampaign(false)}
-        onSaved={(message) => {
-          setOpeningCampaign(false);
-          onDone(message);
         }}
       />
 
@@ -553,12 +540,15 @@ function BudgetDetails({ budgetId, onDone }: { budgetId: string; onDone: (m: str
 export function BudgetFormDialog({
   open,
   budget,
+  asking = null,
   event,
   onClose,
   onSaved,
 }: {
   open: boolean;
   budget: BudgetDetail | null;
+  /** What members are asked to pay towards the budget, when they are. */
+  asking?: Campaign | null;
   /** Planning a new budget from an event's page: it belongs to that event. */
   event?: { id: string; title: string };
   onClose: () => void;
@@ -569,14 +559,22 @@ export function BudgetFormDialog({
       open={open}
       onClose={onClose}
       title={budget ? 'Edit budget' : event ? `Budget for ${event.title}` : 'New budget'}
-      subtitle="The planned total is the sum of the lines."
+      subtitle="Plan the spending in lines, and say what members pay towards it."
       icon={
         <IconTile tone="brand" round>
           <IconFlag />
         </IconTile>
       }
     >
-      {open && <BudgetForm budget={budget} forEvent={event} onClose={onClose} onSaved={onSaved} />}
+      {open && (
+        <BudgetForm
+          budget={budget}
+          asking={asking}
+          forEvent={event}
+          onClose={onClose}
+          onSaved={onSaved}
+        />
+      )}
     </Dialog>
   );
 }
@@ -588,20 +586,36 @@ interface LineDraft {
   planned: string;
 }
 
+type Ask = CampaignCharge | 'none';
+
 function BudgetForm({
   budget,
+  asking,
   forEvent,
   onClose,
   onSaved,
 }: {
   budget: BudgetDetail | null;
+  asking: Campaign | null;
   forEvent?: { id: string; title: string };
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
-  const { communityId } = useWorkspace();
+  const { communityId, can } = useWorkspace();
+  const canAsk = can('finance.campaign.manage');
   const create = useCreateBudget();
   const update = useUpdateBudget();
+  const createAsk = useCreateCampaign();
+  const updateAsk = useUpdateCampaign();
+  const stopAsk = useCloseCampaign();
+  // What members pay towards the budget: part of the budget, not a separate thing.
+  const [ask, setAsk] = useState<Ask>(asking?.charge ?? 'none');
+  const [askAmount, setAskAmount] = useState(
+    asking && asking.amount_minor !== null ? toRwf(asking.amount_minor) : '',
+  );
+  const [askRequired, setAskRequired] = useState(asking?.required ?? false);
+  const [askDue, setAskDue] = useState(asking?.due_date ?? '');
+  const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState(budget?.title ?? (forEvent ? `${forEvent.title} budget` : ''));
   const [description, setDescription] = useState(budget?.description ?? '');
   const [lines, setLines] = useState<LineDraft[]>(
@@ -615,7 +629,7 @@ function BudgetForm({
       : [{ key: 0, title: '', planned: '' }],
   );
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
-  const busy = create.isPending || update.isPending;
+  const busy = saving;
   const total = lines.reduce((sum, l) => sum + (toMinor(l.planned) || 0), 0);
 
   function setLine(key: number, patch: Partial<LineDraft>) {
@@ -633,6 +647,10 @@ function BudgetForm({
       )
     )
       problems.lines = 'Each line needs a name (2+ characters) and a planned amount of 0 or more.';
+    if (ask !== 'none' && ask !== 'any' && (askAmount.trim() === '' || toMinor(askAmount) <= 0))
+      problems.askAmount = 'Enter what each member pays.';
+    if (ask !== 'none' && askDue && askDue < today())
+      problems.askDue = 'The due date is today or later.';
     setErrors(problems);
     if (Object.keys(problems).length > 0 || !communityId) return;
 
@@ -648,24 +666,53 @@ function BudgetForm({
     };
     const onError = (error: unknown) => {
       const f = error instanceof ApiError ? error.fieldErrors : {};
+      const known = f.title || f.lines || f.amount_minor || f.due_date;
       setErrors({
         title: f.title,
         lines: f.lines,
+        askAmount: f.amount_minor,
+        askDue: f.due_date,
         // An event problem (cancelled, already has a budget) is shown as a whole.
-        form: f.title || f.lines ? undefined : (f.event_id ?? errorMessage(error)),
+        form: known ? undefined : (f.event_id ?? errorMessage(error)),
       });
     };
-    if (budget) {
-      update.mutate(
-        { ...body, budgetId: budget.id },
-        { onSuccess: () => onSaved(`${body.title} saved.`), onError },
-      );
-    } else {
-      create.mutate(forEvent ? { ...body, event_id: forEvent.id } : body, {
-        onSuccess: () => onSaved(`${body.title} created.`),
-        onError,
-      });
+
+    const cid = communityId;
+    async function save() {
+      setSaving(true);
+      try {
+        const saved = budget
+          ? await update.mutateAsync({ ...body, budgetId: budget.id })
+          : await create.mutateAsync(forEvent ? { ...body, event_id: forEvent.id } : body);
+        // Then what members pay towards it: start, change or stop it.
+        if (canAsk && ask !== 'none') {
+          const askBody = {
+            communityId: cid,
+            title: saved.title,
+            charge: ask,
+            amount_minor: ask === 'any' ? null : toMinor(askAmount),
+            required: askRequired,
+            due_date: askDue || null,
+          };
+          if (asking) await updateAsk.mutateAsync({ ...askBody, campaignId: asking.id });
+          else await createAsk.mutateAsync({ ...askBody, budget_id: saved.id });
+        } else if (canAsk && asking) {
+          await stopAsk.mutateAsync({ communityId: cid, campaignId: asking.id });
+        }
+        onSaved(
+          budget
+            ? `${body.title} saved.`
+            : ask !== 'none'
+              ? `${body.title} created. Members can contribute to it now.`
+              : `${body.title} created.`,
+        );
+      } catch (error) {
+        onError(error);
+      } finally {
+        setSaving(false);
+      }
     }
+    void save();
   }
 
   return (
@@ -736,6 +783,59 @@ function BudgetForm({
         </div>
         {errors.lines && <p className="field__error">{errors.lines}</p>}
       </fieldset>
+      {canAsk && (
+        <fieldset className="budget-ask">
+          <legend className="field__label">Members&apos; contribution</legend>
+          <div className="form-row">
+            <Select
+              label="Ask members to pay towards it"
+              value={ask}
+              onChange={(event) => setAsk(event.target.value as Ask)}
+              options={[
+                { value: 'none', label: 'No' },
+                { value: 'fixed', label: 'Yes, the same amount per member' },
+                { value: 'per_share', label: 'Yes, an amount per share' },
+                { value: 'any', label: 'Yes, any amount (each member decides)' },
+              ]}
+            />
+            {ask !== 'none' && ask !== 'any' && (
+              <Input
+                label={ask === 'per_share' ? 'Amount per share (RWF)' : 'Amount per member (RWF)'}
+                type="number"
+                min={1}
+                step="any"
+                value={askAmount}
+                onChange={(event) => setAskAmount(event.target.value)}
+                error={errors.askAmount}
+                required
+              />
+            )}
+          </div>
+          {ask !== 'none' && (
+            <div className="form-row">
+              <Input
+                label="Pay by"
+                optional
+                type="date"
+                min={today()}
+                value={askDue}
+                onChange={(event) => setAskDue(event.target.value)}
+                error={errors.askDue}
+              />
+              <Checkbox
+                label="Every member must pay (untick for voluntary)"
+                checked={askRequired}
+                onChange={(event) => setAskRequired(event.target.checked)}
+              />
+            </div>
+          )}
+          {asking && ask === 'none' && (
+            <p className="table__muted">
+              Saving stops contributions to this budget. What was paid stays.
+            </p>
+          )}
+        </fieldset>
+      )}
       {errors.form && <p className="form-error">{errors.form}</p>}
       <div className="dialog__footer dialog__footer--flush">
         <Button variant="tint" onClick={onClose}>
@@ -790,18 +890,11 @@ function CampaignsSection({
 
   return (
     <div className="money-section">
-      <div className="section-bar">
-        <h2 className="section-title">{title}</h2>
-        {!budgetId && filter === 'open' && (
-          <div className="section-bar__actions">
-            {canManage && (
-              <Button inline icon={<IconPlus />} onClick={() => setEditing('new')}>
-                New collection
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+      {budgetId && (
+        <div className="section-bar">
+          <h2 className="section-title">{title}</h2>
+        </div>
+      )}
 
       {campaigns.data === undefined ? (
         campaigns.isPending ? (
@@ -814,21 +907,11 @@ function CampaignsSection({
           <p className="table__muted">
             {filter === 'open'
               ? `Members are not asked to contribute to this budget yet.${
-                  can('finance.campaign.manage') ? ' Use "Ask members" to start.' : ''
+                  can('finance.campaign.manage') ? ' Use Edit to ask them.' : ''
                 }`
               : 'Members were not asked to contribute to this budget.'}
           </p>
-        ) : (
-          <section className="card">
-            <EmptyState
-              icon={<IconHandHeart />}
-              size="sm"
-              title={
-                filter === 'open' ? 'No other open contributions' : 'No other past contributions'
-              }
-            />
-          </section>
-        )
+        ) : null
       ) : (
         <ul className="budget-cards" role="list">
           {shownCampaigns(campaigns.data.items, budgetId, standalone).map((c) => (
@@ -900,7 +983,8 @@ function CampaignsSection({
                       Contribute
                     </Button>
                   )}
-                {canManage && c.status === 'open' && (
+                {/* Inside a budget, the budget's own Edit changes what members pay. */}
+                {canManage && c.status === 'open' && !budgetId && (
                   <>
                     <Button
                       variant="secondary"

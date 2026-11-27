@@ -767,17 +767,22 @@ export function BudgetFormDialog({
   budget: BudgetDetail | null;
   /** What members are asked to pay towards the budget, when they are. */
   asking?: Campaign | null;
-  /** Planning a new budget from an event's page: it belongs to that event. */
-  event?: { id: string; title: string };
+  /** Turning the budget on from an event's page: it belongs to that event. */
+  event?: { id: string; title: string; date?: string };
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
+  const ofEvent = event !== undefined || (budget !== null && budget.event !== null);
   return (
     <Dialog
       open={open}
       onClose={onClose}
       title={budget ? 'Edit budget' : event ? `Budget for ${event.title}` : 'New budget'}
-      subtitle="What you are collecting for, how much, and by when."
+      subtitle={
+        ofEvent
+          ? 'The event gives the name. Say how much and who pays.'
+          : 'What you are collecting for, how much, and by when.'
+      }
       icon={
         <IconTile tone="brand" round>
           <IconFlag />
@@ -808,7 +813,7 @@ function BudgetForm({
 }: {
   budget: BudgetDetail | null;
   asking: Campaign | null;
-  forEvent?: { id: string; title: string };
+  forEvent?: { id: string; title: string; date?: string };
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -837,9 +842,12 @@ function BudgetForm({
       (asking?.category_amounts ?? []).map((c) => [c.category_id, toRwf(c.amount_minor)]),
     ),
   );
-  const [askDue, setAskDue] = useState(asking?.due_date ?? '');
+  // An event's budget is paid by the event's day unless the organiser says otherwise.
+  const eventDay = forEvent?.date && forEvent.date >= today() ? forEvent.date : '';
+  const [askDue, setAskDue] = useState(asking?.due_date ?? eventDay);
   const [saving, setSaving] = useState(false);
-  const [title, setTitle] = useState(budget?.title ?? (forEvent ? `${forEvent.title} budget` : ''));
+  // An event's budget takes the event's name: nothing to type.
+  const [title, setTitle] = useState(budget?.title ?? forEvent?.title ?? '');
   const [description, setDescription] = useState(budget?.description ?? '');
   // The goal: one amount. An older budget planned in several lines keeps them.
   const oldLines = budget !== null && budget.lines.length > 1;
@@ -951,23 +959,29 @@ function BudgetForm({
 
   return (
     <form className="dialog__form" onSubmit={handleSubmit} noValidate>
-      <Input
-        label="Title"
-        placeholder="e.g. End-of-year celebration"
-        maxLength={160}
-        value={title}
-        onChange={(event) => setTitle(event.target.value)}
-        error={errors.title}
-        required
-      />
-      <Textarea
-        label="Description"
-        optional
-        rows={2}
-        maxLength={2000}
-        value={description}
-        onChange={(event) => setDescription(event.target.value)}
-      />
+      {/* An event's budget: the event already says what it is for. */}
+      {!eventBudget && (
+        <>
+          <Input
+            label="Title"
+            placeholder="e.g. End-of-year celebration"
+            maxLength={160}
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            error={errors.title}
+            required
+          />
+          <Textarea
+            label="Description"
+            optional
+            rows={2}
+            maxLength={2000}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </>
+      )}
+      {eventBudget && errors.title && <p className="form-error">{errors.title}</p>}
       {oldLines && budget ? (
         <p className="details__note">
           Goal: <strong>{formatAmount(budget.planned_minor)} RWF</strong> (the total of this

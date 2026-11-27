@@ -136,13 +136,6 @@ export const MEETINGS_APP: AppDefinition = {
       to: '/meetings/announcements',
       permission: 'announcement.view',
     },
-    {
-      label: 'Reports',
-      icon: <IconBarChart />,
-      to: '/meetings/reports',
-      // Attendance reports: whoever takes the roll-call (Secretary, admins) and the Auditor.
-      permission: ['meeting.attendance.record', 'audit.view'],
-    },
   ],
 };
 
